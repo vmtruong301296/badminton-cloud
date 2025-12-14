@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio } from "../../utils/formatters";
+import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from "../../utils/formatters";
 
 export default function BillExport({ bill, paymentAccounts = [], paymentAccountImages = {} }) {
 	// Get active payment accounts (memoized to avoid re-renders)
@@ -155,14 +155,16 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 											}
 											
 											// Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
-											const mainBillTotalAmount = (player.total_amount || 0) + (player.debt_amount || 0);
+											// Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
+											const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
 											
 											// Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+											// Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
 											const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
 												const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
 												if (subBillPlayer) {
 													// Giá trị cột "Tổng tiền" của player trong bill phụ
-													const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+													const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
 													return sum + subBillTotalAmount;
 												}
 												return sum;

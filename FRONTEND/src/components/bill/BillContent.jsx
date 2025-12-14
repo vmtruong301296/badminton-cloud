@@ -1,4 +1,4 @@
-import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio } from '../../utils/formatters';
+import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from '../../utils/formatters';
 
 export default function BillContent({ bill, showHeader = true, onMarkPayment, isMainBill = false, subBills = null }) {
   if (!bill) return null;
@@ -182,14 +182,16 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                           }
                           
                           // Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
-                          const mainBillTotalAmount = (player.total_amount || 0) + (player.debt_amount || 0);
+                          // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
+                          const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
                           
                           // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+                          // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
                           const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
                             const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
                             if (subBillPlayer) {
                               // Giá trị cột "Tổng tiền" của player trong bill phụ
-                              const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+                              const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
                               return sum + subBillTotalAmount;
                             }
                             return sum;
@@ -268,17 +270,18 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                         }
                         
                         // Tính tổng tiền 2 bill
+                        // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
                         return formatCurrencyRounded(
                           bill.bill_players?.reduce((sum, p) => {
-                            // Lấy giá trị cột "Tổng tiền" trong bill chính
-                            const mainBillTotalAmount = (p.total_amount || 0) + (p.debt_amount || 0);
+                            // Lấy giá trị cột "Tổng tiền" trong bill chính (làm tròn trước)
+                            const mainBillTotalAmount = roundToNearestThousand((p.total_amount || 0) + (p.debt_amount || 0));
                             
-                            // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+                            // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ (làm tròn từng giá trị trước)
                             const subBillsTotalAmount = subBills.reduce((subSum, subBill) => {
                               const subBillPlayer = subBill.bill_players?.find((sp) => sp.user_id === p.user_id);
                               if (subBillPlayer) {
-                                // Giá trị cột "Tổng tiền" của player trong bill phụ
-                                const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+                                // Giá trị cột "Tổng tiền" của player trong bill phụ (làm tròn trước)
+                                const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
                                 return subSum + subBillTotalAmount;
                               }
                               return subSum;
