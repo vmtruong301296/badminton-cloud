@@ -673,7 +673,7 @@ export default function BillDetail() {
                           '-'
                         )}
                       </td>
-                      <td className="text-right py-3 font-semibold">
+                      <td className="text-right py-3 font-semibold text-green-600">
                         {formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0))}
                       </td>
                       <td className="text-center py-3">

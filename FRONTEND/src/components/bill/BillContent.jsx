@@ -157,51 +157,57 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                         '-'
                       )}
                     </td>
-                    <td className="text-right py-2 font-semibold">
-                      {(() => {
-                        // Giá trị cột "Tổng tiền" = total_amount + debt_amount
-                        return formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0));
-                      })()}
-                    </td>
-                    {subBills && subBills.length > 0 && (
-                      <td className="text-right py-2 font-semibold text-green-600">
-                        {(() => {
-                          // Kiểm tra xem bill con có tiền dương không
-                          const hasSubBillWithMoney = subBills.some((subBill) => {
-                            const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
-                            if (subBillPlayer) {
-                              const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
-                              return subBillTotalAmount > 0;
-                            }
-                            return false;
-                          });
-                          
-                          // Nếu không có bill con nào có tiền dương, hiển thị rỗng
-                          if (!hasSubBillWithMoney) {
-                            return '';
-                          }
-                          
-                          // Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
-                          // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
-                          const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
-                          
-                          // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
-                          // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
-                          const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
-                            const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
-                            if (subBillPlayer) {
-                              // Giá trị cột "Tổng tiền" của player trong bill phụ
-                              const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
-                              return sum + subBillTotalAmount;
-                            }
-                            return sum;
-                          }, 0);
-                          
-                          // Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
-                          return formatCurrencyRounded(mainBillTotalAmount + subBillsTotalAmount);
-                        })()}
-                      </td>
-                    )}
+                    {(() => {
+                      // Kiểm tra xem bill con có tiền dương không (dùng cho cả 2 cột)
+                      const hasSubBillWithMoney = subBills && subBills.length > 0 ? subBills.some((subBill) => {
+                        const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+                        if (subBillPlayer) {
+                          const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+                          return subBillTotalAmount > 0;
+                        }
+                        return false;
+                      }) : false;
+                      
+                      return (
+                        <>
+                          <td className={`text-right py-2 font-semibold ${!hasSubBillWithMoney && subBills && subBills.length > 0 ? 'text-green-600' : ''}`}>
+                            {(() => {
+                              // Giá trị cột "Tổng tiền" = total_amount + debt_amount
+                              return formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0));
+                            })()}
+                          </td>
+                          {subBills && subBills.length > 0 && (
+                            <td className="text-right py-2 font-semibold text-green-600">
+                              {(() => {
+                                // Nếu không có bill con nào có tiền dương, hiển thị rỗng
+                                if (!hasSubBillWithMoney) {
+                                  return '';
+                                }
+                                
+                                // Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
+                                // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
+                                const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
+                                
+                                // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+                                // Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
+                                const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
+                                  const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+                                  if (subBillPlayer) {
+                                    // Giá trị cột "Tổng tiền" của player trong bill phụ
+                                    const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
+                                    return sum + subBillTotalAmount;
+                                  }
+                                  return sum;
+                                }, 0);
+                                
+                                // Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
+                                return formatCurrencyRounded(mainBillTotalAmount + subBillsTotalAmount);
+                              })()}
+                            </td>
+                          )}
+                        </>
+                      );
+                    })()}
                     <td className="text-center py-2">
                       {isMainBill && onMarkPayment ? (
                         <input
