@@ -87,97 +87,107 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 								return 0;
 							});
 							
-							return sortedPlayers.map((player, index) => (
-							<tr key={player.id}>
-								<td className="border border-gray-300 px-3 py-2">{index + 1}</td>
-								<td className="border border-gray-300 px-3 py-2 font-medium">{player.user?.name}</td>
-								<td className="border border-gray-300 px-3 py-2 text-right">{formatRatio(player.ratio_value)}</td>
-								<td className="border border-gray-300 px-3 py-2 text-right">
-									{player.menu_extra_total > 0 ? (
-										<div className="text-right">
-											<div className="font-semibold mb-1">{formatCurrencyRounded(player.menu_extra_total)}</div>
-											<div className="text-xs text-gray-600 space-y-1">
-												{player.bill_player_menus?.map((menuItem, idx) => (
-													<div key={idx} className="text-right">
-														{menuItem.menu?.name} × {menuItem.quantity} = {formatCurrencyRounded(menuItem.subtotal)}
-													</div>
-												))}
-											</div>
-										</div>
-									) : (
-										"-"
-									)}
-								</td>
-								<td className="border border-gray-300 px-3 py-2 text-right">
-									{player.debt_amount > 0 ? (
-										<div>
-											<div className="font-semibold mb-1">{formatCurrencyRounded(player.debt_amount)}</div>
-											{player.debt_details && player.debt_details.length > 0 && (
-												<div className="text-xs text-gray-600 space-y-2">
-													{player.debt_details.map((debt, idx) => (
-														<div key={idx} className="text-right border border-gray-300 rounded p-1.5 bg-gray-50">
-															{debt.parent_amount !== null && (
-																<div className="font-medium">
-																	{formatDateDisplay(debt.date)}: {formatCurrencyRounded(debt.parent_amount)}
-																</div>
-															)}
-															{debt.sub_bills && debt.sub_bills.length > 0 && debt.sub_bills.map((subBill, subIdx) => (
-																<div key={subIdx} className="pl-2 mt-0.5">
-																	{subBill.note || 'Bill con'}: {formatCurrencyRounded(subBill.amount)}
-																</div>
-															))}
+							return sortedPlayers.map((player, index) => {
+								// Kiểm tra xem bill con có tiền dương không (dùng cho cả 2 cột)
+								const hasSubBillWithMoney = subBills && subBills.length > 0 ? subBills.some((subBill) => {
+									const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+									if (subBillPlayer) {
+										const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+										return subBillTotalAmount > 0;
+									}
+									return false;
+								}) : false;
+								
+								// Xác định màu cho cột "Tổng tiền": 
+								// - Chỉ áp dụng cho bill chính (khi subBills không null và có giá trị)
+								// - Xanh khi không có subBill nào có tiền hoặc khi không có subBills
+								const isMainBill = subBills !== null && subBills !== undefined;
+								const shouldShowGreenForTotal = isMainBill && (!subBills.length || (!hasSubBillWithMoney && subBills.length > 0));
+								
+								return (
+								<tr key={player.id}>
+									<td className="border border-gray-300 px-3 py-2">{index + 1}</td>
+									<td className="border border-gray-300 px-3 py-2 font-medium">{player.user?.name}</td>
+									<td className="border border-gray-300 px-3 py-2 text-right">{formatRatio(player.ratio_value)}</td>
+									<td className="border border-gray-300 px-3 py-2 text-right">
+										{player.menu_extra_total > 0 ? (
+											<div className="text-right">
+												<div className="font-semibold mb-1">{formatCurrencyRounded(player.menu_extra_total)}</div>
+												<div className="text-xs text-gray-600 space-y-1">
+													{player.bill_player_menus?.map((menuItem, idx) => (
+														<div key={idx} className="text-right">
+															{menuItem.menu?.name} × {menuItem.quantity} = {formatCurrencyRounded(menuItem.subtotal)}
 														</div>
 													))}
 												</div>
-											)}
-										</div>
-									) : (
-										"-"
-									)}
-								</td>
-								<td className="border border-gray-300 px-3 py-2 text-right font-semibold">{formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0))}</td>
-								{subBills && subBills.length > 0 && (
-									<td className="border border-gray-300 px-3 py-2 text-right font-semibold text-green-600">
-										{(() => {
-											// Kiểm tra xem bill con có tiền dương không
-											const hasSubBillWithMoney = subBills.some((subBill) => {
-												const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
-												if (subBillPlayer) {
-													const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
-													return subBillTotalAmount > 0;
-												}
-												return false;
-											});
-											
-											// Nếu không có bill con nào có tiền dương, hiển thị rỗng
-											if (!hasSubBillWithMoney) {
-												return '';
-											}
-											
-											// Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
-											// Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
-											const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
-											
-											// Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
-											// Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
-											const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
-												const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
-												if (subBillPlayer) {
-													// Giá trị cột "Tổng tiền" của player trong bill phụ
-													const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
-													return sum + subBillTotalAmount;
-												}
-												return sum;
-											}, 0);
-											
-											// Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
-											return formatCurrencyRounded(mainBillTotalAmount + subBillsTotalAmount);
-										})()}
+											</div>
+										) : (
+											"-"
+										)}
 									</td>
-								)}
-								<td className="border border-gray-300 px-3 py-2 text-center">{player.is_paid ? "✓" : ""}</td>
-							</tr>
-							));
+									<td className="border border-gray-300 px-3 py-2 text-right">
+										{player.debt_amount > 0 ? (
+											<div>
+												<div className="font-semibold mb-1">{formatCurrencyRounded(player.debt_amount)}</div>
+												{player.debt_details && player.debt_details.length > 0 && (
+													<div className="text-xs text-gray-600 space-y-2">
+														{player.debt_details.map((debt, idx) => (
+															<div key={idx} className="text-right border border-gray-300 rounded p-1.5 bg-gray-50">
+																{debt.parent_amount !== null && (
+																	<div className="font-medium">
+																		{formatDateDisplay(debt.date)}: {formatCurrencyRounded(debt.parent_amount)}
+																	</div>
+																)}
+																{debt.sub_bills && debt.sub_bills.length > 0 && debt.sub_bills.map((subBill, subIdx) => (
+																	<div key={subIdx} className="pl-2 mt-0.5">
+																		{subBill.note || 'Bill con'}: {formatCurrencyRounded(subBill.amount)}
+																	</div>
+																))}
+															</div>
+														))}
+													</div>
+												)}
+											</div>
+										) : (
+											"-"
+										)}
+									</td>
+									<td className={`border border-gray-300 px-3 py-2 text-right font-semibold ${shouldShowGreenForTotal ? 'text-green-600' : ''}`}>
+										{formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0))}
+									</td>
+									{subBills && subBills.length > 0 && (
+										<td className="border border-gray-300 px-3 py-2 text-right font-semibold text-green-600">
+											{(() => {
+												// Nếu không có bill con nào có tiền dương, hiển thị rỗng
+												if (!hasSubBillWithMoney) {
+													return '';
+												}
+												
+												// Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
+												// Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
+												const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
+												
+												// Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+												// Làm tròn từng giá trị trước khi cộng để nhất quán với hiển thị
+												const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
+													const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+													if (subBillPlayer) {
+														// Giá trị cột "Tổng tiền" của player trong bill phụ
+														const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
+														return sum + subBillTotalAmount;
+													}
+													return sum;
+												}, 0);
+												
+												// Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
+												return formatCurrencyRounded(mainBillTotalAmount + subBillsTotalAmount);
+											})()}
+										</td>
+									)}
+									<td className="border border-gray-300 px-3 py-2 text-center">{player.is_paid ? "✓" : ""}</td>
+								</tr>
+								);
+							});
 						})()}
 					</tbody>
 				</table>
