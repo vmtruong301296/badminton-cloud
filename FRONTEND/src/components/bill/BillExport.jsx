@@ -11,7 +11,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 	if (!bill) return null;
 
 	// Helper function to render bill content
-	const renderBillContent = (billData, showTitle = true) => (
+	const renderBillContent = (billData, showTitle = true, subBills = null) => (
 		<div>
 			{showTitle && (
 				<div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
@@ -58,6 +58,9 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 							<th className="border border-gray-300 px-3 py-2 text-right">Chi phí thêm</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Tiền nợ</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Tổng tiền</th>
+							{subBills && subBills.length > 0 && (
+								<th className="border border-gray-300 px-3 py-2 text-right">TT + Bill sau</th>
+							)}
 							<th className="border border-gray-300 px-3 py-2 text-center">Đã TT</th>
 						</tr>
 					</thead>
@@ -133,6 +136,43 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 									)}
 								</td>
 								<td className="border border-gray-300 px-3 py-2 text-right font-semibold">{formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0))}</td>
+								{subBills && subBills.length > 0 && (
+									<td className="border border-gray-300 px-3 py-2 text-right font-semibold text-green-600">
+										{(() => {
+											// Kiểm tra xem bill con có tiền dương không
+											const hasSubBillWithMoney = subBills.some((subBill) => {
+												const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+												if (subBillPlayer) {
+													const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+													return subBillTotalAmount > 0;
+												}
+												return false;
+											});
+											
+											// Nếu không có bill con nào có tiền dương, hiển thị rỗng
+											if (!hasSubBillWithMoney) {
+												return '';
+											}
+											
+											// Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
+											const mainBillTotalAmount = (player.total_amount || 0) + (player.debt_amount || 0);
+											
+											// Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+											const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
+												const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+												if (subBillPlayer) {
+													// Giá trị cột "Tổng tiền" của player trong bill phụ
+													const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+													return sum + subBillTotalAmount;
+												}
+												return sum;
+											}, 0);
+											
+											// Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
+											return formatCurrencyRounded(mainBillTotalAmount + subBillsTotalAmount);
+										})()}
+									</td>
+								)}
 								<td className="border border-gray-300 px-3 py-2 text-center">{player.is_paid ? "✓" : ""}</td>
 							</tr>
 							));
@@ -191,7 +231,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 			<div id="bill-export" className="bg-white p-6 mx-auto" style={{ fontFamily: "Arial, sans-serif", maxWidth: "1728px" }}>
 				<div className="grid grid-cols-2 gap-6">
 					{/* Cột trái: Bill chính */}
-					<div className="col-span-1">{renderBillContent(bill, true)}</div>
+					<div className="col-span-1">{renderBillContent(bill, true, bill.sub_bills || [])}</div>
 
 					{/* Cột phải: Bill phụ và QR thanh toán */}
 					<div className="col-span-1">
@@ -220,7 +260,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 		<div id="bill-export" className="bg-white p-6 max-w-6xl mx-auto" style={{ fontFamily: "Arial, sans-serif" }}>
 			<div className="grid grid-cols-3 gap-6">
 				{/* Cột trái: Nội dung phiếu thu */}
-				<div className="col-span-2">{renderBillContent(bill, true)}</div>
+				<div className="col-span-2">{renderBillContent(bill, true, bill.sub_bills || [])}</div>
 
 				{/* Cột phải: Thông tin thanh toán */}
 				{activeAccounts.length > 0 && (

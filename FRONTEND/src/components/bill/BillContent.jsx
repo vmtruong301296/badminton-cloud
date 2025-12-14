@@ -76,7 +76,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                   <th className="text-right py-1">Tiền nợ</th>
                   <th className="text-right py-1">Tổng tiền</th>
                   {subBills && subBills.length > 0 && (
-                    <th className="text-right py-1">TT 2 bill</th>
+                    <th className="text-right py-1">TT + Bill sau</th>
                   )}
                   <th className="text-center py-1">Đã TT</th>
                 </tr>
@@ -145,7 +145,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                                   )}
                                   {debt.sub_bills && debt.sub_bills.length > 0 && debt.sub_bills.map((subBill, subIdx) => (
                                     <div key={subIdx} className="pl-2 mt-0.5">
-                                      {subBill.note || 'Bill con'}: {formatCurrencyRounded(subBill.amount)}
+                                      {subBill.note || 'Sau 9h'}: {formatCurrencyRounded(subBill.amount)}
                                     </div>
                                   ))}
                                 </div>
@@ -166,6 +166,21 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                     {subBills && subBills.length > 0 && (
                       <td className="text-right py-2 font-semibold text-green-600">
                         {(() => {
+                          // Kiểm tra xem bill con có tiền dương không
+                          const hasSubBillWithMoney = subBills.some((subBill) => {
+                            const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
+                            if (subBillPlayer) {
+                              const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+                              return subBillTotalAmount > 0;
+                            }
+                            return false;
+                          });
+                          
+                          // Nếu không có bill con nào có tiền dương, hiển thị rỗng
+                          if (!hasSubBillWithMoney) {
+                            return '';
+                          }
+                          
                           // Lấy giá trị cột "Tổng tiền" trong bill chính (total_amount + debt_amount)
                           const mainBillTotalAmount = (player.total_amount || 0) + (player.debt_amount || 0);
                           
@@ -234,26 +249,46 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                   </td>
                   {subBills && subBills.length > 0 && (
                     <td className="text-right py-2 text-green-600">
-                      {formatCurrencyRounded(
-                        bill.bill_players?.reduce((sum, p) => {
-                          // Lấy giá trị cột "Tổng tiền" trong bill chính
-                          const mainBillTotalAmount = (p.total_amount || 0) + (p.debt_amount || 0);
-                          
-                          // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
-                          const subBillsTotalAmount = subBills.reduce((subSum, subBill) => {
+                      {(() => {
+                        // Kiểm tra xem có bất kỳ bill con nào có tiền dương không
+                        const hasAnySubBillWithMoney = bill.bill_players?.some((p) => {
+                          return subBills.some((subBill) => {
                             const subBillPlayer = subBill.bill_players?.find((sp) => sp.user_id === p.user_id);
                             if (subBillPlayer) {
-                              // Giá trị cột "Tổng tiền" của player trong bill phụ
                               const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
-                              return subSum + subBillTotalAmount;
+                              return subBillTotalAmount > 0;
                             }
-                            return subSum;
-                          }, 0);
-                          
-                          // Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
-                          return sum + mainBillTotalAmount + subBillsTotalAmount;
-                        }, 0) || 0
-                      )}
+                            return false;
+                          });
+                        });
+                        
+                        // Nếu không có bill con nào có tiền dương, hiển thị rỗng
+                        if (!hasAnySubBillWithMoney) {
+                          return '';
+                        }
+                        
+                        // Tính tổng tiền 2 bill
+                        return formatCurrencyRounded(
+                          bill.bill_players?.reduce((sum, p) => {
+                            // Lấy giá trị cột "Tổng tiền" trong bill chính
+                            const mainBillTotalAmount = (p.total_amount || 0) + (p.debt_amount || 0);
+                            
+                            // Lấy tổng giá trị cột "Tổng tiền" trong tất cả bill phụ
+                            const subBillsTotalAmount = subBills.reduce((subSum, subBill) => {
+                              const subBillPlayer = subBill.bill_players?.find((sp) => sp.user_id === p.user_id);
+                              if (subBillPlayer) {
+                                // Giá trị cột "Tổng tiền" của player trong bill phụ
+                                const subBillTotalAmount = (subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0);
+                                return subSum + subBillTotalAmount;
+                              }
+                              return subSum;
+                            }, 0);
+                            
+                            // Tổng tiền 2 bill = Tổng tiền bill chính + Tổng tiền bill phụ
+                            return sum + mainBillTotalAmount + subBillsTotalAmount;
+                          }, 0) || 0
+                        );
+                      })()}
                     </td>
                   )}
                   <td></td>
