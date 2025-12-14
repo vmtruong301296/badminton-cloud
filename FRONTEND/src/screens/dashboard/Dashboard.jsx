@@ -308,7 +308,7 @@ export default function Dashboard() {
 	}, [allBills]);
 
 	// Calculate displayed bills and total main bills count
-	const { displayedBills, totalMainBillsCount, totalPages } = useMemo(() => {
+	const { billGroups, totalMainBillsCount, totalPages } = useMemo(() => {
 		// Sort all bills by date descending (newest first)
 		const sortedBills = [...bills].sort((a, b) => {
 			const dateA = a.date ? new Date(a.date) : new Date(0);
@@ -332,16 +332,33 @@ export default function Dashboard() {
 		const mainBillIds = new Set(paginatedMainBills.map((bill) => bill.id));
 		const relatedSubBills = subBills.filter((bill) => mainBillIds.has(bill.parent_bill_id));
 
-		// Combine and sort by date: main bills first, then their sub bills, all sorted by date
-		const combined = [...paginatedMainBills, ...relatedSubBills];
-		const displayed = combined.sort((a, b) => {
-			const dateA = a.date ? new Date(a.date) : new Date(0);
-			const dateB = b.date ? new Date(b.date) : new Date(0);
-			return dateB - dateA; // Descending order (newest first)
+		// Group sub bills by parent bill ID
+		const subBillsByParent = new Map();
+		relatedSubBills.forEach((subBill) => {
+			const parentId = subBill.parent_bill_id;
+			if (!subBillsByParent.has(parentId)) {
+				subBillsByParent.set(parentId, []);
+			}
+			subBillsByParent.get(parentId).push(subBill);
 		});
 
+		// Sort sub bills by date (newest first) within each parent group
+		subBillsByParent.forEach((subs) => {
+			subs.sort((a, b) => {
+				const dateA = a.date ? new Date(a.date) : new Date(0);
+				const dateB = b.date ? new Date(b.date) : new Date(0);
+				return dateB - dateA;
+			});
+		});
+
+		// Build bill groups: each group contains main bill and its sub bills
+		const groups = paginatedMainBills.map((mainBill) => ({
+			mainBill,
+			subBills: subBillsByParent.get(mainBill.id) || [],
+		}));
+
 		return {
-			displayedBills: displayed,
+			billGroups: groups,
 			totalMainBillsCount: mainBills.length,
 			totalPages: totalPagesCount,
 		};
@@ -559,148 +576,230 @@ export default function Dashboard() {
 				<div className="lg:col-span-3">
 					{loading ? (
 						<div className="text-center py-8">Đang tải...</div>
-					) : displayedBills.length === 0 ? (
+					) : billGroups.length === 0 ? (
 						<div className="text-center py-8 text-gray-500">Chưa có bill nào</div>
 					) : (
 						<div className="bg-white shadow rounded-lg overflow-hidden">
 							{/* Desktop Table View */}
-							<div className="hidden md:block overflow-x-auto">
-								<table className="min-w-full divide-y divide-gray-200">
-									<thead className="bg-gray-50">
-										<tr>
-											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
-											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
-											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
-											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chưa TT</th>
-											<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
-										</tr>
-									</thead>
-									<tbody className="bg-white divide-y divide-gray-200">
-										{displayedBills.map((bill) => {
-											const isWarning = isOverdueWarning(bill);
-											const allPaid = bill.bill_players?.every((p) => p.is_paid) && bill.bill_players?.length > 0;
-											return (
-												<tr
-													key={bill.id}
-													className={`hover:bg-gray-50 ${
-														isWarning
-															? "bg-red-100 hover:bg-red-200"
-															: allPaid
-															? "bg-green-50 hover:bg-green-100"
-															: bill.parent_bill_id
-															? "bg-blue-50"
-															: ""
-													}`}>
-													<td className="px-6 py-4 whitespace-nowrap">
-														{bill.parent_bill_id ? (
-															<div className="flex items-center space-x-2">
-																<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Bill con</span>
-																{bill.parent_bill && (
-																	<Link
-																		to={`/bills/${bill.parent_bill.id}`}
-																		className="text-xs text-blue-600 hover:text-blue-900 hover:underline"
-																		title="Xem bill chính">
-																		{formatDate(bill.parent_bill.date)}
+							<div className="hidden md:block space-y-4">
+								{billGroups.map((group, groupIndex) => {
+									const mainBill = group.mainBill;
+									const subBills = group.subBills;
+									const mainBillWarning = isOverdueWarning(mainBill);
+									const mainBillAllPaid = mainBill.bill_players?.every((p) => p.is_paid) && mainBill.bill_players?.length > 0;
+									
+									return (
+										<div 
+											key={mainBill.id} 
+											className={`border-2 rounded-lg overflow-hidden ${
+												mainBillWarning ? 'border-red-300' : mainBillAllPaid ? 'border-green-300' : 'border-gray-300'
+											}`}>
+											<table className="min-w-full divide-y divide-gray-200">
+												<thead className="bg-gray-50">
+													<tr>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chưa TT</th>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
+													</tr>
+												</thead>
+												<tbody className="bg-white divide-y divide-gray-200">
+													{/* Main Bill Row */}
+													<tr
+														className={`hover:bg-gray-50 ${
+															mainBillWarning
+																? "bg-red-100 hover:bg-red-200"
+																: mainBillAllPaid
+																? "bg-green-50 hover:bg-green-100"
+																: ""
+														}`}>
+														<td className="px-6 py-4 whitespace-nowrap">
+															<span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Bill chính #{mainBill.id}</span>
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(mainBill.date)}</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrencyRounded(mainBill.total_amount)}</td>
+														<td className="px-6 py-4 whitespace-nowrap">
+															<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(mainBill)}`}>{getStatusText(mainBill)}</span>
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+															{mainBill.bill_players?.filter((p) => !p.is_paid).length || 0}
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+															<div className="flex space-x-3">
+																{hasPermission('bills.view') && (
+																	<Link to={`/bills/${mainBill.id}`} className="text-blue-600 hover:text-blue-900">
+																		Chi tiết
 																	</Link>
 																)}
+																{hasPermission('bills.delete') && (
+																	<button type="button" onClick={() => handleDeleteClick(mainBill.id)} className="text-red-600 hover:text-red-900">
+																		Xóa
+																	</button>
+																)}
 															</div>
-														) : (
-															<span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Bill chính</span>
-														)}
-													</td>
-													<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(bill.date)}</td>
-													<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrencyRounded(bill.total_amount)}</td>
-													<td className="px-6 py-4 whitespace-nowrap">
-														<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(bill)}`}>{getStatusText(bill)}</span>
-													</td>
-													<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-														{bill.bill_players?.filter((p) => !p.is_paid).length || 0}
-													</td>
-													<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-														<div className="flex space-x-3">
+														</td>
+													</tr>
+													{/* Sub Bills Rows */}
+													{subBills.map((subBill) => {
+														const subBillWarning = isOverdueWarning(subBill);
+														const subBillAllPaid = subBill.bill_players?.every((p) => p.is_paid) && subBill.bill_players?.length > 0;
+														return (
+															<tr
+																key={subBill.id}
+																className={`hover:bg-gray-50 bg-blue-50 ${
+																	subBillWarning
+																		? "bg-red-100 hover:bg-red-200"
+																		: subBillAllPaid
+																		? "bg-green-50 hover:bg-green-100"
+																		: ""
+																}`}>
+																<td className="px-6 py-4 whitespace-nowrap pl-12 border-l-4 border-blue-400">
+																	<div className="flex items-center space-x-2">
+																		<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Bill con</span>
+																		<span className="text-xs text-gray-600">
+																			của Bill #{mainBill.id}
+																		</span>
+																	</div>
+																</td>
+																<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(subBill.date)}</td>
+																<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrencyRounded(subBill.total_amount)}</td>
+																<td className="px-6 py-4 whitespace-nowrap">
+																	<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(subBill)}`}>{getStatusText(subBill)}</span>
+																</td>
+																<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+																	{subBill.bill_players?.filter((p) => !p.is_paid).length || 0}
+																</td>
+																<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+																	<div className="flex space-x-3">
+																		{hasPermission('bills.view') && (
+																			<Link to={`/bills/${subBill.id}`} className="text-blue-600 hover:text-blue-900">
+																				Chi tiết
+																			</Link>
+																		)}
+																		{hasPermission('bills.delete') && (
+																			<button type="button" onClick={() => handleDeleteClick(subBill.id)} className="text-red-600 hover:text-red-900">
+																				Xóa
+																			</button>
+																		)}
+																	</div>
+																</td>
+															</tr>
+														);
+													})}
+												</tbody>
+											</table>
+										</div>
+									);
+								})}
+							</div>
+
+							{/* Mobile Card View */}
+							<div className="md:hidden space-y-4">
+								{billGroups.map((group, groupIndex) => {
+									const mainBill = group.mainBill;
+									const subBills = group.subBills;
+									const mainBillWarning = isOverdueWarning(mainBill);
+									const mainBillAllPaid = mainBill.bill_players?.every((p) => p.is_paid) && mainBill.bill_players?.length > 0;
+									
+									return (
+										<div key={mainBill.id} className={`border-2 rounded-lg overflow-hidden ${groupIndex < billGroups.length - 1 ? 'mb-4' : ''} ${mainBillWarning ? 'border-red-300' : mainBillAllPaid ? 'border-green-300' : 'border-gray-300'}`}>
+											{/* Main Bill Card */}
+											<div
+												className={`p-4 ${
+													mainBillWarning
+														? "bg-red-100"
+														: mainBillAllPaid
+														? "bg-green-50"
+														: "bg-white"
+												}`}>
+												<div className="flex items-start justify-between mb-3">
+													<div className="flex-1">
+														<div className="flex items-center gap-2 mb-2 flex-wrap">
+															<span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Bill chính #{mainBill.id}</span>
+														</div>
+														<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(mainBill.date)}</div>
+														<div className="text-lg font-semibold text-gray-900">{formatCurrencyRounded(mainBill.total_amount)}</div>
+													</div>
+													<div className="flex flex-col items-end gap-2">
+														<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(mainBill)}`}>{getStatusText(mainBill)}</span>
+														<div className="text-xs text-gray-600">
+															Chưa TT: {mainBill.bill_players?.filter((p) => !p.is_paid).length || 0}
+														</div>
+													</div>
+												</div>
+												<div className="flex gap-3 pt-2 border-t border-gray-200">
+													{hasPermission('bills.view') && (
+														<Link
+															to={`/bills/${mainBill.id}`}
+															className="flex-1 text-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
+															Chi tiết
+														</Link>
+													)}
+													{hasPermission('bills.delete') && (
+														<button
+															type="button"
+															onClick={() => handleDeleteClick(mainBill.id)}
+															className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
+															Xóa
+														</button>
+													)}
+												</div>
+											</div>
+											
+											{/* Sub Bills Cards */}
+											{subBills.map((subBill) => {
+												const subBillWarning = isOverdueWarning(subBill);
+												const subBillAllPaid = subBill.bill_players?.every((p) => p.is_paid) && subBill.bill_players?.length > 0;
+												return (
+													<div
+														key={subBill.id}
+														className={`p-4 pl-6 border-l-4 border-blue-400 border-t border-gray-200 ${
+															subBillWarning
+																? "bg-red-100"
+																: subBillAllPaid
+																? "bg-green-50"
+																: "bg-blue-50"
+														}`}>
+														<div className="flex items-start justify-between mb-3">
+															<div className="flex-1">
+																<div className="flex items-center gap-2 mb-2 flex-wrap">
+																	<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Bill con</span>
+																	<span className="text-xs text-gray-600">
+																		của Bill #{mainBill.id}
+																	</span>
+																</div>
+																<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(subBill.date)}</div>
+																<div className="text-lg font-semibold text-gray-900">{formatCurrencyRounded(subBill.total_amount)}</div>
+															</div>
+															<div className="flex flex-col items-end gap-2">
+																<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(subBill)}`}>{getStatusText(subBill)}</span>
+																<div className="text-xs text-gray-600">
+																	Chưa TT: {subBill.bill_players?.filter((p) => !p.is_paid).length || 0}
+																</div>
+															</div>
+														</div>
+														<div className="flex gap-3 pt-2 border-t border-gray-200">
 															{hasPermission('bills.view') && (
-																<Link to={`/bills/${bill.id}`} className="text-blue-600 hover:text-blue-900">
+																<Link
+																	to={`/bills/${subBill.id}`}
+																	className="flex-1 text-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
 																	Chi tiết
 																</Link>
 															)}
 															{hasPermission('bills.delete') && (
-																<button type="button" onClick={() => handleDeleteClick(bill.id)} className="text-red-600 hover:text-red-900">
+																<button
+																	type="button"
+																	onClick={() => handleDeleteClick(subBill.id)}
+																	className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
 																	Xóa
 																</button>
 															)}
 														</div>
-													</td>
-												</tr>
-											);
-										})}
-									</tbody>
-								</table>
-							</div>
-
-							{/* Mobile Card View */}
-							<div className="md:hidden divide-y divide-gray-200">
-								{displayedBills.map((bill) => {
-									const isWarning = isOverdueWarning(bill);
-									const allPaid = bill.bill_players?.every((p) => p.is_paid) && bill.bill_players?.length > 0;
-									return (
-										<div
-											key={bill.id}
-											className={`p-4 ${
-												isWarning
-													? "bg-red-100"
-													: allPaid
-													? "bg-green-50"
-													: bill.parent_bill_id
-													? "bg-blue-50"
-													: "bg-white"
-											}`}>
-											<div className="flex items-start justify-between mb-3">
-												<div className="flex-1">
-													<div className="flex items-center gap-2 mb-2">
-														{bill.parent_bill_id ? (
-															<>
-																<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Bill con</span>
-																{bill.parent_bill && (
-																	<Link
-																		to={`/bills/${bill.parent_bill.id}`}
-																		className="text-xs text-blue-600 hover:text-blue-900 hover:underline"
-																		title="Xem bill chính">
-																		{formatDate(bill.parent_bill.date)}
-																	</Link>
-																)}
-															</>
-														) : (
-															<span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Bill chính</span>
-														)}
 													</div>
-													<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(bill.date)}</div>
-													<div className="text-lg font-semibold text-gray-900">{formatCurrencyRounded(bill.total_amount)}</div>
-												</div>
-												<div className="flex flex-col items-end gap-2">
-													<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(bill)}`}>{getStatusText(bill)}</span>
-													<div className="text-xs text-gray-600">
-														Chưa TT: {bill.bill_players?.filter((p) => !p.is_paid).length || 0}
-													</div>
-												</div>
-											</div>
-											<div className="flex gap-3 pt-2 border-t border-gray-200">
-												{hasPermission('bills.view') && (
-													<Link
-														to={`/bills/${bill.id}`}
-														className="flex-1 text-center px-3 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700">
-														Chi tiết
-													</Link>
-												)}
-												{hasPermission('bills.delete') && (
-													<button
-														type="button"
-														onClick={() => handleDeleteClick(bill.id)}
-														className="flex-1 px-3 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700">
-														Xóa
-													</button>
-												)}
-											</div>
+												);
+											})}
 										</div>
 									);
 								})}
