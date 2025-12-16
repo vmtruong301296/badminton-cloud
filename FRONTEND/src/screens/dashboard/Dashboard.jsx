@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { billsApi } from "../../services/api";
-import { formatCurrencyRounded, formatDate } from "../../utils/formatters";
+import { formatCurrencyRounded, formatDate, roundToNearestThousand } from "../../utils/formatters";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -180,13 +180,44 @@ export default function Dashboard() {
 					}
 				} catch (error) {
 					console.error(`Error marking payment for bill ${bill.id}:`, error);
+					throw error; // Re-throw to handle in outer catch
 				}
 			});
 
 			await Promise.all(promises);
 
-			// Reload bills to update the list
-			await loadBills();
+			// Update state directly without reloading
+			setAllBills((prevBills) => {
+				return prevBills.map((bill) => {
+					const playerIndex = bill.bill_players?.findIndex((p) => p.user_id === userId);
+					if (playerIndex !== undefined && playerIndex !== -1) {
+						const updatedBill = { ...bill };
+						updatedBill.bill_players = [...(bill.bill_players || [])];
+						updatedBill.bill_players[playerIndex] = {
+							...updatedBill.bill_players[playerIndex],
+							is_paid: true,
+						};
+						return updatedBill;
+					}
+					return bill;
+				});
+			});
+
+			setBills((prevBills) => {
+				return prevBills.map((bill) => {
+					const playerIndex = bill.bill_players?.findIndex((p) => p.user_id === userId);
+					if (playerIndex !== undefined && playerIndex !== -1) {
+						const updatedBill = { ...bill };
+						updatedBill.bill_players = [...(bill.bill_players || [])];
+						updatedBill.bill_players[playerIndex] = {
+							...updatedBill.bill_players[playerIndex],
+							is_paid: true,
+						};
+						return updatedBill;
+					}
+					return bill;
+				});
+			});
 		} catch (error) {
 			console.error("Error marking player payment:", error);
 			alert("Có lỗi xảy ra khi đánh dấu thanh toán");
@@ -234,7 +265,7 @@ export default function Dashboard() {
 
 				const playerData = playerMap.get(userId);
 				// Total amount includes both current bill amount and debt amount
-				const playerTotal = (player.total_amount || 0) + (player.debt_amount || 0);
+				const playerTotal = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
 				playerData.totalAmount += playerTotal;
 
 				// Add bill date if player hasn't paid (only current bill amount, debt is in debt_details)
@@ -587,18 +618,17 @@ export default function Dashboard() {
 									const subBills = group.subBills;
 									const mainBillWarning = isOverdueWarning(mainBill);
 									const mainBillAllPaid = mainBill.bill_players?.every((p) => p.is_paid) && mainBill.bill_players?.length > 0;
-									
+
 									return (
-										<div 
-											key={mainBill.id} 
-											className={`border-2 rounded-lg overflow-hidden ${
-												mainBillWarning ? 'border-red-300' : mainBillAllPaid ? 'border-green-300' : 'border-gray-300'
-											}`}>
+										<div
+											key={mainBill.id}
+											className={`border-2 rounded-lg overflow-hidden ${mainBillWarning ? 'border-red-300' : mainBillAllPaid ? 'border-green-300' : 'border-gray-300'
+												}`}>
 											<table className="min-w-full divide-y divide-gray-200">
 												<thead className="bg-gray-50">
 													<tr>
-														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
 														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
+														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
 														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tổng tiền</th>
 														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
 														<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chưa TT</th>
@@ -608,17 +638,16 @@ export default function Dashboard() {
 												<tbody className="bg-white divide-y divide-gray-200">
 													{/* Main Bill Row */}
 													<tr
-														className={`hover:bg-gray-50 ${
-															mainBillWarning
+														className={`hover:bg-gray-50 ${mainBillWarning
 																? "bg-red-100 hover:bg-red-200"
 																: mainBillAllPaid
-																? "bg-green-50 hover:bg-green-100"
-																: ""
-														}`}>
+																	? "bg-green-50 hover:bg-green-100"
+																	: ""
+															}`}>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(mainBill.date)}</td>
 														<td className="px-6 py-4 whitespace-nowrap">
 															<span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Bill chính #{mainBill.id}</span>
 														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(mainBill.date)}</td>
 														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrencyRounded(mainBill.total_amount)}</td>
 														<td className="px-6 py-4 whitespace-nowrap">
 															<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(mainBill)}`}>{getStatusText(mainBill)}</span>
@@ -648,14 +677,16 @@ export default function Dashboard() {
 														return (
 															<tr
 																key={subBill.id}
-																className={`hover:bg-gray-50 bg-blue-50 ${
-																	subBillWarning
+																className={`hover:bg-gray-50 bg-blue-50 ${subBillWarning
 																		? "bg-red-100 hover:bg-red-200"
 																		: subBillAllPaid
-																		? "bg-green-50 hover:bg-green-100"
-																		: ""
-																}`}>
-																<td className="px-6 py-4 whitespace-nowrap pl-12 border-l-4 border-blue-400">
+																			? "bg-green-50 hover:bg-green-100"
+																			: ""
+																	}`}>
+																<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+																	{/* {formatDate(subBill.date)} */}
+																</td>
+																<td className="px-6 py-4 whitespace-nowrap">
 																	<div className="flex items-center space-x-2">
 																		<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Bill con</span>
 																		<span className="text-xs text-gray-600">
@@ -663,7 +694,6 @@ export default function Dashboard() {
 																		</span>
 																	</div>
 																</td>
-																<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(subBill.date)}</td>
 																<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{formatCurrencyRounded(subBill.total_amount)}</td>
 																<td className="px-6 py-4 whitespace-nowrap">
 																	<span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(subBill)}`}>{getStatusText(subBill)}</span>
@@ -702,24 +732,23 @@ export default function Dashboard() {
 									const subBills = group.subBills;
 									const mainBillWarning = isOverdueWarning(mainBill);
 									const mainBillAllPaid = mainBill.bill_players?.every((p) => p.is_paid) && mainBill.bill_players?.length > 0;
-									
+
 									return (
 										<div key={mainBill.id} className={`border-2 rounded-lg overflow-hidden ${groupIndex < billGroups.length - 1 ? 'mb-4' : ''} ${mainBillWarning ? 'border-red-300' : mainBillAllPaid ? 'border-green-300' : 'border-gray-300'}`}>
 											{/* Main Bill Card */}
 											<div
-												className={`p-4 ${
-													mainBillWarning
+												className={`p-4 ${mainBillWarning
 														? "bg-red-100"
 														: mainBillAllPaid
-														? "bg-green-50"
-														: "bg-white"
-												}`}>
+															? "bg-green-50"
+															: "bg-white"
+													}`}>
 												<div className="flex items-start justify-between mb-3">
 													<div className="flex-1">
+														<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(mainBill.date)}</div>
 														<div className="flex items-center gap-2 mb-2 flex-wrap">
 															<span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Bill chính #{mainBill.id}</span>
 														</div>
-														<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(mainBill.date)}</div>
 														<div className="text-lg font-semibold text-gray-900">{formatCurrencyRounded(mainBill.total_amount)}</div>
 													</div>
 													<div className="flex flex-col items-end gap-2">
@@ -747,7 +776,7 @@ export default function Dashboard() {
 													)}
 												</div>
 											</div>
-											
+
 											{/* Sub Bills Cards */}
 											{subBills.map((subBill) => {
 												const subBillWarning = isOverdueWarning(subBill);
@@ -755,22 +784,21 @@ export default function Dashboard() {
 												return (
 													<div
 														key={subBill.id}
-														className={`p-4 pl-6 border-l-4 border-blue-400 border-t border-gray-200 ${
-															subBillWarning
+														className={`p-4 pl-6 border-l-4 border-blue-400 border-t border-gray-200 ${subBillWarning
 																? "bg-red-100"
 																: subBillAllPaid
-																? "bg-green-50"
-																: "bg-blue-50"
-														}`}>
+																	? "bg-green-50"
+																	: "bg-blue-50"
+															}`}>
 														<div className="flex items-start justify-between mb-3">
 															<div className="flex-1">
+																<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(subBill.date)}</div>
 																<div className="flex items-center gap-2 mb-2 flex-wrap">
 																	<span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Bill con</span>
 																	<span className="text-xs text-gray-600">
 																		của Bill #{mainBill.id}
 																	</span>
 																</div>
-																<div className="text-sm font-medium text-gray-900 mb-1">{formatDate(subBill.date)}</div>
 																<div className="text-lg font-semibold text-gray-900">{formatCurrencyRounded(subBill.total_amount)}</div>
 															</div>
 															<div className="flex flex-col items-end gap-2">
@@ -855,11 +883,10 @@ export default function Dashboard() {
 															<button
 																key={page}
 																onClick={() => setCurrentPage(page)}
-																className={`px-2 sm:px-3 py-1 text-xs sm:text-sm border rounded-md ${
-																	currentPage === page
+																className={`px-2 sm:px-3 py-1 text-xs sm:text-sm border rounded-md ${currentPage === page
 																		? "bg-blue-600 text-white border-blue-600"
 																		: "border-gray-300 hover:bg-gray-50"
-																}`}>
+																	}`}>
 																{page}
 															</button>
 														);
@@ -891,7 +918,9 @@ export default function Dashboard() {
 				<div className="lg:col-span-1">
 					<div className="bg-white shadow rounded-lg overflow-hidden">
 						<div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
-							<h3 className="text-base sm:text-lg font-semibold text-gray-900">Người chơi chưa thanh toán</h3>
+							<h3 className="text-base sm:text-lg font-semibold text-gray-900">
+								DS chưa thanh toán ({unpaidPlayers.length})
+							</h3>
 						</div>
 						<div className="divide-y divide-gray-200 max-h-[calc(100vh-300px)] overflow-y-auto">
 							{loading ? (
@@ -903,13 +932,12 @@ export default function Dashboard() {
 									const isMarking = markingPayment.has(player.userId);
 									const isOverdue = isPlayerOverdue(player);
 									return (
-										<div 
-											key={player.userId} 
-											className={`px-4 sm:px-6 py-3 relative ${
-												isOverdue 
-													? "bg-red-100 hover:bg-red-200" 
+										<div
+											key={player.userId}
+											className={`px-4 sm:px-6 py-3 relative ${isOverdue
+													? "bg-red-100 hover:bg-red-200"
 													: "hover:bg-gray-50"
-											}`}>
+												}`}>
 											<div className="pr-14 sm:pr-8 mb-2">
 												<div className="text-xs sm:text-sm font-semibold text-gray-900">
 													{player.name}: <span className="text-red-600">{formatCurrencyRounded(player.totalAmount)}</span>
