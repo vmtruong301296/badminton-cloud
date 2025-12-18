@@ -8,6 +8,7 @@ import PlayersManagement from './screens/players/PlayersManagement';
 import MasterManagement from './screens/master/MasterManagement';
 import CreateBill from './screens/bills/CreateBill';
 import BillDetail from './screens/bills/BillDetail';
+import EditBill from './screens/bills/EditBill';
 import RolesManagement from './screens/roles/RolesManagement';
 import PartyBills from './screens/party/PartyBills';
 import TournamentBrackets from './screens/tournament/TournamentBrackets';
@@ -125,6 +126,16 @@ function AppRoutes() {
 					<ProtectedRoute requiredPermission="bills.create">
 						<Layout>
 							<CreateBill />
+						</Layout>
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/bills/:id/edit"
+				element={
+					<ProtectedRoute requiredPermission="bills.update">
+						<Layout>
+							<EditBill />
 						</Layout>
 					</ProtectedRoute>
 				}

@@ -32,7 +32,7 @@ export default function BillSummary({ preview }) {
             </div>
             <div className="flex justify-between">
               <span>Unit price:</span>
-              <span>{formatCurrencyRounded(Math.round(preview.unit_price || 0))}</span>
+              <span>{preview.unit_price ? formatCurrencyRounded(Math.round(preview.unit_price)) : '0đ'}</span>
             </div>
           </div>
         </div>

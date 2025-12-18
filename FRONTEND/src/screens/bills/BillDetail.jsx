@@ -460,6 +460,22 @@ export default function BillDetail() {
           >
             {exporting ? 'Đang xuất...' : '📄 Xuất Bill'}
           </button>
+          {(() => {
+            // Kiểm tra xem có người nào đã thanh toán chưa
+            const hasPaidPlayers = bill.bill_players?.some((p) => p.is_paid) || false;
+            if (hasPaidPlayers) {
+              return null; // Không hiển thị nút sửa nếu đã có người thanh toán
+            }
+            return (
+              <button
+                type="button"
+                onClick={() => navigate(`/bills/${id}/edit`)}
+                className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 text-sm sm:text-base"
+              >
+                ✏️ Sửa bill
+              </button>
+            );
+          })()}
           {!bill.parent_bill_id && (
             <button
               type="button"

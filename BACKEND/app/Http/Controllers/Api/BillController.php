@@ -330,16 +330,147 @@ class BillController extends Controller
      */
     public function update(UpdateBillRequest $request, string $id): JsonResponse
     {
-        $bill = Bill::findOrFail($id);
-        
-        // Allow updating note
-        if ($request->has('note')) {
-            $bill->update(['note' => $request->note]);
+        try {
+            DB::beginTransaction();
+
+            /** @var Bill $bill */
+            $bill = Bill::with(['billShuttles', 'billPlayers.billPlayerMenus'])->findOrFail($id);
+
+            // Calculate total shuttle price
+            $totalShuttlePrice = 0;
+            foreach ($request->shuttles as $shuttleData) {
+                $shuttleType = ShuttleType::findOrFail($shuttleData['shuttle_type_id']);
+                $totalShuttlePrice += $shuttleType->price * $shuttleData['quantity'];
+            }
+
+            // Calculate total amount (court + shuttle)
+            $totalAmount = $request->court_total + $totalShuttlePrice;
+
+            // Calculate sum of ratios for all players
+            $sumRatios = 0;
+            $playersData = [];
+
+            foreach ($request->players as $playerData) {
+                $user = User::findOrFail($playerData['user_id']);
+
+                // Get ratio: use provided ratio or get default from user
+                $ratioValue = $playerData['ratio_value'] ?? $user->getDefaultRatio();
+
+                $sumRatios += $ratioValue;
+
+                // Calculate menu extra total
+                $menuExtraTotal = 0;
+                if (isset($playerData['menus']) && is_array($playerData['menus'])) {
+                    foreach ($playerData['menus'] as $menuData) {
+                        $menu = Menu::findOrFail($menuData['menu_id']);
+                        $menuExtraTotal += $menu->price * $menuData['quantity'];
+                    }
+                }
+
+                // Get current debt
+                $debtAmount = $user->getCurrentDebtAmount();
+                $debtDate = $user->debts()->where('is_resolved', false)->orderBy('debt_date', 'desc')->first()?->debt_date;
+
+                $playersData[] = [
+                    'user' => $user,
+                    'ratio_value' => $ratioValue,
+                    'menu_extra_total' => $menuExtraTotal,
+                    'debt_amount' => $debtAmount,
+                    'debt_date' => $debtDate,
+                    'menus' => $playerData['menus'] ?? [],
+                ];
+            }
+
+            // Calculate unit price: total_amount / sum_ratios
+            $unitPrice = $sumRatios > 0 ? $totalAmount / $sumRatios : 0;
+
+            // Update bill (keep created_by as-is)
+            $bill->update([
+                'date' => $request->date,
+                'note' => $request->note,
+                'court_total' => $request->court_total,
+                'court_count' => null, // Không cần số sân
+                'total_shuttle_price' => $totalShuttlePrice,
+                'total_amount' => $totalAmount,
+                'unit_price' => $unitPrice,
+                'parent_bill_id' => $request->parent_bill_id ?? $bill->parent_bill_id,
+            ]);
+
+            // Remove existing related records
+            foreach ($bill->billPlayers as $billPlayer) {
+                $billPlayer->billPlayerMenus()->delete();
+            }
+            $bill->billPlayers()->delete();
+            $bill->billShuttles()->delete();
+
+            // Re-create bill shuttles
+            foreach ($request->shuttles as $shuttleData) {
+                $shuttleType = ShuttleType::findOrFail($shuttleData['shuttle_type_id']);
+                $quantity = $shuttleData['quantity'];
+                $priceEach = $shuttleType->price;
+                $subtotal = $priceEach * $quantity;
+
+                BillShuttle::create([
+                    'bill_id' => $bill->id,
+                    'shuttle_type_id' => $shuttleType->id,
+                    'quantity' => $quantity,
+                    'price_each' => $priceEach,
+                    'subtotal' => $subtotal,
+                ]);
+            }
+
+            // Re-create bill players with calculations
+            foreach ($playersData as $playerData) {
+                $user = $playerData['user'];
+                $ratioValue = $playerData['ratio_value'];
+                $menuExtraTotal = $playerData['menu_extra_total'];
+                $debtAmount = $playerData['debt_amount'];
+                $debtDate = $playerData['debt_date'];
+
+                // Calculate share amount: ratio_value * unit_price (rounded)
+                $shareAmount = (int) round($ratioValue * $unitPrice);
+
+                // Calculate total amount: share_amount + menu_extra_total + debt_amount
+                $playerTotalAmount = $shareAmount + $menuExtraTotal + $debtAmount;
+
+                $billPlayer = BillPlayer::create([
+                    'bill_id' => $bill->id,
+                    'user_id' => $user->id,
+                    'ratio_value' => $ratioValue,
+                    'menu_extra_total' => $menuExtraTotal,
+                    'debt_amount' => $debtAmount,
+                    'debt_date' => $debtDate,
+                    'share_amount' => $shareAmount,
+                    'total_amount' => $playerTotalAmount,
+                    'is_paid' => false,
+                ]);
+
+                // Create bill player menus
+                foreach ($playerData['menus'] as $menuData) {
+                    $menu = Menu::findOrFail($menuData['menu_id']);
+                    $quantity = $menuData['quantity'];
+                    $priceEach = $menu->price;
+                    $subtotal = $priceEach * $quantity;
+
+                    $billPlayer->billPlayerMenus()->create([
+                        'menu_id' => $menu->id,
+                        'quantity' => $quantity,
+                        'price_each' => $priceEach,
+                        'subtotal' => $subtotal,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            // Load relationships for response
+            $bill->load(['creator', 'billShuttles.shuttleType', 'billPlayers.user', 'billPlayers.billPlayerMenus.menu']);
+
+            return response()->json($bill);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        $bill->load(['creator', 'billShuttles.shuttleType', 'billPlayers.user', 'billPlayers.billPlayerMenus.menu']);
-
-        return response()->json($bill);
     }
 
     /**
