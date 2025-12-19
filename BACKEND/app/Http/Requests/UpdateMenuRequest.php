@@ -23,7 +23,7 @@ class UpdateMenuRequest extends FormRequest
     {
         return [
             'name' => 'sometimes|string|max:255',
-            'price' => 'sometimes|integer|min:0',
+            'price' => 'sometimes|integer',
         ];
     }
 }

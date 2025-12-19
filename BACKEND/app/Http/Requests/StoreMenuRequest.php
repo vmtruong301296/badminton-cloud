@@ -23,7 +23,7 @@ class StoreMenuRequest extends FormRequest
     {
         return [
             'name' => 'required|string|max:255',
-            'price' => 'required|integer|min:0',
+            'price' => 'required|integer',
         ];
     }
 }

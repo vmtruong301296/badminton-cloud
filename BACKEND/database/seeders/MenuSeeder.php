@@ -34,6 +34,10 @@ class MenuSeeder extends Seeder
                 'name' => 'Sting',
                 'price' => 15000,
             ],
+            [
+                'name' => 'Trừ tiền revive',
+                'price' => -10000,
+            ],
         ];
 
         foreach ($menus as $menu) {

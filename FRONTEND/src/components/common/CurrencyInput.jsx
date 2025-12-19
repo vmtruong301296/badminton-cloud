@@ -10,13 +10,43 @@ export default function CurrencyInput({ value, onChange, placeholder = '0', clas
   }, [value]);
 
   const formatNumber = (num) => {
-    if (!num && num !== 0) return '';
-    return new Intl.NumberFormat('vi-VN').format(num);
+    if (num === null || num === undefined) return '';
+    const absNum = Math.abs(num);
+    const formatted = new Intl.NumberFormat('vi-VN').format(absNum);
+    return num < 0 ? '-' + formatted : formatted;
   };
 
   const handleChange = (e) => {
-    const input = e.target.value.replace(/[^\d]/g, '');
-    const numValue = parseInt(input) || 0;
+    let input = e.target.value.replace(/[^\d-]/g, '');
+    
+    // Only allow minus sign at the beginning
+    if (input.includes('-')) {
+      if (!input.startsWith('-')) {
+        // Remove minus if it's not at the start
+        input = input.replace(/-/g, '');
+      } else if ((input.match(/-/g) || []).length > 1) {
+        // Keep only the first minus sign
+        input = '-' + input.replace(/-/g, '');
+      }
+    }
+    
+    // Parse the number
+    let numValue = 0;
+    if (input === '' || input === '-') {
+      setDisplayValue(input);
+      onChange?.(input === '-' ? 0 : 0);
+      return;
+    }
+    
+    if (input.startsWith('-')) {
+      const numStr = input.substring(1);
+      if (numStr) {
+        numValue = -parseInt(numStr) || 0;
+      }
+    } else {
+      numValue = parseInt(input) || 0;
+    }
+    
     setDisplayValue(formatNumber(numValue));
     onChange?.(numValue);
   };

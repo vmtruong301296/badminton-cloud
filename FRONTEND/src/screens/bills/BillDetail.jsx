@@ -645,13 +645,13 @@ export default function BillDetail() {
                       <td className="py-3 font-medium">{player.user?.name}</td>
                       <td className="text-right py-3">{formatRatio(player.ratio_value)}</td>
                       <td className="text-right py-3">
-                        {player.menu_extra_total > 0 ? (
+                        {player.bill_player_menus && player.bill_player_menus.length > 0 ? (
                           <div className="text-right">
                             <div className="font-semibold mb-1">
-                              {formatCurrencyRounded(player.menu_extra_total)}
+                              {formatCurrencyRounded(player.menu_extra_total || 0)}
                             </div>
                             <div className="text-xs text-gray-600 space-y-1">
-                              {player.bill_player_menus?.map((menuItem, idx) => (
+                              {player.bill_player_menus.map((menuItem, idx) => (
                                 <div key={idx} className="text-right">
                                   {menuItem.menu?.name} × {menuItem.quantity} = {formatCurrency(menuItem.subtotal)}
                                 </div>
@@ -793,14 +793,14 @@ export default function BillDetail() {
                       </div>
                     </div>
                     
-                    {player.menu_extra_total > 0 && (
+                    {player.bill_player_menus && player.bill_player_menus.length > 0 && (
                       <div className="mb-2 pb-2 border-b border-gray-200">
                         <div className="text-xs text-gray-600 mb-1">Chi phí thêm:</div>
                         <div className="text-sm font-semibold mb-1">
-                          {formatCurrencyRounded(player.menu_extra_total)}
+                          {formatCurrencyRounded(player.menu_extra_total || 0)}
                         </div>
                         <div className="text-xs text-gray-600 space-y-0.5">
-                          {player.bill_player_menus?.map((menuItem, idx) => (
+                          {player.bill_player_menus.map((menuItem, idx) => (
                             <div key={idx}>
                               {menuItem.menu?.name} × {menuItem.quantity} = {formatCurrency(menuItem.subtotal)}
                             </div>

@@ -70,8 +70,17 @@ export default function BillSummary({ preview }) {
                     )}
                   </div>
                   <div className="text-xs text-gray-600 text-right flex-shrink-0">
-                    {player.menu_extra_total > 0 && (
-                      <div>Menu: {formatCurrencyRounded(player.menu_extra_total)}</div>
+                    {player.menus && player.menus.length > 0 && (
+                      <div>
+                        <div>Menu: {formatCurrencyRounded(player.menu_extra_total || 0)}</div>
+                        <div className="text-xs text-gray-500 mt-0.5 space-y-0.5">
+                          {player.menus.map((menu, menuIdx) => (
+                            <div key={menuIdx} className="text-right">
+                              {menu.name} × {menu.quantity} = {formatCurrency(menu.subtotal || 0)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                     {player.debt_amount > 0 && (
                       <div>Nợ: {formatCurrencyRounded(player.debt_amount)}</div>
