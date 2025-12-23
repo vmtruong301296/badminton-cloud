@@ -278,6 +278,11 @@ class BillController extends Controller
             $totalDebt = 0;
             $debtDetails = [];
             
+            // Helper function to round to nearest thousand (consistent with frontend)
+            $roundToNearestThousand = function($amount) {
+                return round($amount / 1000) * 1000;
+            };
+            
             // Sort dates in descending order (newest first)
             krsort($billsByDate);
             
@@ -289,21 +294,23 @@ class BillController extends Controller
                     'sub_bills' => [],
                 ];
                 
-                // Add parent bill debt
+                // Add parent bill debt (rounded to nearest thousand)
                 if ($billsGroup['parent']) {
-                    $dateDebt += $billsGroup['parent']['amount'];
-                    $totalDebt += $billsGroup['parent']['amount'];
-                    $detail['parent_amount'] = $billsGroup['parent']['amount'];
+                    $roundedParentAmount = $roundToNearestThousand($billsGroup['parent']['amount']);
+                    $dateDebt += $roundedParentAmount;
+                    $totalDebt += $roundedParentAmount;
+                    $detail['parent_amount'] = $roundedParentAmount;
                     $detail['parent_bill_id'] = $billsGroup['parent']['bill_id'];
                 }
                 
-                // Add sub-bills debts
+                // Add sub-bills debts (rounded to nearest thousand)
                 foreach ($billsGroup['sub_bills'] as $subBill) {
-                    $dateDebt += $subBill['amount'];
-                    $totalDebt += $subBill['amount'];
+                    $roundedSubBillAmount = $roundToNearestThousand($subBill['amount']);
+                    $dateDebt += $roundedSubBillAmount;
+                    $totalDebt += $roundedSubBillAmount;
                     $detail['sub_bills'][] = [
                         'note' => $subBill['note'],
-                        'amount' => $subBill['amount'],
+                        'amount' => $roundedSubBillAmount,
                         'bill_id' => $subBill['bill_id'],
                     ];
                 }

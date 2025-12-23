@@ -264,15 +264,16 @@ export default function Dashboard() {
 				}
 
 				const playerData = playerMap.get(userId);
-				// Total amount includes both current bill amount and debt amount
+				// Total amount includes both current bill amount and debt amount (đã làm tròn)
 				const playerTotal = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
 				playerData.totalAmount += playerTotal;
 
-				// Add bill date if player hasn't paid (only current bill amount, debt is in debt_details)
+				// Add bill date if player hasn't paid (only current bill amount, debt được tách ở debt_details)
 				if (bill.date && player.total_amount > 0) {
 					playerData.unpaidDates.push({
 						date: bill.date,
-						amount: player.total_amount || 0,
+						// Làm tròn giống như tổng để tránh lệch giữa "Tổng tiền" và "DS ngày thiếu"
+						amount: roundToNearestThousand(player.total_amount || 0),
 						billId: bill.id,
 					});
 				}
@@ -294,7 +295,8 @@ export default function Dashboard() {
 							if (debtAmount > 0) {
 								playerData.unpaidDates.push({
 									date: debt.date,
-									amount: debtAmount,
+									// Làm tròn cho từng mục nợ theo đúng cách hiển thị
+									amount: roundToNearestThousand(debtAmount),
 									billId: bill.id,
 								});
 							}
@@ -613,7 +615,7 @@ export default function Dashboard() {
 						<div className="bg-white shadow rounded-lg overflow-hidden">
 							{/* Desktop Table View */}
 							<div className="hidden md:block space-y-4">
-								{billGroups.map((group, groupIndex) => {
+								{billGroups.map((group) => {
 									const mainBill = group.mainBill;
 									const subBills = group.subBills;
 									const mainBillWarning = isOverdueWarning(mainBill);

@@ -536,63 +536,79 @@ export default function BillDetail() {
         </div>
       ) : (
         <>
-          {/* Bill Info và Shuttles - Layout 2 cột */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-            {/* Bill Info - Bên trái */}
-            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          {/* Bill Info và Shuttles - Layout: Bill Info 6 phần, Shuttles 4 phần */}
+          <div className="grid grid-cols-1 lg:grid-cols-10 gap-4 sm:gap-6 mb-4 sm:mb-6">
+            {/* Bill Info - Chiếm 6 phần */}
+            <div className="lg:col-span-6 bg-white p-4 sm:p-6 rounded-lg shadow">
               <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Thông tin Bill</h3>
-              <div className="grid grid-cols-3 gap-3 sm:gap-4">
-              <div>
-                <div className="text-xs sm:text-sm text-gray-600">Tổng tiền sân</div>
-                <div className="text-base sm:text-lg font-semibold">{formatCurrencyRounded(bill.court_total)}</div>
-              </div>
-              <div>
-                <div className="text-xs sm:text-sm text-gray-600">Tổng tiền cầu</div>
-                <div className="text-base sm:text-lg font-semibold">{formatCurrencyRounded(bill.total_shuttle_price)}</div>
-              </div>
-              <div>
-                <div className="text-xs sm:text-sm text-gray-600">Tổng tiền</div>
-                  <div className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrencyRounded(bill.total_amount)}</div>
-              </div>
+              {(() => {
+                // Tính Tiền/người = Tổng tiền / Tổng mức tính
+                const sumRatios = (bill.bill_players || []).reduce((sum, p) => {
+                  const ratio = p.ratio_value ?? 1.0;
+                  return sum + Number(ratio);
+                }, 0);
+                const totalAmount = Number(bill.total_amount || 0);
+                const perPersonAmount = sumRatios > 0 ? Math.round(totalAmount / sumRatios) : 0;
+                
+                return (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div>
+                      <div className="text-xs sm:text-sm text-gray-600">Tổng tiền sân</div>
+                      <div className="text-base sm:text-lg font-semibold">{formatCurrencyRounded(bill.court_total)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs sm:text-sm text-gray-600">Tổng tiền cầu</div>
+                      <div className="text-base sm:text-lg font-semibold">{formatCurrencyRounded(bill.total_shuttle_price)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs sm:text-sm text-gray-600">Tổng tiền</div>
+                      <div className="text-lg sm:text-xl font-bold text-blue-600">{formatCurrencyRounded(bill.total_amount)}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs sm:text-sm text-gray-600">Tiền/người</div>
+                      <div className="text-base sm:text-lg font-semibold text-green-600">{formatCurrencyRounded(perPersonAmount)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+              {bill.note && (
+                <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
+                  <div className="text-xs sm:text-sm text-gray-600">Ghi chú:</div>
+                  <div className="text-sm sm:text-base text-gray-900">{bill.note}</div>
+                </div>
+              )}
             </div>
-            {bill.note && (
-              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t">
-                <div className="text-xs sm:text-sm text-gray-600">Ghi chú:</div>
-                <div className="text-sm sm:text-base text-gray-900">{bill.note}</div>
+
+            {/* Shuttles - Chiếm 4 phần */}
+            {bill.bill_shuttles && bill.bill_shuttles.length > 0 && (
+              <div className="lg:col-span-4 bg-white p-4 sm:p-6 rounded-lg shadow">
+                <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Chi tiết cầu</h3>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm sm:text-base">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 text-xs sm:text-sm">Loại cầu</th>
+                        <th className="text-right py-2 text-xs sm:text-sm">Số lượng</th>
+                        <th className="text-right py-2 text-xs sm:text-sm">Đơn giá</th>
+                        <th className="text-right py-2 text-xs sm:text-sm">Thành tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bill.bill_shuttles.map((shuttle, index) => (
+                        <tr key={index} className="border-b">
+                          <td className="py-2 text-xs sm:text-sm">{shuttle.shuttle_type?.name}</td>
+                          <td className="text-right py-2 text-xs sm:text-sm">{shuttle.quantity}</td>
+                          <td className="text-right py-2 text-xs sm:text-sm">{formatCurrencyRounded(shuttle.price_each)}</td>
+                          <td className="text-right py-2 font-semibold text-xs sm:text-sm">
+                            {formatCurrencyRounded(shuttle.subtotal)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )}
-          </div>
-
-            {/* Shuttles - Bên phải */}
-          {bill.bill_shuttles && bill.bill_shuttles.length > 0 && (
-              <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
-              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Chi tiết cầu</h3>
-                <div className="overflow-x-auto">
-              <table className="min-w-full text-sm sm:text-base">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-2 text-xs sm:text-sm">Loại cầu</th>
-                    <th className="text-right py-2 text-xs sm:text-sm">Số lượng</th>
-                    <th className="text-right py-2 text-xs sm:text-sm">Đơn giá</th>
-                    <th className="text-right py-2 text-xs sm:text-sm">Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bill.bill_shuttles.map((shuttle, index) => (
-                    <tr key={index} className="border-b">
-                      <td className="py-2 text-xs sm:text-sm">{shuttle.shuttle_type?.name}</td>
-                      <td className="text-right py-2 text-xs sm:text-sm">{shuttle.quantity}</td>
-                      <td className="text-right py-2 text-xs sm:text-sm">{formatCurrencyRounded(shuttle.price_each)}</td>
-                      <td className="text-right py-2 font-semibold text-xs sm:text-sm">
-                        {formatCurrencyRounded(shuttle.subtotal)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-                </div>
-            </div>
-          )}
           </div>
 
           {/* Players Table */}

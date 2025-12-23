@@ -11,41 +11,54 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 	if (!bill) return null;
 
 	// Helper function to render bill content
-	const renderBillContent = (billData, showTitle = true, subBills = null) => (
-		<div>
-			{showTitle && (
-				<div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
-					<h1 className="text-3xl font-bold mb-2">Bill Ngày: {formatDate(billData.date)}</h1>
-				</div>
-			)}
+	const renderBillContent = (billData, showTitle = true, subBills = null) => {
+		// Tính Tiền/người = Tổng tiền / Tổng mức tính
+		const sumRatios = (billData.bill_players || []).reduce((sum, p) => {
+			const ratio = p.ratio_value ?? 1.0;
+			return sum + Number(ratio);
+		}, 0);
+		const totalAmount = Number(billData.total_amount || 0);
+		const perPersonAmount = sumRatios > 0 ? Math.round(totalAmount / sumRatios) : 0;
 
-			{/* Bill Info */}
-			<div className="mb-6 grid grid-cols-4 gap-4 bg-gray-50 p-4 rounded-lg">
-				<div className="col-span-1">
-					<div className="text-sm text-gray-600 mb-1">Tổng tiền sân</div>
-					<div className="text-lg font-semibold">{formatCurrencyRounded(billData.court_total)}</div>
-				</div>
-				<div className="col-span-2">
-					<div className="text-sm text-gray-600 mb-1">Tổng tiền cầu</div>
-					<div className="text-lg font-semibold">
-						{billData.bill_shuttles && billData.bill_shuttles.length > 0 ? (
-							<div className="space-y-1">
-								{billData.bill_shuttles.map((shuttle, index) => (
-									<div key={index}>
-										{shuttle.shuttle_type?.name} × {shuttle.quantity} = {formatCurrencyRounded(shuttle.subtotal)}
-									</div>
-								))}
-							</div>
-						) : (
-							formatCurrencyRounded(billData.total_shuttle_price)
-						)}
+		return (
+			<div>
+				{showTitle && (
+					<div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
+						<h1 className="text-3xl font-bold mb-2">Bill Ngày: {formatDate(billData.date)}</h1>
+					</div>
+				)}
+
+				{/* Bill Info */}
+				<div className="mb-6 grid grid-cols-5 gap-4 bg-gray-50 p-4 rounded-lg">
+					<div className="col-span-1">
+						<div className="text-sm text-gray-600 mb-1">Tổng tiền sân</div>
+						<div className="text-lg font-semibold">{formatCurrencyRounded(billData.court_total)}</div>
+					</div>
+					<div className="col-span-2">
+						<div className="text-sm text-gray-600 mb-1">Tổng tiền cầu</div>
+						<div className="text-lg font-semibold">
+							{billData.bill_shuttles && billData.bill_shuttles.length > 0 ? (
+								<div className="space-y-1">
+									{billData.bill_shuttles.map((shuttle, index) => (
+										<div key={index}>
+											{shuttle.shuttle_type?.name} × {shuttle.quantity} = {formatCurrencyRounded(shuttle.subtotal)}
+										</div>
+									))}
+								</div>
+							) : (
+								formatCurrencyRounded(billData.total_shuttle_price)
+							)}
+						</div>
+					</div>
+					<div className="col-span-1">
+						<div className="text-sm text-gray-600 mb-1">Tổng tiền</div>
+						<div className="text-xl font-bold text-blue-600">{formatCurrencyRounded(billData.total_amount)}</div>
+					</div>
+					<div className="col-span-1">
+						<div className="text-sm text-gray-600 mb-1">Tiền/người</div>
+						<div className="text-lg font-semibold text-green-600">{formatCurrencyRounded(perPersonAmount)}</div>
 					</div>
 				</div>
-				<div className="col-span-1">
-					<div className="text-sm text-gray-600 mb-1">Tổng tiền</div>
-					<div className="text-xl font-bold text-blue-600">{formatCurrencyRounded(billData.total_amount)}</div>
-				</div>
-			</div>
 
 			{/* Players Table */}
 			<div className="mb-6">
@@ -194,6 +207,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 			</div>
 		</div>
 	);
+	};
 
 	// Render payment accounts section
 	const renderPaymentAccounts = () => {
