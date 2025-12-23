@@ -20,6 +20,12 @@ export default function Dashboard() {
 	const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, billId: null });
 	const [markingPayment, setMarkingPayment] = useState(new Set()); // Track players being marked as paid
 	const [currentPage, setCurrentPage] = useState(1);
+	const [statsMonth, setStatsMonth] = useState(() => {
+		// Default to current month (YYYY-MM format)
+		const now = new Date();
+		return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+	});
+	const [statsModalOpen, setStatsModalOpen] = useState(false);
 
 	useEffect(() => {
 		loadBills();
@@ -397,15 +403,117 @@ export default function Dashboard() {
 		};
 	}, [bills, filters.limit, currentPage]);
 
+	// Calculate monthly statistics
+	const monthlyStats = useMemo(() => {
+		if (!allBills || allBills.length === 0) {
+			return {
+				shuttles: [],
+				players: [],
+			};
+		}
+
+		// Parse selected month
+		const [year, month] = statsMonth.split('-').map(Number);
+		const startDate = new Date(year, month - 1, 1);
+		const endDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
+
+		// Filter bills in selected month
+		const billsInMonth = allBills.filter((bill) => {
+			if (!bill.date) return false;
+			const billDate = new Date(bill.date);
+			return billDate >= startDate && billDate <= endDate;
+		});
+
+		// Calculate shuttle statistics
+		const shuttleMap = new Map(); // { shuttleTypeId: { name, totalQuantity } }
+		billsInMonth.forEach((bill) => {
+			if (bill.bill_shuttles && Array.isArray(bill.bill_shuttles)) {
+				bill.bill_shuttles.forEach((shuttle) => {
+					const shuttleTypeId = shuttle.shuttle_type_id;
+					const shuttleTypeName = shuttle.shuttle_type?.name || 'Unknown';
+					const quantity = shuttle.quantity || 0;
+
+					if (!shuttleMap.has(shuttleTypeId)) {
+						shuttleMap.set(shuttleTypeId, {
+							name: shuttleTypeName,
+							totalQuantity: 0,
+						});
+					}
+
+					const current = shuttleMap.get(shuttleTypeId);
+					current.totalQuantity += quantity;
+				});
+			}
+		});
+
+		// Convert shuttle map to array and sort by name
+		const shuttles = Array.from(shuttleMap.values()).sort((a, b) => 
+			a.name.localeCompare(b.name)
+		);
+
+		// Calculate player statistics
+		const playerMap = new Map(); // { userId: { name, totalAmount, billCount } }
+		billsInMonth.forEach((bill) => {
+			// Only count main bills (not sub-bills)
+			if (bill.parent_bill_id) return;
+
+			if (bill.bill_players && Array.isArray(bill.bill_players)) {
+				bill.bill_players.forEach((player) => {
+					const userId = player.user_id;
+					const userName = player.user?.name || 'Unknown';
+					// Total amount includes both current bill amount and debt amount
+					const playerTotal = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
+
+					if (!playerMap.has(userId)) {
+						playerMap.set(userId, {
+							name: userName,
+							totalAmount: 0,
+							billCount: 0,
+						});
+					}
+
+					const current = playerMap.get(userId);
+					current.totalAmount += playerTotal;
+					current.billCount += 1; // Count this bill for this player
+				});
+			}
+		});
+
+		// Convert player map to array and sort by total amount (descending)
+		const players = Array.from(playerMap.values())
+			.filter((p) => p.totalAmount > 0)
+			.sort((a, b) => b.totalAmount - a.totalAmount);
+
+		// Calculate total shuttles for "ống cầu" calculation
+		const totalShuttles = shuttles.reduce((sum, s) => sum + s.totalQuantity, 0);
+		const totalOngCau = Math.floor(totalShuttles / 12); // 1 ống cầu = 12 quả
+		const remainingShuttles = totalShuttles % 12;
+
+		return {
+			shuttles,
+			players,
+			totalShuttles,
+			totalOngCau,
+			remainingShuttles,
+		};
+	}, [allBills, statsMonth]);
+
 	return (
 		<div className="px-2 sm:px-0">
 			<div className="flex flex-row justify-between items-center mb-6 gap-4">
 				<h2 className="text-xl sm:text-2xl font-bold text-gray-900">Danh sách Bills</h2>
-				{hasPermission('bills.create') && (
-					<Link to="/bills/create" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base whitespace-nowrap">
-						➕ Tạo Bill
-					</Link>
-				)}
+				<div className="flex items-center gap-3">
+					<button
+						onClick={() => setStatsModalOpen(true)}
+						className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm sm:text-base flex items-center gap-2 whitespace-nowrap">
+						📊 Xem thống kê tháng
+					</button>
+					{hasPermission('bills.create') && (
+						<Link to="/bills/create" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base whitespace-nowrap">
+							➕ Tạo Bill
+						</Link>
+					)}
+				</div>
 			</div>
 
 			{/* Filters */}
@@ -988,6 +1096,103 @@ export default function Dashboard() {
 				title="Xác nhận xóa bill"
 				message="Bạn có chắc chắn muốn xóa bill này? Hành động này không thể hoàn tác."
 			/>
+
+			{/* Statistics Modal */}
+			{statsModalOpen && (
+				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+					<div className="bg-white rounded-lg shadow-xl max-w-4xl w-full h-[90vh] overflow-y-auto">
+						<div className="p-6">
+							<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+								<h3 className="text-xl font-semibold text-gray-900">Thống kê tháng</h3>
+								<div className="flex items-center gap-3">
+									<label className="text-sm font-medium text-gray-700">Chọn tháng:</label>
+									<input
+										type="month"
+										value={statsMonth}
+										onChange={(e) => setStatsMonth(e.target.value)}
+										className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+									/>
+									<button
+										onClick={() => setStatsModalOpen(false)}
+										className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm">
+										Đóng
+									</button>
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
+								{/* Shuttle Statistics - Chiếm 4 phần */}
+								<div className="lg:col-span-4 bg-gray-50 p-4 rounded-lg">
+									<h4 className="text-base font-semibold mb-3 text-gray-900">Tổng số lượng cầu</h4>
+									{monthlyStats.shuttles.length === 0 ? (
+										<div className="text-sm text-gray-500">Không có dữ liệu cầu trong tháng này</div>
+									) : (
+										<div className="space-y-2">
+											{monthlyStats.shuttles.map((shuttle, index) => (
+												<div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+													<span className="text-sm font-medium text-gray-700">{shuttle.name}</span>
+													<span className="text-sm font-semibold text-gray-900">{shuttle.totalQuantity} quả</span>
+												</div>
+											))}
+											<div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-gray-400">
+												<span className="text-sm font-bold text-gray-900">Tổng cộng:</span>
+												<span className="text-sm font-bold text-gray-900">
+													{monthlyStats.totalShuttles} quả
+												</span>
+											</div>
+											{/* Ổng cầu */}
+											<div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-blue-400 bg-blue-50 px-2 py-2 rounded">
+												<span className="text-sm font-bold text-blue-900">Tổng ống cầu:</span>
+												<span className="text-sm font-bold text-blue-900">
+													{monthlyStats.totalOngCau} ống
+													{monthlyStats.remainingShuttles > 0 && (
+														<span className="text-xs text-gray-600 ml-1">
+															({monthlyStats.remainingShuttles} quả lẻ)
+														</span>
+													)}
+												</span>
+											</div>
+											<div className="text-xs text-gray-500 mt-1 italic">
+												* 1 ống cầu = 12 quả
+											</div>
+										</div>
+									)}
+								</div>
+
+								{/* Player Statistics - Chiếm 6 phần */}
+								<div className="lg:col-span-6 bg-gray-50 p-4 rounded-lg">
+									<h4 className="text-base font-semibold mb-3 text-gray-900">
+										Tổng tiền theo người chơi ({monthlyStats.players.length})
+									</h4>
+									{monthlyStats.players.length === 0 ? (
+										<div className="text-sm text-gray-500">Không có dữ liệu người chơi trong tháng này</div>
+									) : (
+										<div className="space-y-2 max-h-[950px] overflow-y-auto">
+											{monthlyStats.players.map((player, index) => (
+												<div key={index} className="py-2 border-b border-gray-200 last:border-0">
+													<div className="flex justify-between items-center">
+														<span className="text-sm font-medium text-gray-700">#{index + 1} {player.name}</span>
+														<span className="text-sm font-semibold text-gray-900">{formatCurrencyRounded(player.totalAmount)}</span>
+													</div>
+													<div className="flex justify-end mt-1">
+														<span className="text-xs text-gray-500">Số bill: {player.billCount || 0}</span>
+													</div>
+												</div>
+											))}
+											<div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-gray-400 sticky bottom-0 bg-gray-50">
+												<span className="text-sm font-bold text-gray-900">Tổng cộng:</span>
+												<span className="text-sm font-bold text-gray-900">
+													{formatCurrencyRounded(monthlyStats.players.reduce((sum, p) => sum + p.totalAmount, 0))}
+												</span>
+											</div>
+										</div>
+									)}
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }
