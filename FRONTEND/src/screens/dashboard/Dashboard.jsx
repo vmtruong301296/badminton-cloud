@@ -1167,9 +1167,9 @@ export default function Dashboard() {
 									{monthlyStats.players.length === 0 ? (
 										<div className="text-sm text-gray-500">Không có dữ liệu người chơi trong tháng này</div>
 									) : (
-										<div className="space-y-2 max-h-[950px] overflow-y-auto">
+										<div className="space-y-2 max-h-[600px] overflow-y-auto">
 											{monthlyStats.players.map((player, index) => (
-												<div key={index} className="py-2 border-b border-gray-200 last:border-0">
+												<div key={index} className="py-2 border-b border-gray-200 last:border-0 mr-4">
 													<div className="flex justify-between items-center">
 														<span className="text-sm font-medium text-gray-700">#{index + 1} {player.name}</span>
 														<span className="text-sm font-semibold text-gray-900">{formatCurrencyRounded(player.totalAmount)}</span>
