@@ -87,7 +87,7 @@ Route::middleware('auth')->group(function () {
 	Route::apiResource('payment-accounts', PaymentAccountController::class);
 
 	// Party Bills (Chia tiền tiệc)
-	Route::apiResource('party-bills', PartyBillController::class)->only(['index', 'store', 'show', 'destroy']);
+	Route::apiResource('party-bills', PartyBillController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
 	Route::post('party-bills/{id}/participants/{participantId}/pay', [PartyBillController::class, 'markPayment']);
 
 	// Roles (Quyền)

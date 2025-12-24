@@ -82,6 +82,7 @@ export const partyBillsApi = {
   getAll: () => api.get('/party-bills'),
   getById: (id) => api.get(`/party-bills/${id}`),
   create: (data) => api.post('/party-bills', data),
+  update: (id, data) => api.put(`/party-bills/${id}`, data),
   delete: (id) => api.delete(`/party-bills/${id}`),
   markPayment: (billId, participantId, data) => api.post(`/party-bills/${billId}/participants/${participantId}/pay`, data),
 };

@@ -14,7 +14,7 @@ export default function PartyBills() {
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [partyBills, setPartyBills] = useState([]);
-	const [filters, setFilters] = useState({ date_from: "", date_to: "", status: ["unpaid", "partial"], limit: 20 });
+	const [filters, setFilters] = useState({ date_from: "", date_to: "", status: ["unpaid", "partial"], limit: 20, name: "" });
 	const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
 	const [expanded, setExpanded] = useState(null);
 	const [detailBill, setDetailBill] = useState(null);
@@ -43,6 +43,7 @@ export default function PartyBills() {
 		extras: [{ name: "Bánh + Tôm", amount: 0 }],
 		participants: [],
 	});
+	const [editingBillId, setEditingBillId] = useState(null);
 
 	const totalExtra = useMemo(() => form.extras.reduce((sum, item) => sum + (Number(item.amount) || 0), 0), [form.extras]);
 
@@ -66,12 +67,16 @@ export default function PartyBills() {
 
 	const filteredPartyBills = useMemo(() => {
 		let data = [...partyBills];
+
+		// Lọc theo ngày
 		if (filters.date_from) {
 			data = data.filter((b) => !b.date || b.date >= filters.date_from);
 		}
 		if (filters.date_to) {
 			data = data.filter((b) => !b.date || b.date <= filters.date_to);
 		}
+
+		// Lọc theo trạng thái thanh toán
 		if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
 			data = data.filter((b) => {
 				const participants = b.participants || [];
@@ -91,6 +96,17 @@ export default function PartyBills() {
 				return statuses.some(status => filters.status.includes(status));
 			});
 		}
+
+		// Lọc theo tên tiệc (không dấu, không phân biệt hoa thường)
+		if (filters.name && filters.name.trim() !== "") {
+			const search = normalize(filters.name.trim());
+			data = data.filter((b) => {
+				const name = normalize(b.name || "");
+				return name.includes(search);
+			});
+		}
+
+		// Sắp xếp và giới hạn số lượng
 		data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 		if (filters.limit) data = data.slice(0, filters.limit);
 		return data;
@@ -221,14 +237,15 @@ export default function PartyBills() {
 		}
 	};
 
-	const normalize = (str) =>
-		(str || "")
+	function normalize(str) {
+		return (str || "")
 			.toString()
 			.normalize("NFD")
 			.replace(/[\u0300-\u036f]/g, "")
 			.replace(/đ/g, "d")
 			.replace(/Đ/g, "D")
 			.toLowerCase();
+	}
 
 	const availablePlayers = useMemo(() => {
 		const search = normalize(playerSearch);
@@ -342,6 +359,7 @@ export default function PartyBills() {
 						paid_amount: Number(p.paid_amount) || 0,
 						food_amount: Number(p.food_amount) || 0,
 						note: p.note || "",
+						is_paid: p.is_paid || false,
 					})),
 			};
 
@@ -357,10 +375,19 @@ export default function PartyBills() {
 				return;
 			}
 
-			await partyBillsApi.create(payload);
-			await loadPartyBills();
-			alert("Đã tạo chia tiệc");
-			// Reset form sau khi tạo thành công
+			if (editingBillId) {
+				// Update existing bill
+				await partyBillsApi.update(editingBillId, payload);
+				await loadPartyBills();
+				alert("Đã cập nhật chia tiệc");
+			} else {
+				// Create new bill
+				await partyBillsApi.create(payload);
+				await loadPartyBills();
+				alert("Đã tạo chia tiệc");
+			}
+
+			// Reset form sau khi tạo/cập nhật thành công
 			setForm({
 				date: today(),
 				name: "Tiệc",
@@ -369,9 +396,10 @@ export default function PartyBills() {
 				extras: [{ name: "Bánh + Tôm", amount: 0 }],
 				participants: [],
 			});
+			setEditingBillId(null);
 		} catch (error) {
-			console.error("Error creating party bill", error);
-			const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || "Tạo chia tiệc thất bại";
+			console.error("Error saving party bill", error);
+			const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || (editingBillId ? "Cập nhật chia tiệc thất bại" : "Tạo chia tiệc thất bại");
 			alert(`Lỗi: ${errorMessage}`);
 		} finally {
 			setSaving(false);
@@ -382,10 +410,83 @@ export default function PartyBills() {
 		try {
 			await partyBillsApi.delete(id);
 			await loadPartyBills();
+			// Nếu đang edit bill bị xóa, reset form
+			if (editingBillId === id) {
+				setForm({
+					date: today(),
+					name: "Tiệc",
+					note: "",
+					base_amount: 0,
+					extras: [{ name: "Bánh + Tôm", amount: 0 }],
+					participants: [],
+				});
+				setEditingBillId(null);
+			}
 		} catch (error) {
 			console.error("Delete party bill error", error);
 			alert("Không thể xóa tiệc");
 		}
+	};
+
+	const handleEdit = async (id) => {
+		try {
+			setSaving(true);
+			const res = await partyBillsApi.getById(id);
+			const bill = res.data;
+
+			// Kiểm tra xem bill đã được thanh toán chưa
+			const participants = bill.participants || [];
+			const allPaid = participants.length > 0 && participants.every((p) => p.is_paid === true);
+			
+			if (allPaid) {
+				alert("Không thể sửa bill tiệc đã thanh toán");
+				setSaving(false);
+				return;
+			}
+
+			// Load dữ liệu vào form
+			setForm({
+				date: bill.date ? bill.date.slice(0, 10) : today(),
+				name: bill.name || "Tiệc",
+				note: bill.note || "",
+				base_amount: bill.base_amount || 0,
+				extras: bill.extras && bill.extras.length > 0 
+					? bill.extras.map((ex) => ({ name: ex.name, amount: ex.amount || 0 }))
+					: [{ name: "Bánh + Tôm", amount: 0 }],
+				participants: bill.participants 
+					? bill.participants.map((p) => ({
+						user_id: p.user_id || null,
+						name: p.name || "",
+						ratio_value: p.ratio_value || 1,
+						paid_amount: p.paid_amount || 0,
+						food_amount: p.food_amount || 0,
+						note: p.note || "",
+						is_paid: p.is_paid || false,
+					}))
+					: [],
+			});
+			setEditingBillId(id);
+
+			// Scroll to form
+			window.scrollTo({ top: 0, behavior: 'smooth' });
+		} catch (error) {
+			console.error("Error loading bill for edit", error);
+			alert("Không thể tải dữ liệu để sửa");
+		} finally {
+			setSaving(false);
+		}
+	};
+
+	const handleCancelEdit = () => {
+		setForm({
+			date: today(),
+			name: "Tiệc",
+			note: "",
+			base_amount: 0,
+			extras: [{ name: "Bánh + Tôm", amount: 0 }],
+			participants: [],
+		});
+		setEditingBillId(null);
 	};
 
 	const handleOpenDetail = async (id) => {
@@ -638,7 +739,17 @@ export default function PartyBills() {
 	return (
 		<div className="space-y-8">
 			<div className="bg-white shadow rounded-lg p-6">
-				<h2 className="text-xl font-semibold mb-4">Chia tiền tiệc</h2>
+				<div className="flex items-center justify-between mb-4">
+					<h2 className="text-xl font-semibold">{editingBillId ? "Sửa chia tiền tiệc" : "Chia tiền tiệc"}</h2>
+					{editingBillId && (
+						<button
+							type="button"
+							onClick={handleCancelEdit}
+							className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">
+							Hủy sửa
+						</button>
+					)}
+				</div>
 
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -822,8 +933,17 @@ export default function PartyBills() {
 					</div>
 
 					<div className="flex justify-end space-x-3">
+						{editingBillId && (
+							<button 
+								type="button" 
+								onClick={handleCancelEdit} 
+								disabled={saving}
+								className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50">
+								Hủy
+							</button>
+						)}
 						<button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-							{saving ? "Đang lưu..." : "Lưu chia tiệc"}
+							{saving ? "Đang lưu..." : editingBillId ? "Cập nhật chia tiệc" : "Lưu chia tiệc"}
 						</button>
 					</div>
 				</form>
@@ -835,7 +955,7 @@ export default function PartyBills() {
 					{loading && <div className="text-sm text-gray-500">Đang tải...</div>}
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4">
+				<div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
 					<div>
 						<label className="block text-sm text-gray-700 mb-1">Từ ngày</label>
 						<input
@@ -920,10 +1040,20 @@ export default function PartyBills() {
 							))}
 						</select>
 					</div>
+					<div>
+						<label className="block text-sm text-gray-700 mb-1">Tên tiệc</label>
+						<input
+							type="text"
+							value={filters.name}
+							onChange={(e) => setFilters({ ...filters, name: e.target.value })}
+							placeholder="Nhập tên/nội dung tiệc..."
+							className="w-full border rounded px-3 py-2"
+						/>
+					</div>
 					<div className="flex items-end">
 						<button
 							type="button"
-							onClick={() => setFilters({ date_from: "", date_to: "", status: "all", limit: 20 })}
+							onClick={() => setFilters({ date_from: "", date_to: "", status: "all", limit: 20, name: "" })}
 							className="w-full px-3 py-2 border rounded bg-gray-100 hover:bg-gray-200">
 							Reset
 						</button>
@@ -964,10 +1094,25 @@ export default function PartyBills() {
 										})()}
 									</td>
 									<td className="py-2 px-2 text-center">{getUnpaidCount(bill)}</td>
-									<td className="py-2 px-2 text-center space-x-2">
+													<td className="py-2 px-2 text-center space-x-2">
 										<button type="button" onClick={() => handleOpenDetail(bill.id)} className="text-indigo-600 hover:underline text-sm">
 											Xem
 										</button>
+										{(() => {
+											const participants = bill.participants || [];
+											const allPaid = participants.length > 0 && participants.every((p) => p.is_paid === true);
+											if (!allPaid) {
+												return (
+													<button
+														type="button"
+														onClick={() => handleEdit(bill.id)}
+														className="text-blue-600 hover:underline text-sm">
+														Sửa
+													</button>
+												);
+											}
+											return null;
+										})()}
 										<button
 											type="button"
 											onClick={() => setDeleteConfirm({ isOpen: true, id: bill.id })}

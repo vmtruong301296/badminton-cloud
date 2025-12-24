@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePartyBillRequest;
+use App\Http\Requests\UpdatePartyBillRequest;
 use App\Models\PartyBill;
 use App\Models\PartyBillExtra;
 use App\Models\PartyBillParticipant;
@@ -122,6 +123,118 @@ class PartyBillController extends Controller
             return response()->json([
                 'error' => $e->getMessage(),
                 'message' => 'Có lỗi xảy ra khi tạo chia tiệc. Vui lòng kiểm tra lại dữ liệu.',
+            ], 500);
+        }
+    }
+
+    public function update(UpdatePartyBillRequest $request, string $id): JsonResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            $partyBill = PartyBill::with(['participants'])->findOrFail($id);
+
+            // Kiểm tra xem bill đã được thanh toán chưa
+            // Bill được coi là đã thanh toán nếu TẤT CẢ participants đều đã thanh toán
+            $allParticipantsPaid = $partyBill->participants->every(function ($participant) {
+                return $participant->is_paid === true;
+            });
+
+            if ($allParticipantsPaid) {
+                return response()->json([
+                    'error' => 'Không thể sửa bill tiệc đã thanh toán',
+                    'message' => 'Chỉ có thể sửa bill tiệc khi còn ít nhất một người chưa thanh toán.',
+                ], 403);
+            }
+
+            $baseAmount = (int) $request->base_amount;
+
+            $extrasData = $request->extras ?? [];
+            $totalExtra = 0;
+            foreach ($extrasData as $extra) {
+                $totalExtra += (int) ($extra['amount'] ?? 0);
+            }
+
+            $totalAmount = $baseAmount + $totalExtra;
+
+            $participantsData = $request->participants;
+            $sumRatios = 0;
+            foreach ($participantsData as $p) {
+                $ratio = isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1;
+                $sumRatios += $ratio;
+            }
+
+            $unitPrice = $sumRatios > 0 ? (int) round($totalAmount / $sumRatios) : 0;
+
+            // Update bill (giữ nguyên created_by)
+            $partyBill->update([
+                'date' => $request->date,
+                'name' => $request->name ?: null,
+                'note' => $request->note ?: null,
+                'base_amount' => $baseAmount,
+                'total_extra' => $totalExtra,
+                'total_amount' => $totalAmount,
+                'unit_price' => $unitPrice,
+            ]);
+
+            // Xóa các extras và participants cũ
+            $partyBill->extras()->delete();
+            $partyBill->participants()->delete();
+
+            // Tạo lại extras
+            foreach ($extrasData as $extra) {
+                PartyBillExtra::create([
+                    'party_bill_id' => $partyBill->id,
+                    'name' => $extra['name'],
+                    'amount' => (int) $extra['amount'],
+                ]);
+            }
+
+            // Tạo lại participants
+            foreach ($participantsData as $p) {
+                $ratioValue = isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1;
+                $shareAmount = (int) round($ratioValue * $unitPrice);
+                $paidAmount = isset($p['paid_amount']) ? (int) $p['paid_amount'] : 0;
+                $foodAmount = isset($p['food_amount']) ? (int) $p['food_amount'] : 0;
+                $totalAmount = $shareAmount + $foodAmount - $paidAmount; // Thành tiền = share + số tiền món ăn - số tiền đã chi
+                $isPaid = $p['is_paid'] ?? false;
+
+                PartyBillParticipant::create([
+                    'party_bill_id' => $partyBill->id,
+                    'user_id' => $p['user_id'] ?? null,
+                    'name' => $p['name'],
+                    'ratio_value' => $ratioValue,
+                    'share_amount' => $shareAmount,
+                    'total_amount' => $totalAmount,
+                    'paid_amount' => $paidAmount,
+                    'food_amount' => $foodAmount,
+                    'note' => $p['note'] ?? null,
+                    'is_paid' => $isPaid,
+                    'paid_at' => $isPaid ? now() : null,
+                ]);
+            }
+
+            DB::commit();
+
+            $partyBill->load(['creator', 'extras', 'participants.user']);
+
+            return response()->json($partyBill);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => 'Validation failed',
+                'message' => $e->getMessage(),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('PartyBill update error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
+            return response()->json([
+                'error' => $e->getMessage(),
+                'message' => 'Có lỗi xảy ra khi sửa chia tiệc. Vui lòng kiểm tra lại dữ liệu.',
             ], 500);
         }
     }
