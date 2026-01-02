@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { partyBillsApi, playersApi, paymentAccountsApi } from "../../services/api";
-import { formatCurrencyRounded, formatDate, formatRatio } from "../../utils/formatters";
+import { formatCurrencyRounded, formatDate, formatRatio, roundToNearestThousand } from "../../utils/formatters";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
@@ -14,6 +14,7 @@ export default function PartyBills() {
 	const [loading, setLoading] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [partyBills, setPartyBills] = useState([]);
+	const [allPartyBills, setAllPartyBills] = useState([]); // Store all bills for unpaid players calculation
 	const [filters, setFilters] = useState({ date_from: "", date_to: "", status: ["unpaid", "partial"], limit: 20, name: "" });
 	const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
 	const [expanded, setExpanded] = useState(null);
@@ -21,6 +22,7 @@ export default function PartyBills() {
 	const [detailOpen, setDetailOpen] = useState(false);
 	const [detailLoading, setDetailLoading] = useState(false);
 	const [payingIds, setPayingIds] = useState(new Set());
+	const [markingPayment, setMarkingPayment] = useState(new Set()); // Track players being marked as paid
 	const [uncheckPaymentConfirm, setUncheckPaymentConfirm] = useState({ isOpen: false, participantId: null, participantName: '' });
 	const [payOldBillsConfirm, setPayOldBillsConfirm] = useState({ isOpen: false, participantId: null, participantName: '', debtAmount: 0, oldBillIds: [] });
 	const [paymentAccounts, setPaymentAccounts] = useState([]);
@@ -64,6 +66,112 @@ export default function PartyBills() {
 			return { ...p, share, totalAmount };
 		});
 	}, [form.participants, unitPrice]);
+
+	// Format date to YYYY/MM/DD
+	const formatDateForUnpaid = (date) => {
+		if (!date) return "";
+		const d = new Date(date);
+		const year = d.getFullYear();
+		const month = String(d.getMonth() + 1).padStart(2, "0");
+		const day = String(d.getDate()).padStart(2, "0");
+		return `${year}/${month}/${day}`;
+	};
+
+	// Check if participant has overdue bills (quá 7 ngày)
+	const isParticipantOverdue = (participant) => {
+		if (!participant.unpaidDates || participant.unpaidDates.length === 0) return false;
+
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		return participant.unpaidDates.some((dateItem) => {
+			if (!dateItem.date) return false;
+
+			const billDate = new Date(dateItem.date);
+			billDate.setHours(0, 0, 0, 0);
+
+			const diffTime = today - billDate;
+			const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+			return diffDays >= 7;
+		});
+	};
+
+	// Calculate unpaid participants list
+	const unpaidParticipants = useMemo(() => {
+		const participantMap = new Map();
+
+		// Process all bills to collect unpaid participants
+		allPartyBills.forEach((bill) => {
+			if (!bill.participants) return;
+
+			bill.participants.forEach((participant) => {
+				if (participant.is_paid) return; // Skip paid participants
+
+				const userId = participant.user_id;
+				if (!userId) return; // Skip if no user_id
+
+				const userName = participant.name || "Unknown";
+
+				if (!participantMap.has(userId)) {
+					participantMap.set(userId, {
+						userId,
+						name: userName,
+						totalAmount: 0,
+						unpaidDates: [],
+					});
+				}
+
+				const participantData = participantMap.get(userId);
+				
+				// Calculate total amount for this participant in this bill
+				const shareAmount = participant.share_amount || 0;
+				const foodAmount = participant.food_amount || 0;
+				const paidAmount = participant.paid_amount || 0;
+				const totalAmount = shareAmount + foodAmount - paidAmount;
+				const roundedAmount = roundToNearestThousand(totalAmount);
+				
+				participantData.totalAmount += roundedAmount;
+
+				// Add bill date if participant hasn't paid
+				if (bill.date && roundedAmount > 0) {
+					participantData.unpaidDates.push({
+						date: bill.date,
+						amount: roundedAmount,
+						billId: bill.id,
+					});
+				}
+			});
+		});
+
+		// Convert map to array and sort dates (newest first)
+		return Array.from(participantMap.values())
+			.map((participant) => {
+				// Group by date and sum amounts for same date
+				const dateMap = new Map();
+				participant.unpaidDates.forEach((item) => {
+					const dateKey = item.date;
+					if (!dateMap.has(dateKey)) {
+						dateMap.set(dateKey, { date: dateKey, amount: 0 });
+					}
+					dateMap.get(dateKey).amount += item.amount;
+				});
+
+				return {
+					...participant,
+					unpaidDates: Array.from(dateMap.values()).sort((a, b) => {
+						return new Date(b.date) - new Date(a.date);
+					}),
+				};
+			})
+			.filter((participant) => participant.totalAmount > 0)
+			.sort((a, b) => {
+				// Sort by latest unpaid date (descending - newest first)
+				const aLatestDate = a.unpaidDates && a.unpaidDates.length > 0 ? new Date(a.unpaidDates[0].date) : new Date(0);
+				const bLatestDate = b.unpaidDates && b.unpaidDates.length > 0 ? new Date(b.unpaidDates[0].date) : new Date(0);
+				return bLatestDate - aLatestDate;
+			});
+	}, [allPartyBills]);
 
 	const filteredPartyBills = useMemo(() => {
 		let data = [...partyBills];
@@ -132,6 +240,7 @@ export default function PartyBills() {
 			setLoading(true);
 			const res = await partyBillsApi.getAll();
 			setPartyBills(res.data || []);
+			setAllPartyBills(res.data || []); // Store all bills for unpaid players calculation
 		} catch (error) {
 			console.error("Error loading party bills", error);
 			alert("Không tải được danh sách tiệc");
@@ -409,7 +518,10 @@ export default function PartyBills() {
 	const handleDeletePartyBill = async (id) => {
 		try {
 			await partyBillsApi.delete(id);
-			await loadPartyBills();
+			// Cập nhật state local thay vì reload từ server
+			setPartyBills(prevBills => prevBills.filter(bill => bill.id !== id));
+			setAllPartyBills(prevBills => prevBills.filter(bill => bill.id !== id));
+			
 			// Nếu đang edit bill bị xóa, reset form
 			if (editingBillId === id) {
 				setForm({
@@ -560,8 +672,6 @@ export default function PartyBills() {
 			
 			// Mark payment cho bill hiện tại
 			const res = await partyBillsApi.markPayment(detailBill.id, participantId, { is_paid: isPaid });
-			const updated = detailBill.participants.map((p) => (p.id === participantId ? res.data.participant : p));
-			setDetailBill({ ...detailBill, participants: updated });
 			
 			// Nếu có bill cũ cần thanh toán, mark payment cho từng bill
 			if (oldBillIds.length > 0 && isPaid) {
@@ -587,10 +697,47 @@ export default function PartyBills() {
 				}
 			}
 			
-			// Reload detail bill để lấy đầy đủ thông tin debt_amount và debt_details được tính lại
-			await handleOpenDetail(detailBill.id);
-			// Reload list to reflect status/unpaid count
-			await loadPartyBills();
+			// Cập nhật state local cho detail bill với dữ liệu từ API response
+			const updated = detailBill.participants.map((p) => (p.id === participantId ? res.data.participant : p));
+			setDetailBill({ ...detailBill, participants: updated });
+			
+			// Cập nhật state local cho list bill (không cần reload từ server)
+			setPartyBills(prevBills => 
+				prevBills.map(bill => {
+					if (bill.id === detailBill.id) {
+						return {
+							...bill,
+							participants: updated
+						};
+					}
+					return bill;
+				})
+			);
+
+			// Cập nhật allPartyBills để cập nhật danh sách người chưa thanh toán
+			setAllPartyBills(prevBills => 
+				prevBills.map(bill => {
+					if (bill.id === detailBill.id) {
+						return {
+							...bill,
+							participants: updated
+						};
+					}
+					// Nếu có old bills được thanh toán, cập nhật luôn
+					if (oldBillIds.includes(bill.id) && isPaid) {
+						const participant = detailBill.participants.find((p) => p.id === participantId);
+						if (participant && participant.user_id) {
+							return {
+								...bill,
+								participants: bill.participants?.map(p => 
+									p.user_id === participant.user_id ? { ...p, is_paid: true } : p
+								)
+							};
+						}
+					}
+					return bill;
+				})
+			);
 		} catch (error) {
 			console.error("Mark payment error", error);
 			alert("Không thể cập nhật thanh toán");
@@ -733,6 +880,78 @@ export default function PartyBills() {
 			console.error('Error exporting bill:', error);
 			alert('Có lỗi xảy ra khi xuất bill');
 			setExporting(false);
+		}
+	};
+
+	// Mark payment for all unpaid bills of a participant
+	const handleMarkParticipantPayment = async (userId) => {
+		try {
+			setMarkingPayment((prev) => new Set(prev).add(userId));
+
+			// Find all bills where this participant hasn't paid
+			const unpaidBills = allPartyBills.filter((bill) => {
+				const participant = bill.participants?.find((p) => p.user_id === userId);
+				return participant && !participant.is_paid;
+			});
+
+			// Mark payment for all unpaid bills
+			const promises = unpaidBills.map(async (bill) => {
+				try {
+					const participant = bill.participants?.find((p) => p.user_id === userId);
+					if (participant) {
+						await partyBillsApi.markPayment(bill.id, participant.id, {
+							is_paid: true,
+						});
+					}
+				} catch (error) {
+					console.error(`Error marking payment for bill ${bill.id}:`, error);
+					throw error;
+				}
+			});
+
+			await Promise.all(promises);
+
+			// Update state directly without reloading
+			setAllPartyBills((prevBills) => {
+				return prevBills.map((bill) => {
+					const participantIndex = bill.participants?.findIndex((p) => p.user_id === userId);
+					if (participantIndex !== undefined && participantIndex !== -1) {
+						const updatedBill = { ...bill };
+						updatedBill.participants = [...(bill.participants || [])];
+						updatedBill.participants[participantIndex] = {
+							...updatedBill.participants[participantIndex],
+							is_paid: true,
+						};
+						return updatedBill;
+					}
+					return bill;
+				});
+			});
+
+			setPartyBills((prevBills) => {
+				return prevBills.map((bill) => {
+					const participantIndex = bill.participants?.findIndex((p) => p.user_id === userId);
+					if (participantIndex !== undefined && participantIndex !== -1) {
+						const updatedBill = { ...bill };
+						updatedBill.participants = [...(bill.participants || [])];
+						updatedBill.participants[participantIndex] = {
+							...updatedBill.participants[participantIndex],
+							is_paid: true,
+						};
+						return updatedBill;
+					}
+					return bill;
+				});
+			});
+		} catch (error) {
+			console.error("Error marking participant payment:", error);
+			alert("Có lỗi xảy ra khi đánh dấu thanh toán");
+		} finally {
+			setMarkingPayment((prev) => {
+				const newSet = new Set(prev);
+				newSet.delete(userId);
+				return newSet;
+			});
 		}
 	};
 
@@ -949,13 +1168,17 @@ export default function PartyBills() {
 				</form>
 			</div>
 
-			<div className="bg-white shadow rounded-lg p-6">
-				<div className="flex items-center justify-between mb-4">
-					<h3 className="text-lg font-semibold">Danh sách tiệc</h3>
-					{loading && <div className="text-sm text-gray-500">Đang tải...</div>}
-				</div>
+			{/* Main Content: Bills Table and Unpaid Participants */}
+			<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+				{/* Bills Table - Left Side (3/4 width) */}
+				<div className="lg:col-span-3">
+					<div className="bg-white shadow rounded-lg p-6">
+						<div className="flex items-center justify-between mb-4">
+							<h3 className="text-lg font-semibold">Danh sách tiệc</h3>
+							{loading && <div className="text-sm text-gray-500">Đang tải...</div>}
+						</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
+						<div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
 					<div>
 						<label className="block text-sm text-gray-700 mb-1">Từ ngày</label>
 						<input
@@ -1132,6 +1355,70 @@ export default function PartyBills() {
 							)}
 						</tbody>
 					</table>
+				</div>
+					</div>
+				</div>
+
+				{/* Unpaid Participants List - Right Side (1/4 width) */}
+				<div className="lg:col-span-1">
+					<div className="bg-white shadow rounded-lg overflow-hidden">
+						<div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
+							<h3 className="text-base sm:text-lg font-semibold text-gray-900">
+								DS chưa thanh toán ({unpaidParticipants.length})
+							</h3>
+						</div>
+						<div className="divide-y divide-gray-200 max-h-[calc(100vh-300px)] overflow-y-auto">
+							{loading ? (
+								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">Đang tải...</div>
+							) : unpaidParticipants.length === 0 ? (
+								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">Không có người nào chưa thanh toán</div>
+							) : (
+								unpaidParticipants.map((participant) => {
+									const isMarking = markingPayment.has(participant.userId);
+									const isOverdue = isParticipantOverdue(participant);
+									return (
+										<div
+											key={participant.userId}
+											className={`px-4 sm:px-6 py-3 relative ${isOverdue
+													? "bg-red-100 hover:bg-red-200"
+													: "hover:bg-gray-50"
+												}`}>
+											<div className="pr-14 sm:pr-8 mb-2">
+												<div className="text-xs sm:text-sm font-semibold text-gray-900">
+													{participant.name}: <span className="text-red-600">{formatCurrencyRounded(participant.totalAmount)}</span>
+												</div>
+											</div>
+											<div className="text-xs sm:text-sm pr-14 sm:pr-8">
+												<div className="text-gray-700 font-medium mb-1">DS ngày thiếu:</div>
+												<div className="space-y-1 pl-2">
+													{participant.unpaidDates.map((dateItem, idx) => (
+														<div key={idx} className="text-gray-600">
+															{formatDateForUnpaid(dateItem.date)} : {formatCurrencyRounded(dateItem.amount)}
+														</div>
+													))}
+												</div>
+											</div>
+											<div className="absolute top-3 right-4 sm:right-4">
+												<input
+													type="checkbox"
+													checked={false}
+													onChange={() => handleMarkParticipantPayment(participant.userId)}
+													disabled={isMarking}
+													className="w-6 h-6 sm:w-5 sm:h-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+													title="Đánh dấu thanh toán tất cả bills"
+												/>
+											</div>
+											{isMarking && (
+												<div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
+													<div className="text-xs sm:text-sm text-gray-600">Đang xử lý...</div>
+												</div>
+											)}
+										</div>
+									);
+								})
+							)}
+						</div>
+					</div>
 				</div>
 			</div>
 
