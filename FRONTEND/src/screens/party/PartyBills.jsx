@@ -1366,6 +1366,9 @@ export default function PartyBills() {
 							<h3 className="text-base sm:text-lg font-semibold text-gray-900">
 								DS chưa thanh toán ({unpaidParticipants.length})
 							</h3>
+							<div className="text-sm font-semibold text-red-600 mt-1">
+								Tổng: {formatCurrencyRounded(unpaidParticipants.reduce((sum, p) => sum + p.totalAmount, 0))}
+							</div>
 						</div>
 						<div className="divide-y divide-gray-200 max-h-[calc(100vh-300px)] overflow-y-auto">
 							{loading ? (
