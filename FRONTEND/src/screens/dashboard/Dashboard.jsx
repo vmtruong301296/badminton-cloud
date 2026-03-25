@@ -1,9 +1,25 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { billsApi } from "../../services/api";
-import { formatCurrencyRounded, formatDate, roundToNearestThousand } from "../../utils/formatters";
+import { billsApi, shuttlesApi } from "../../services/api";
+import { formatCurrencyRounded, formatDate, formatNumber, roundToNearestThousand } from "../../utils/formatters";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAuth } from "../../contexts/AuthContext";
+
+const BALLS_PER_TUBE = 12;
+
+/** Hiển thị tồn kho: quả + gợi ý ống (12 quả/ống). */
+function formatShuttleStockDisplay(totalBalls) {
+	const n = Math.floor(Number(totalBalls) || 0);
+	if (n < 0) {
+		return `${formatNumber(n)} quả`;
+	}
+	const tubes = Math.floor(n / BALLS_PER_TUBE);
+	const rem = n % BALLS_PER_TUBE;
+	if (n === 0) return "0 quả";
+	if (tubes === 0) return `${formatNumber(n)} quả`;
+	if (rem === 0) return `${tubes} ống (${formatNumber(n)} quả)`;
+	return `${tubes} ống + ${rem} quả (${formatNumber(n)} quả)`;
+}
 
 export default function Dashboard() {
 	const { hasPermission } = useAuth();
@@ -26,11 +42,30 @@ export default function Dashboard() {
 		return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 	});
 	const [statsModalOpen, setStatsModalOpen] = useState(false);
+	const [shuttleTypes, setShuttleTypes] = useState([]);
+	const [loadingShuttles, setLoadingShuttles] = useState(true);
 
 	useEffect(() => {
 		loadBills();
 		setCurrentPage(1); // Reset to page 1 when filters change
 	}, [filters]);
+
+	useEffect(() => {
+		const loadShuttleTypes = async () => {
+			try {
+				setLoadingShuttles(true);
+				const res = await shuttlesApi.getAll();
+				const list = res.data || [];
+				list.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+				setShuttleTypes(list);
+			} catch (e) {
+				console.error("Error loading shuttle types:", e);
+			} finally {
+				setLoadingShuttles(false);
+			}
+		};
+		loadShuttleTypes();
+	}, []);
 
 	// Adjust currentPage if it exceeds totalPages (e.g., when limit changes)
 	useEffect(() => {
@@ -345,6 +380,17 @@ export default function Dashboard() {
 				return bLatestDate - aLatestDate; // Descending order (newest first)
 			});
 	}, [allBills]);
+
+	/** Chỉ loại còn tồn trên 0 quả (0 hoặc âm không hiển thị). */
+	const shuttleTypesWithStock = useMemo(
+		() => shuttleTypes.filter((s) => (Number(s.stock_quantity) || 0) > 0),
+		[shuttleTypes]
+	);
+
+	const totalShuttleStockBalls = useMemo(
+		() => shuttleTypesWithStock.reduce((sum, s) => sum + (Number(s.stock_quantity) || 0), 0),
+		[shuttleTypesWithStock]
+	);
 
 	// Calculate displayed bills and total main bills count
 	const { billGroups, totalMainBillsCount, totalPages } = useMemo(() => {
@@ -1024,8 +1070,49 @@ export default function Dashboard() {
 					)}
 				</div>
 
-				{/* Unpaid Players List - Right Side (1/4 width) */}
-				<div className="lg:col-span-1">
+				{/* Right column: Cầu khả dụng + DS chưa thanh toán */}
+				<div className="lg:col-span-1 space-y-6">
+					<div className="bg-white shadow rounded-lg overflow-hidden">
+						<div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
+							<div className="flex items-start justify-between gap-2">
+								<h3 className="text-base sm:text-lg font-semibold text-gray-900">Cầu khả dụng</h3>
+								{hasPermission("shuttles.view") && (
+									<Link
+										to="/master?tab=shuttles"
+										className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap">
+										Nhập kho
+									</Link>
+								)}
+							</div>
+							<div className="text-sm font-semibold text-emerald-700 mt-1">
+								Tổng: {formatShuttleStockDisplay(totalShuttleStockBalls)}
+							</div>
+						</div>
+						<div className="divide-y divide-gray-200 max-h-[min(40vh,320px)] lg:max-h-[min(35vh,280px)] overflow-y-auto">
+							{loadingShuttles ? (
+								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">Đang tải...</div>
+							) : shuttleTypes.length === 0 ? (
+								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">Chưa có loại cầu</div>
+							) : shuttleTypesWithStock.length === 0 ? (
+								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
+									Không có loại cầu nào còn tồn kho
+								</div>
+							) : (
+								shuttleTypesWithStock.map((st) => {
+									const q = Number(st.stock_quantity) || 0;
+									return (
+										<div key={st.id} className="px-4 sm:px-6 py-3 hover:bg-gray-50">
+											<div className="text-xs sm:text-sm font-semibold text-gray-900">{st.name}</div>
+											<div className="text-xs sm:text-sm mt-0.5 text-gray-700">
+												{formatShuttleStockDisplay(q)}
+											</div>
+										</div>
+									);
+								})
+							)}
+						</div>
+					</div>
+
 					<div className="bg-white shadow rounded-lg overflow-hidden">
 						<div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
 							<h3 className="text-base sm:text-lg font-semibold text-gray-900">
