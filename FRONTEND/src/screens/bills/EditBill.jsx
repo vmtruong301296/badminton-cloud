@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { billsApi, shuttlesApi } from '../../services/api';
 import { formatDate } from '../../utils/formatters';
@@ -27,6 +27,17 @@ export default function EditBill() {
   });
 
   const [preview, setPreview] = useState(null);
+
+  /** Tổng số quả theo từng loại trong bill (để tính hoàn tồn khi sửa). */
+  const creditByShuttleTypeId = useMemo(() => {
+    const m = {};
+    formData.shuttles.forEach((s) => {
+      if (!s.shuttle_type_id) return;
+      const tid = s.shuttle_type_id;
+      m[tid] = (m[tid] || 0) + (Number(s.quantity) || 0);
+    });
+    return m;
+  }, [formData.shuttles]);
 
   const loadInitialData = useCallback(async () => {
     try {
@@ -406,6 +417,11 @@ export default function EditBill() {
                     <ShuttleRow
                       key={index}
                       shuttle={shuttle}
+                      restoreCredit={
+                        shuttle.shuttle_type_id
+                          ? creditByShuttleTypeId[shuttle.shuttle_type_id] || 0
+                          : 0
+                      }
                       onUpdate={(updated) => handleUpdateShuttle(index, updated)}
                       onRemove={() => handleRemoveShuttle(index)}
                     />

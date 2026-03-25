@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { shuttlesApi } from '../../services/api';
 import NumberInput from '../common/NumberInput';
 import { formatCurrency } from '../../utils/formatters';
 
-export default function ShuttleRow({ shuttle, onUpdate, onRemove }) {
+/** @param {{ shuttle: object, onUpdate: Function, onRemove: Function, restoreCredit?: number }} props */
+export default function ShuttleRow({ shuttle, onUpdate, onRemove, restoreCredit = 0 }) {
   const [shuttleTypes, setShuttleTypes] = useState([]);
 
   useEffect(() => {
@@ -20,6 +21,17 @@ export default function ShuttleRow({ shuttle, onUpdate, onRemove }) {
   };
 
   const selectedType = shuttleTypes.find((st) => st.id === shuttle.shuttle_type_id);
+
+  const availableBalls = useMemo(() => {
+    const stock = selectedType?.stock_quantity ?? 0;
+    return stock + (restoreCredit || 0);
+  }, [selectedType, restoreCredit]);
+
+  /** Chỉ cảnh báo khi tạo bill: số lượng dòng > tồn kho hiện tại (chưa trừ bill này). */
+  const overStock =
+    restoreCredit === 0 &&
+    selectedType &&
+    shuttle.quantity > (selectedType.stock_quantity ?? 0);
 
   const handleTypeChange = (e) => {
     const typeId = parseInt(e.target.value);
@@ -54,10 +66,19 @@ export default function ShuttleRow({ shuttle, onUpdate, onRemove }) {
           <option value="">Chọn loại cầu</option>
           {shuttleTypes.map((type) => (
             <option key={type.id} value={type.id}>
-              {type.name} - {formatCurrency(type.price)}
+              {type.name} — {formatCurrency(type.price)} (tồn: {type.stock_quantity ?? 0} quả)
             </option>
           ))}
         </select>
+        {selectedType && (
+          <p className={`text-xs mt-1 ${overStock ? 'text-amber-700 font-medium' : 'text-gray-500'}`}>
+            Khả dụng: {availableBalls} quả
+            {restoreCredit > 0 && (
+              <span className="text-gray-600"> (đã tính hoàn từ bill này)</span>
+            )}
+            {overStock && ' — vượt tồn, vẫn có thể lưu nếu đồng ý'}
+          </p>
+        )}
       </div>
       <div className="col-span-3">
         <label className="block text-sm font-medium text-gray-700 mb-1">

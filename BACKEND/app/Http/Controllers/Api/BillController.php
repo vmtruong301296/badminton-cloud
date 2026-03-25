@@ -69,13 +69,13 @@ class BillController extends Controller
 
             // Lấy user hiện tại, nếu không có thì mặc định dùng "Võ Trường"
             $createdBy = $request->user()?->id;
-            if (!$createdBy) {
+            if (! $createdBy) {
                 $voTruong = User::where('name', 'LIKE', '%Võ Trường%')
                     ->orWhere('name', 'LIKE', '%Vo Truong%')
                     ->first();
                 $createdBy = $voTruong?->id ?? User::value('id');
             }
-            if (!$createdBy) {
+            if (! $createdBy) {
                 return response()->json(['error' => 'Không tìm thấy user để gán created_by'], 500);
             }
 
@@ -92,15 +92,15 @@ class BillController extends Controller
             // Calculate sum of ratios for all players
             $sumRatios = 0;
             $playersData = [];
-            
+
             foreach ($request->players as $playerData) {
                 $user = User::findOrFail($playerData['user_id']);
-                
+
                 // Get ratio: use provided ratio or get default from user
                 $ratioValue = $playerData['ratio_value'] ?? $user->getDefaultRatio();
-                
+
                 $sumRatios += $ratioValue;
-                
+
                 // Calculate menu extra total
                 $menuExtraTotal = 0;
                 if (isset($playerData['menus']) && is_array($playerData['menus'])) {
@@ -109,11 +109,11 @@ class BillController extends Controller
                         $menuExtraTotal += $menu->price * $menuData['quantity'];
                     }
                 }
-                
+
                 // Get current debt
                 $debtAmount = $user->getCurrentDebtAmount();
                 $debtDate = $user->debts()->where('is_resolved', false)->orderBy('debt_date', 'desc')->first()?->debt_date;
-                
+
                 $playersData[] = [
                     'user' => $user,
                     'ratio_value' => $ratioValue,
@@ -155,6 +155,8 @@ class BillController extends Controller
                     'subtotal' => $subtotal,
                 ]);
             }
+
+            $this->deductShuttleStock($request->shuttles);
 
             // Create bill players with calculations
             foreach ($playersData as $playerData) {
@@ -206,6 +208,7 @@ class BillController extends Controller
             return response()->json($bill, 201);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -216,9 +219,9 @@ class BillController extends Controller
     public function show(string $id): JsonResponse
     {
         $bill = Bill::with([
-            'creator', 
-            'billShuttles.shuttleType', 
-            'billPlayers.user', 
+            'creator',
+            'billShuttles.shuttleType',
+            'billPlayers.user',
             'billPlayers.billPlayerMenus.menu',
             'parentBill',
             'subBills.billShuttles.shuttleType',
@@ -230,7 +233,7 @@ class BillController extends Controller
         // Calculate debts from previous bills for each player
         foreach ($bill->billPlayers as $billPlayer) {
             $userId = $billPlayer->user_id;
-            
+
             // Get all previous bills (date < current bill date) where this player hasn't paid
             $previousBills = Bill::where('date', '<', $bill->date)
                 ->whereHas('billPlayers', function ($query) use ($userId) {
@@ -247,16 +250,16 @@ class BillController extends Controller
             $billsByDate = [];
             foreach ($previousBills as $prevBill) {
                 $prevBillPlayer = $prevBill->billPlayers->first();
-                if ($prevBillPlayer && !$prevBillPlayer->is_paid) {
+                if ($prevBillPlayer && ! $prevBillPlayer->is_paid) {
                     $dateKey = $prevBill->date->format('Y-m-d');
-                    
-                    if (!isset($billsByDate[$dateKey])) {
+
+                    if (! isset($billsByDate[$dateKey])) {
                         $billsByDate[$dateKey] = [
                             'parent' => null,
                             'sub_bills' => [],
                         ];
                     }
-                    
+
                     // If it's a sub-bill (has parent_bill_id)
                     if ($prevBill->parent_bill_id) {
                         $billsByDate[$dateKey]['sub_bills'][] = [
@@ -277,15 +280,15 @@ class BillController extends Controller
             // Calculate total debt and format debt details
             $totalDebt = 0;
             $debtDetails = [];
-            
+
             // Helper function to round to nearest thousand (consistent with frontend)
-            $roundToNearestThousand = function($amount) {
+            $roundToNearestThousand = function ($amount) {
                 return round($amount / 1000) * 1000;
             };
-            
+
             // Sort dates in descending order (newest first)
             krsort($billsByDate);
-            
+
             foreach ($billsByDate as $date => $billsGroup) {
                 $dateDebt = 0;
                 $detail = [
@@ -293,7 +296,7 @@ class BillController extends Controller
                     'parent_amount' => null,
                     'sub_bills' => [],
                 ];
-                
+
                 // Add parent bill debt (rounded to nearest thousand)
                 if ($billsGroup['parent']) {
                     $roundedParentAmount = $roundToNearestThousand($billsGroup['parent']['amount']);
@@ -302,7 +305,7 @@ class BillController extends Controller
                     $detail['parent_amount'] = $roundedParentAmount;
                     $detail['parent_bill_id'] = $billsGroup['parent']['bill_id'];
                 }
-                
+
                 // Add sub-bills debts (rounded to nearest thousand)
                 foreach ($billsGroup['sub_bills'] as $subBill) {
                     $roundedSubBillAmount = $roundToNearestThousand($subBill['amount']);
@@ -314,7 +317,7 @@ class BillController extends Controller
                         'bill_id' => $subBill['bill_id'],
                     ];
                 }
-                
+
                 // Only add to details if there's debt for this date
                 if ($dateDebt > 0) {
                     $debtDetails[] = $detail;
@@ -407,6 +410,8 @@ class BillController extends Controller
             foreach ($bill->billPlayers as $billPlayer) {
                 $billPlayer->billPlayerMenus()->delete();
             }
+            $this->restoreShuttleStockFromBill($bill);
+
             $bill->billPlayers()->delete();
             $bill->billShuttles()->delete();
 
@@ -425,6 +430,8 @@ class BillController extends Controller
                     'subtotal' => $subtotal,
                 ]);
             }
+
+            $this->deductShuttleStock($request->shuttles);
 
             // Re-create bill players with calculations
             foreach ($playersData as $playerData) {
@@ -476,6 +483,7 @@ class BillController extends Controller
             return response()->json($bill);
         } catch (\Exception $e) {
             DB::rollBack();
+
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -502,7 +510,7 @@ class BillController extends Controller
             $isPaid = (bool) $request->is_paid;
         } else {
             // Logic cũ: nếu có amount và amount >= total_amount thì mark as paid
-            $isPaid = $request->has('amount') 
+            $isPaid = $request->has('amount')
                 ? ($request->amount >= $billPlayer->total_amount)
                 : true;
         }
@@ -526,8 +534,12 @@ class BillController extends Controller
      */
     public function destroy(string $id): JsonResponse
     {
-        $bill = Bill::findOrFail($id);
-        $bill->delete();
+        $bill = Bill::with('billShuttles')->findOrFail($id);
+
+        DB::transaction(function () use ($bill) {
+            $this->restoreShuttleStockFromBill($bill);
+            $bill->delete();
+        });
 
         return response()->json(['message' => 'Bill deleted successfully']);
     }
@@ -557,11 +569,35 @@ class BillController extends Controller
     public function createSubBill(StoreBillRequest $request, string $id): JsonResponse
     {
         $parentBill = Bill::findOrFail($id);
-        
+
         // Set parent_bill_id in request
         $request->merge(['parent_bill_id' => $id]);
-        
+
         // Call store method with modified request
         return $this->store($request);
+    }
+
+    /**
+     * Trừ tồn kho (quả) theo từng dòng cầu trên bill.
+     *
+     * @param  array<int, array{shuttle_type_id: int, quantity: int}>  $shuttlesData
+     */
+    private function deductShuttleStock(array $shuttlesData): void
+    {
+        foreach ($shuttlesData as $shuttleData) {
+            $typeId = (int) $shuttleData['shuttle_type_id'];
+            $qty = (int) $shuttleData['quantity'];
+            ShuttleType::where('id', $typeId)->decrement('stock_quantity', $qty);
+        }
+    }
+
+    /**
+     * Hoàn lại tồn kho khi sửa/xóa bill (theo các dòng bill_shuttles hiện có).
+     */
+    private function restoreShuttleStockFromBill(Bill $bill): void
+    {
+        foreach ($bill->billShuttles as $bs) {
+            ShuttleType::where('id', $bs->shuttle_type_id)->increment('stock_quantity', $bs->quantity);
+        }
     }
 }

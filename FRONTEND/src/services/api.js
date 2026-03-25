@@ -45,6 +45,8 @@ export const shuttlesApi = {
   create: (data) => api.post('/shuttles', data),
   update: (id, data) => api.put(`/shuttles/${id}`, data),
   delete: (id) => api.delete(`/shuttles/${id}`),
+  getStockEntries: (id) => api.get(`/shuttles/${id}/stock-entries`),
+  addStockEntry: (id, data) => api.post(`/shuttles/${id}/stock-entries`, data),
 };
 
 // Bills

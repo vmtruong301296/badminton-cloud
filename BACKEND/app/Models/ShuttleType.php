@@ -16,4 +16,9 @@ class ShuttleType extends Model
     {
         return $this->hasMany(BillShuttle::class);
     }
+
+    public function stockEntries()
+    {
+        return $this->hasMany(ShuttleStockEntry::class);
+    }
 }
