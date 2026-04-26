@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { billsApi, shuttlesApi } from '../../services/api';
-import { formatDate } from '../../utils/formatters';
+import { formatDate, shuttleUnitPrice } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 import NumberInput from '../../components/common/NumberInput';
 import DatePicker from '../../components/common/DatePicker';
@@ -27,6 +27,8 @@ export default function EditBill() {
   });
 
   const [preview, setPreview] = useState(null);
+  const [shuttleTypesLoading, setShuttleTypesLoading] = useState(false);
+  const skipNextShuttleTypesFetchRef = useRef(true);
 
   /** Tổng số quả theo từng loại trong bill (để tính hoàn tồn khi sửa). */
   const creditByShuttleTypeId = useMemo(() => {
@@ -42,13 +44,11 @@ export default function EditBill() {
   const loadInitialData = useCallback(async () => {
     try {
       setInitialLoading(true);
-      const [shuttlesRes, billRes] = await Promise.all([
-        shuttlesApi.getAll(),
-        billsApi.getById(id),
-      ]);
-
-      const shuttleTypesData = shuttlesRes.data;
+      const billRes = await billsApi.getById(id);
       const bill = billRes.data;
+      const billDateStr = bill.date ? formatDate(bill.date) : new Date().toISOString().split('T')[0];
+      const shuttlesRes = await shuttlesApi.getAll({ params: { as_of: billDateStr } });
+      const shuttleTypesData = shuttlesRes.data;
 
       // Map shuttles
       const mappedShuttles = (bill.bill_shuttles || []).map((s) => ({
@@ -77,7 +77,7 @@ export default function EditBill() {
       }));
 
       const newFormData = {
-        date: bill.date ? formatDate(bill.date) : new Date().toISOString().split('T')[0],
+        date: billDateStr,
         note: bill.note || '',
         court_total: bill.court_total || 0,
         shuttles: mappedShuttles,
@@ -96,7 +96,7 @@ export default function EditBill() {
           .filter((s) => s.shuttle_type_id)
           .map((s) => {
             const type = shuttleTypesData.find((st) => st.id === s.shuttle_type_id);
-            const price = type?.price || s.price || 0;
+            const price = shuttleUnitPrice(type) || s.price || 0;
             return {
               price: price,
               quantity: s.quantity || 1,
@@ -161,6 +161,34 @@ export default function EditBill() {
     loadInitialData();
   }, [loadInitialData]);
 
+  useEffect(() => {
+    skipNextShuttleTypesFetchRef.current = true;
+  }, [id]);
+
+  /** Khi đổi ngày bill: tải lại giá cầu áp dụng cho ngày đó (lần đầu sau load bill đã có trong loadInitialData). */
+  useEffect(() => {
+    if (initialLoading) return;
+    if (skipNextShuttleTypesFetchRef.current) {
+      skipNextShuttleTypesFetchRef.current = false;
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        setShuttleTypesLoading(true);
+        const res = await shuttlesApi.getAll({ params: { as_of: formData.date } });
+        if (!cancelled) setShuttleTypes(res.data);
+      } catch (e) {
+        console.error('Error loading shuttle types for date:', e);
+      } finally {
+        if (!cancelled) setShuttleTypesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.date, initialLoading]);
+
   const updatePreview = useCallback(() => {
     // Không tính preview nếu chưa có players hoặc đang loading
     if (initialLoading || formData.players.length === 0) {
@@ -176,7 +204,7 @@ export default function EditBill() {
       .map((s) => {
         // Ưu tiên lấy giá từ shuttleTypes nếu có, nếu không thì dùng giá đã lưu trong formData
         const type = shuttleTypes.find((st) => st.id === s.shuttle_type_id);
-        const price = type?.price || s.price || 0;
+        const price = shuttleUnitPrice(type) || s.price || 0;
         return {
           price: price,
           quantity: s.quantity || 1,
@@ -417,6 +445,8 @@ export default function EditBill() {
                     <ShuttleRow
                       key={index}
                       shuttle={shuttle}
+                      shuttleTypes={shuttleTypes}
+                      typesLoading={shuttleTypesLoading}
                       restoreCredit={
                         shuttle.shuttle_type_id
                           ? creditByShuttleTypeId[shuttle.shuttle_type_id] || 0

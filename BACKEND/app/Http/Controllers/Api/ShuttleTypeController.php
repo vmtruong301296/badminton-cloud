@@ -4,23 +4,37 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreShuttleStockEntryRequest;
+use App\Http\Requests\StoreShuttleTypePriceRequest;
 use App\Http\Requests\StoreShuttleTypeRequest;
 use App\Http\Requests\UpdateShuttleTypeRequest;
 use App\Models\ShuttleStockEntry;
 use App\Models\ShuttleType;
+use App\Models\ShuttleTypePrice;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ShuttleTypeController extends Controller
 {
     /**
      * Display a listing of the resource.
+     *
+     * Query: as_of=Y-m-d — thêm price_for_bill (giá áp dụng cho bill vào ngày đó).
+     * Query: with_prices=1 — kèm lịch giá (prices).
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $shuttleTypes = ShuttleType::all();
+        $query = ShuttleType::query()->orderBy('name');
+        if ($request->boolean('with_prices')) {
+            $query->with(['prices' => fn ($q) => $q->orderByDesc('effective_from')]);
+        }
+        $shuttleTypes = $query->get();
+
+        if ($request->filled('as_of')) {
+            ShuttleType::attachPriceForBill($shuttleTypes, (string) $request->query('as_of'));
+        }
 
         return response()->json($shuttleTypes);
     }
@@ -51,9 +65,74 @@ class ShuttleTypeController extends Controller
     public function update(UpdateShuttleTypeRequest $request, string $id): JsonResponse
     {
         $shuttleType = ShuttleType::findOrFail($id);
-        $shuttleType->update($request->validated());
+        $validated = $request->validated();
+        $shuttleType->update($validated);
+
+        if (array_key_exists('price', $validated)) {
+            ShuttleTypePrice::updateOrCreate(
+                [
+                    'shuttle_type_id' => $shuttleType->id,
+                    'effective_from' => now()->toDateString(),
+                ],
+                ['price' => (int) $validated['price']]
+            );
+            $shuttleType->refresh();
+            $shuttleType->update(['price' => $shuttleType->priceForDate(now())]);
+        }
 
         return response()->json($shuttleType);
+    }
+
+    /**
+     * Lịch giá theo ngày hiệu lực (mới nhất trước).
+     */
+    public function pricesIndex(string $id): JsonResponse
+    {
+        ShuttleType::findOrFail($id);
+
+        $prices = ShuttleTypePrice::query()
+            ->where('shuttle_type_id', $id)
+            ->orderByDesc('effective_from')
+            ->get();
+
+        return response()->json($prices);
+    }
+
+    /**
+     * Thêm / ghi đè mốc giá (cùng ngày hiệu lực thì cập nhật giá).
+     */
+    public function storePrice(StoreShuttleTypePriceRequest $request, string $id): JsonResponse
+    {
+        $shuttleType = ShuttleType::findOrFail($id);
+        $effectiveFrom = Carbon::parse($request->input('effective_from'))->toDateString();
+
+        ShuttleTypePrice::updateOrCreate(
+            [
+                'shuttle_type_id' => $shuttleType->id,
+                'effective_from' => $effectiveFrom,
+            ],
+            ['price' => (int) $request->input('price')]
+        );
+
+        $shuttleType->refresh();
+        $shuttleType->update(['price' => $shuttleType->priceForDate(now())]);
+
+        return response()->json($shuttleType->load(['prices' => fn ($q) => $q->orderByDesc('effective_from')]), 201);
+    }
+
+    public function destroyPrice(string $id, string $priceId): JsonResponse
+    {
+        $shuttleType = ShuttleType::findOrFail($id);
+        ShuttleTypePrice::query()
+            ->where('shuttle_type_id', $shuttleType->id)
+            ->where('id', $priceId)
+            ->firstOrFail()
+            ->delete();
+
+        $shuttleType->refresh();
+        $shuttleType->update(['price' => $shuttleType->priceForDate(now())]);
+
+        return response()->json(['message' => 'Price tier deleted']);
     }
 
     /**

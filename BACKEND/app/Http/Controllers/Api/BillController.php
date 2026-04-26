@@ -79,11 +79,13 @@ class BillController extends Controller
                 return response()->json(['error' => 'Không tìm thấy user để gán created_by'], 500);
             }
 
-            // Calculate total shuttle price
+            $billDate = \Carbon\Carbon::parse($request->date)->toDateString();
+
+            // Calculate total shuttle price (giá theo ngày bill)
             $totalShuttlePrice = 0;
             foreach ($request->shuttles as $shuttleData) {
                 $shuttleType = ShuttleType::findOrFail($shuttleData['shuttle_type_id']);
-                $totalShuttlePrice += $shuttleType->price * $shuttleData['quantity'];
+                $totalShuttlePrice += $shuttleType->priceForDate($billDate) * $shuttleData['quantity'];
             }
 
             // Calculate total amount (court + shuttle)
@@ -144,7 +146,7 @@ class BillController extends Controller
             foreach ($request->shuttles as $shuttleData) {
                 $shuttleType = ShuttleType::findOrFail($shuttleData['shuttle_type_id']);
                 $quantity = $shuttleData['quantity'];
-                $priceEach = $shuttleType->price;
+                $priceEach = $shuttleType->priceForDate($billDate);
                 $subtotal = $priceEach * $quantity;
 
                 BillShuttle::create([
@@ -346,11 +348,13 @@ class BillController extends Controller
             /** @var Bill $bill */
             $bill = Bill::with(['billShuttles', 'billPlayers.billPlayerMenus'])->findOrFail($id);
 
+            $billDate = \Carbon\Carbon::parse($request->date)->toDateString();
+
             // Calculate total shuttle price
             $totalShuttlePrice = 0;
             foreach ($request->shuttles as $shuttleData) {
                 $shuttleType = ShuttleType::findOrFail($shuttleData['shuttle_type_id']);
-                $totalShuttlePrice += $shuttleType->price * $shuttleData['quantity'];
+                $totalShuttlePrice += $shuttleType->priceForDate($billDate) * $shuttleData['quantity'];
             }
 
             // Calculate total amount (court + shuttle)
@@ -419,7 +423,7 @@ class BillController extends Controller
             foreach ($request->shuttles as $shuttleData) {
                 $shuttleType = ShuttleType::findOrFail($shuttleData['shuttle_type_id']);
                 $quantity = $shuttleData['quantity'];
-                $priceEach = $shuttleType->price;
+                $priceEach = $shuttleType->priceForDate($billDate);
                 $subtotal = $priceEach * $quantity;
 
                 BillShuttle::create([

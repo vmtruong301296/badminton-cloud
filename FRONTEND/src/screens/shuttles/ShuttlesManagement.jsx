@@ -30,6 +30,15 @@ export default function ShuttlesManagement() {
   const [historyEntries, setHistoryEntries] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  const [priceModalShuttle, setPriceModalShuttle] = useState(null);
+  const [priceRows, setPriceRows] = useState([]);
+  const [priceLoading, setPriceLoading] = useState(false);
+  const [priceSaving, setPriceSaving] = useState(false);
+  const [newPriceForm, setNewPriceForm] = useState({
+    effective_from: todayInputDate(),
+    price: 0,
+  });
+
   useEffect(() => {
     loadShuttles();
   }, []);
@@ -110,6 +119,56 @@ export default function ShuttlesManagement() {
       alert(msg);
     } finally {
       setStockSaving(false);
+    }
+  };
+
+  const openPriceModal = async (shuttle) => {
+    setPriceModalShuttle(shuttle);
+    setPriceRows([]);
+    setNewPriceForm({ effective_from: todayInputDate(), price: shuttle.price || 0 });
+    try {
+      setPriceLoading(true);
+      const res = await shuttlesApi.getPrices(shuttle.id);
+      setPriceRows(res.data || []);
+    } catch (error) {
+      console.error('Error loading price tiers:', error);
+      alert('Không tải được lịch giá');
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
+  const submitNewPrice = async (e) => {
+    e.preventDefault();
+    if (!priceModalShuttle) return;
+    try {
+      setPriceSaving(true);
+      await shuttlesApi.addPrice(priceModalShuttle.id, {
+        effective_from: newPriceForm.effective_from,
+        price: Number(newPriceForm.price) || 0,
+      });
+      const res = await shuttlesApi.getPrices(priceModalShuttle.id);
+      setPriceRows(res.data || []);
+      await loadShuttles();
+    } catch (error) {
+      console.error('Error saving price tier:', error);
+      const msg = error.response?.data?.message || error.response?.data?.error || 'Có lỗi xảy ra';
+      alert(msg);
+    } finally {
+      setPriceSaving(false);
+    }
+  };
+
+  const deletePriceTier = async (priceId) => {
+    if (!priceModalShuttle || !confirm('Xóa mốc giá này?')) return;
+    try {
+      await shuttlesApi.deletePrice(priceModalShuttle.id, priceId);
+      const res = await shuttlesApi.getPrices(priceModalShuttle.id);
+      setPriceRows(res.data || []);
+      await loadShuttles();
+    } catch (error) {
+      console.error('Error deleting price tier:', error);
+      alert('Không xóa được mốc giá');
     }
   };
 
@@ -266,6 +325,92 @@ export default function ShuttlesManagement() {
         </div>
       )}
 
+      {priceModalShuttle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4 gap-2">
+              <h3 className="text-lg font-semibold">Lên giá — {priceModalShuttle.name}</h3>
+              <button
+                type="button"
+                onClick={() => setPriceModalShuttle(null)}
+                className="text-gray-500 hover:text-gray-800 px-2"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Bill dùng <strong>ngày đánh</strong> để chọn mốc giá: áp dụng mốc có ngày hiệu lực mới nhất không sau ngày đó.
+            </p>
+            {priceLoading ? (
+              <div className="py-6 text-center text-gray-500">Đang tải...</div>
+            ) : (
+              <>
+                <table className="min-w-full text-sm mb-4">
+                  <thead>
+                    <tr className="border-b bg-gray-50 text-left">
+                      <th className="py-2 pr-2">Áp dụng từ</th>
+                      <th className="py-2 pr-2">Giá</th>
+                      {hasPermission('shuttles.update') && <th className="py-2 w-16" />}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {priceRows.map((row) => (
+                      <tr key={row.id} className="border-b border-gray-100">
+                        <td className="py-2 pr-2 whitespace-nowrap">{row.effective_from}</td>
+                        <td className="py-2 pr-2">{formatCurrency(row.price)}</td>
+                        {hasPermission('shuttles.update') && (
+                          <td className="py-2">
+                            <button
+                              type="button"
+                              onClick={() => deletePriceTier(row.id)}
+                              className="text-red-600 text-xs hover:underline"
+                            >
+                              Xóa
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {hasPermission('shuttles.update') && (
+                  <form onSubmit={submitNewPrice} className="space-y-3 border-t pt-4">
+                    <p className="text-sm font-medium text-gray-800">Thêm / cập nhật mốc giá</p>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Ngày hiệu lực *</label>
+                      <input
+                        type="date"
+                        value={newPriceForm.effective_from}
+                        onChange={(e) =>
+                          setNewPriceForm({ ...newPriceForm, effective_from: e.target.value })
+                        }
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Giá (VND) *</label>
+                      <CurrencyInput
+                        value={newPriceForm.price}
+                        onChange={(value) => setNewPriceForm({ ...newPriceForm, price: value })}
+                        className="w-full"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={priceSaving}
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {priceSaving ? 'Đang lưu...' : 'Lưu mốc giá'}
+                    </button>
+                  </form>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {historyModalShuttle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -360,6 +505,13 @@ export default function ShuttlesManagement() {
                           >
                             Lịch sử
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => openPriceModal(shuttle)}
+                            className="text-indigo-600 hover:text-indigo-900 mr-2"
+                          >
+                            Lên giá
+                          </button>
                         </>
                       )}
                       {hasPermission('shuttles.update') && (
@@ -413,6 +565,13 @@ export default function ShuttlesManagement() {
                         className="flex-1 min-w-[100px] px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm"
                       >
                         Lịch sử
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openPriceModal(shuttle)}
+                        className="flex-1 min-w-[100px] px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
+                      >
+                        Lên giá
                       </button>
                     </>
                   )}

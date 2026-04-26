@@ -1,26 +1,27 @@
-import { useState, useEffect, useMemo } from 'react';
-import { shuttlesApi } from '../../services/api';
+import { useMemo } from 'react';
 import NumberInput from '../common/NumberInput';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, shuttleUnitPrice } from '../../utils/formatters';
 
-/** @param {{ shuttle: object, onUpdate: Function, onRemove: Function, restoreCredit?: number }} props */
-export default function ShuttleRow({ shuttle, onUpdate, onRemove, restoreCredit = 0 }) {
-  const [shuttleTypes, setShuttleTypes] = useState([]);
-
-  useEffect(() => {
-    loadShuttleTypes();
-  }, []);
-
-  const loadShuttleTypes = async () => {
-    try {
-      const response = await shuttlesApi.getAll();
-      setShuttleTypes(response.data);
-    } catch (error) {
-      console.error('Error loading shuttle types:', error);
-    }
-  };
-
+/**
+ * @param {{
+ *   shuttle: object,
+ *   onUpdate: Function,
+ *   onRemove: Function,
+ *   restoreCredit?: number,
+ *   shuttleTypes: object[],
+ *   typesLoading?: boolean,
+ * }} props
+ */
+export default function ShuttleRow({
+  shuttle,
+  onUpdate,
+  onRemove,
+  restoreCredit = 0,
+  shuttleTypes = [],
+  typesLoading = false,
+}) {
   const selectedType = shuttleTypes.find((st) => st.id === shuttle.shuttle_type_id);
+  const unitPrice = shuttleUnitPrice(selectedType);
 
   const availableBalls = useMemo(() => {
     const stock = selectedType?.stock_quantity ?? 0;
@@ -34,12 +35,12 @@ export default function ShuttleRow({ shuttle, onUpdate, onRemove, restoreCredit 
     shuttle.quantity > (selectedType.stock_quantity ?? 0);
 
   const handleTypeChange = (e) => {
-    const typeId = parseInt(e.target.value);
+    const typeId = parseInt(e.target.value, 10);
     const type = shuttleTypes.find((st) => st.id === typeId);
     onUpdate({
       ...shuttle,
       shuttle_type_id: typeId,
-      price: type?.price || 0,
+      price: shuttleUnitPrice(type),
     });
   };
 
@@ -50,7 +51,13 @@ export default function ShuttleRow({ shuttle, onUpdate, onRemove, restoreCredit 
     });
   };
 
-  const subtotal = (selectedType?.price || 0) * shuttle.quantity;
+  const subtotal = unitPrice * shuttle.quantity;
+
+  if (typesLoading && shuttleTypes.length === 0) {
+    return (
+      <div className="text-sm text-gray-500 py-2">Đang tải loại cầu...</div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-12 gap-4 items-end">
@@ -66,7 +73,7 @@ export default function ShuttleRow({ shuttle, onUpdate, onRemove, restoreCredit 
           <option value="">Chọn loại cầu</option>
           {shuttleTypes.map((type) => (
             <option key={type.id} value={type.id}>
-              {type.name} — {formatCurrency(type.price)} (tồn: {type.stock_quantity ?? 0} quả)
+              {type.name} — {formatCurrency(shuttleUnitPrice(type))} (tồn: {type.stock_quantity ?? 0} quả)
             </option>
           ))}
         </select>
@@ -111,4 +118,3 @@ export default function ShuttleRow({ shuttle, onUpdate, onRemove, restoreCredit 
     </div>
   );
 }
-

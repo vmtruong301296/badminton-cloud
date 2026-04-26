@@ -72,6 +72,9 @@ Route::middleware('auth')->group(function () {
     // Shuttles (Loại quả cầu)
     Route::get('shuttles/{id}/stock-entries', [ShuttleTypeController::class, 'stockEntries']);
     Route::post('shuttles/{id}/stock-entries', [ShuttleTypeController::class, 'storeStockEntry']);
+    Route::get('shuttles/{id}/prices', [ShuttleTypeController::class, 'pricesIndex']);
+    Route::post('shuttles/{id}/prices', [ShuttleTypeController::class, 'storePrice']);
+    Route::delete('shuttles/{id}/prices/{priceId}', [ShuttleTypeController::class, 'destroyPrice']);
     Route::apiResource('shuttles', ShuttleTypeController::class);
 
     // Bills (Phiếu thu)

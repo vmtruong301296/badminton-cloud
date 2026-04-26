@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { billsApi, shuttlesApi } from '../../services/api';
-import { calculateBillPreview, formatCurrencyRounded, formatDate, formatRatio } from '../../utils/formatters';
+import {
+  calculateBillPreview,
+  formatCurrencyRounded,
+  formatDate,
+  formatRatio,
+  shuttleUnitPrice,
+} from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 import NumberInput from '../../components/common/NumberInput';
 import DatePicker from '../../components/common/DatePicker';
@@ -28,41 +34,55 @@ export default function CreateBill() {
   });
 
   const [preview, setPreview] = useState(null);
+  const [shuttleTypesLoading, setShuttleTypesLoading] = useState(true);
+  const shuttlesDefaultedRef = useRef(false);
+
+  const loadShuttleTypesForBillDate = async (asOfDate) => {
+    try {
+      setShuttleTypesLoading(true);
+      const response = await shuttlesApi.getAll({ params: { as_of: asOfDate } });
+      setShuttleTypes(response.data);
+    } catch (error) {
+      console.error('Error loading shuttle types:', error);
+    } finally {
+      setShuttleTypesLoading(false);
+    }
+  };
 
   useEffect(() => {
-    loadShuttleTypes();
+    loadShuttleTypesForBillDate(formData.date);
+  }, [formData.date]);
+
+  useEffect(() => {
     if (parentBillId) {
       loadParentBill();
     }
   }, [parentBillId]);
 
   useEffect(() => {
-    updatePreview();
-  }, [formData]);
+    if (shuttlesDefaultedRef.current || shuttleTypes.length === 0) return;
+    const s70Shuttle = shuttleTypes.find((st) => st.name === 'Cầu S70');
+    shuttlesDefaultedRef.current = true;
+    setFormData((prev) => {
+      if (prev.shuttles.length > 0) return prev;
+      return {
+        ...prev,
+        shuttles: s70Shuttle
+          ? [
+              {
+                shuttle_type_id: s70Shuttle.id,
+                quantity: 12,
+                price: shuttleUnitPrice(s70Shuttle),
+              },
+            ]
+          : [],
+      };
+    });
+  }, [shuttleTypes]);
 
-  const loadShuttleTypes = async () => {
-    try {
-      const response = await shuttlesApi.getAll();
-      setShuttleTypes(response.data);
-      
-      // Tự động thêm cầu S70 với số lượng 12
-      const s70Shuttle = response.data.find((st) => st.name === 'Cầu S70');
-      if (s70Shuttle) {
-        setFormData((prev) => ({
-          ...prev,
-          shuttles: [
-            {
-              shuttle_type_id: s70Shuttle.id,
-              quantity: 12,
-              price: s70Shuttle.price,
-            },
-          ],
-        }));
-      }
-    } catch (error) {
-      console.error('Error loading shuttle types:', error);
-    }
-  };
+  useEffect(() => {
+    updatePreview();
+  }, [formData, shuttleTypes]);
 
   const loadParentBill = async () => {
     try {
@@ -94,7 +114,7 @@ export default function CreateBill() {
         .map((s) => {
           const type = shuttleTypes.find((st) => st.id === s.shuttle_type_id);
           return {
-            price: type?.price || 0,
+            price: shuttleUnitPrice(type),
             quantity: s.quantity || 1,
           };
         }),
@@ -303,6 +323,8 @@ export default function CreateBill() {
                     <ShuttleRow
                       key={index}
                       shuttle={shuttle}
+                      shuttleTypes={shuttleTypes}
+                      typesLoading={shuttleTypesLoading}
                       onUpdate={(updated) => handleUpdateShuttle(index, updated)}
                       onRemove={() => handleRemoveShuttle(index)}
                     />

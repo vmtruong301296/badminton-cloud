@@ -70,6 +70,13 @@ export const formatRatio = (value) => {
   return num.toString();
 };
 
+/** Đơn giá cầu cho bill: API trả price_for_bill khi gọi kèm as_of, không thì dùng price. */
+export const shuttleUnitPrice = (type) => {
+  if (!type) return 0;
+  const v = type.price_for_bill ?? type.price;
+  return Number(v) || 0;
+};
+
 /**
  * Calculate bill preview
  */

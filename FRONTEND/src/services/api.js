@@ -40,13 +40,16 @@ export const menusApi = {
 
 // Shuttles
 export const shuttlesApi = {
-  getAll: () => api.get('/shuttles'),
+  getAll: (params) => api.get('/shuttles', { params }),
   getById: (id) => api.get(`/shuttles/${id}`),
   create: (data) => api.post('/shuttles', data),
   update: (id, data) => api.put(`/shuttles/${id}`, data),
   delete: (id) => api.delete(`/shuttles/${id}`),
   getStockEntries: (id) => api.get(`/shuttles/${id}/stock-entries`),
   addStockEntry: (id, data) => api.post(`/shuttles/${id}/stock-entries`, data),
+  getPrices: (id) => api.get(`/shuttles/${id}/prices`),
+  addPrice: (id, data) => api.post(`/shuttles/${id}/prices`, data),
+  deletePrice: (id, priceId) => api.delete(`/shuttles/${id}/prices/${priceId}`),
 };
 
 // Bills
