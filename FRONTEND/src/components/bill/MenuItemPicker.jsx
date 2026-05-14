@@ -1,29 +1,20 @@
-import { useState, useEffect } from 'react';
-import { menusApi } from '../../services/api';
-import NumberInput from '../common/NumberInput';
-import { formatCurrency } from '../../utils/formatters';
+import { useState } from "react";
+import NumberInput from "../common/NumberInput";
+import { formatCurrency } from "../../utils/formatters";
 
-export default function MenuItemPicker({ player, onUpdate }) {
-  const [menus, setMenus] = useState([]);
-  const [selectedMenuId, setSelectedMenuId] = useState('');
+/**
+ * MenuItemPicker
+ * `menus` must be passed in from the parent — fetching the list once at the
+ * parent level avoids N duplicate /api/menus calls when this picker is
+ * rendered per-player in a bill form.
+ */
+export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
+  const [selectedMenuId, setSelectedMenuId] = useState("");
   const [quantity, setQuantity] = useState(1);
-
-  useEffect(() => {
-    loadMenus();
-  }, []);
-
-  const loadMenus = async () => {
-    try {
-      const response = await menusApi.getAll();
-      setMenus(response.data);
-    } catch (error) {
-      console.error('Error loading menus:', error);
-    }
-  };
 
   const handleAdd = () => {
     if (!selectedMenuId) return;
-    
+
     const menu = menus.find((m) => m.id === parseInt(selectedMenuId));
     if (!menu) return;
 
@@ -41,7 +32,7 @@ export default function MenuItemPicker({ player, onUpdate }) {
       menus: updatedMenus,
     });
 
-    setSelectedMenuId('');
+    setSelectedMenuId("");
     setQuantity(1);
   };
 
@@ -53,7 +44,10 @@ export default function MenuItemPicker({ player, onUpdate }) {
     });
   };
 
-  const menuTotal = (player.menus || []).reduce((sum, m) => sum + m.subtotal, 0);
+  const menuTotal = (player.menus || []).reduce(
+    (sum, m) => sum + m.subtotal,
+    0,
+  );
 
   return (
     <div className="border rounded-lg p-4">
@@ -98,9 +92,13 @@ export default function MenuItemPicker({ player, onUpdate }) {
           <div className="text-sm font-medium mb-2">Menu đã chọn:</div>
           <div className="space-y-1">
             {player.menus.map((menu, index) => (
-              <div key={index} className="flex justify-between items-center bg-gray-50 p-2 rounded">
+              <div
+                key={index}
+                className="flex justify-between items-center bg-gray-50 p-2 rounded"
+              >
                 <span className="text-sm">
-                  {menu.name} x {menu.quantity} = {formatCurrency(menu.subtotal)}
+                  {menu.name} x {menu.quantity} ={" "}
+                  {formatCurrency(menu.subtotal)}
                 </span>
                 <button
                   type="button"
@@ -120,4 +118,3 @@ export default function MenuItemPicker({ player, onUpdate }) {
     </div>
   );
 }
-

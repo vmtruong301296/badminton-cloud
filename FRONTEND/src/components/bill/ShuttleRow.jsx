@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
-import NumberInput from '../common/NumberInput';
-import { formatCurrency, shuttleUnitPrice } from '../../utils/formatters';
+import { useMemo } from "react";
+import NumberInput from "../common/NumberInput";
+import { formatCurrency, shuttleUnitPrice } from "../../utils/formatters";
 
 /**
  * @param {{
@@ -20,7 +20,9 @@ export default function ShuttleRow({
   shuttleTypes = [],
   typesLoading = false,
 }) {
-  const selectedType = shuttleTypes.find((st) => st.id === shuttle.shuttle_type_id);
+  const selectedType = shuttleTypes.find(
+    (st) => st.id === shuttle.shuttle_type_id,
+  );
   const unitPrice = shuttleUnitPrice(selectedType);
 
   const availableBalls = useMemo(() => {
@@ -60,60 +62,82 @@ export default function ShuttleRow({
   }
 
   return (
-    <div className="grid grid-cols-12 gap-4 items-end">
-      <div className="col-span-5">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:gap-4 sm:items-end">
+      <div className="sm:col-span-5">
+        <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
           Loại cầu
         </label>
         <select
-          value={shuttle.shuttle_type_id || ''}
+          value={shuttle.shuttle_type_id || ""}
           onChange={handleTypeChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md"
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
         >
           <option value="">Chọn loại cầu</option>
           {shuttleTypes.map((type) => (
             <option key={type.id} value={type.id}>
-              {type.name} — {formatCurrency(shuttleUnitPrice(type))} (tồn: {type.stock_quantity ?? 0} quả)
+              {type.name} — {formatCurrency(shuttleUnitPrice(type))} (tồn:{" "}
+              {type.stock_quantity ?? 0} quả)
             </option>
           ))}
         </select>
         {selectedType && (
-          <p className={`text-xs mt-1 ${overStock ? 'text-amber-700 font-medium' : 'text-gray-500'}`}>
+          <p
+            className={`mt-1 text-xs ${overStock ? "font-medium text-amber-700" : "text-slate-500"}`}
+          >
             Khả dụng: {availableBalls} quả
             {restoreCredit > 0 && (
-              <span className="text-gray-600"> (đã tính hoàn từ bill này)</span>
+              <span className="text-slate-500">
+                {" "}
+                (đã tính hoàn từ bill này)
+              </span>
             )}
-            {overStock && ' — vượt tồn, vẫn có thể lưu nếu đồng ý'}
+            {overStock && " — vượt tồn, vẫn có thể lưu nếu đồng ý"}
           </p>
         )}
       </div>
-      <div className="col-span-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Số lượng
-        </label>
-        <NumberInput
-          value={shuttle.quantity}
-          onChange={handleQuantityChange}
-          min={1}
-          className="w-full"
-        />
-      </div>
-      <div className="col-span-3">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Thành tiền
-        </label>
-        <div className="px-3 py-2 bg-gray-50 border border-gray-300 rounded-md">
-          {formatCurrency(subtotal)}
+      {/* On mobile: SL + Thành tiền + X on one row. On desktop: each is its own grid cell. */}
+      <div className="grid grid-cols-[1fr_1fr_auto] items-end gap-2 sm:contents">
+        <div className="sm:col-span-3">
+          <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+            Số lượng
+          </label>
+          <NumberInput
+            value={shuttle.quantity}
+            onChange={handleQuantityChange}
+            min={1}
+            className="w-full"
+          />
         </div>
-      </div>
-      <div className="col-span-1">
-        <button
-          type="button"
-          onClick={onRemove}
-          className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-        >
-          ✕
-        </button>
+        <div className="sm:col-span-3">
+          <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+            Thành tiền
+          </label>
+          <div className="font-tabular rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900">
+            {formatCurrency(subtotal)}
+          </div>
+        </div>
+        <div className="sm:col-span-1">
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Xóa loại cầu"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 sm:h-10 sm:w-10"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
