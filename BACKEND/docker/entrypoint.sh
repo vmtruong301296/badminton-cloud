@@ -13,6 +13,8 @@ php artisan storage:link --force || true
 
 php artisan migrate --force || echo "Migrate failed or already up to date"
 
+php artisan db:seed --class=RolePermissionSeeder --force || echo "RolePermissionSeeder failed"
+
 php artisan config:cache
 php artisan route:cache
 
