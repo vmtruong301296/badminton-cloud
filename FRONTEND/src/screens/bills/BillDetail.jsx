@@ -13,7 +13,7 @@ import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 
 export default function BillDetail() {
   const { id } = useParams();
@@ -36,6 +36,8 @@ export default function BillDetail() {
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [paymentAccountImages, setPaymentAccountImages] = useState({}); // Store base64 images: { accountId: base64 }
   const [exporting, setExporting] = useState(false);
+  const [sendingTelegram, setSendingTelegram] = useState(false);
+  const [pendingExportAction, setPendingExportAction] = useState("download"); // "download" | "telegram"
   const [selectAccountDialog, setSelectAccountDialog] = useState({
     isOpen: false,
   });
@@ -376,14 +378,23 @@ export default function BillDetail() {
 
   const handleExportBill = () => {
     if (!bill) return;
-    // Mở modal chọn tài khoản
+    setPendingExportAction("download");
+    setSelectAccountDialog({ isOpen: true });
+  };
+
+  const handleSendTelegramClick = () => {
+    if (!bill) return;
+    setPendingExportAction("telegram");
     setSelectAccountDialog({ isOpen: true });
   };
 
   const handleSelectAccountConfirm = async (accountId) => {
     setSelectAccountDialog({ isOpen: false });
-    // Gọi hàm xuất với tài khoản đã chọn (hàm này sẽ set selectedAccountId)
-    await executeExportBill(accountId);
+    if (pendingExportAction === "telegram") {
+      await executeSendTelegram(accountId);
+    } else {
+      await executeExportBill(accountId);
+    }
   };
 
   const handleSelectAccountCancel = () => {
@@ -533,6 +544,101 @@ export default function BillDetail() {
       console.error("Error exporting bill:", error);
       alert("Có lỗi xảy ra khi xuất bill");
       setExporting(false);
+    }
+  };
+
+  /**
+   * Render the bill the same way as export, but upload the PNG to backend
+   * which forwards it to the Telegram chat configured in BACKEND/.env.
+   * Reuses the same image-preload + html2canvas pipeline as executeExportBill.
+   */
+  const executeSendTelegram = async (accountId) => {
+    if (!bill) return;
+    setSelectedAccountId(accountId);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
+    if (!exportRef.current) {
+      console.error("Export ref not available");
+      setSendingTelegram(false);
+      return;
+    }
+
+    try {
+      setSendingTelegram(true);
+
+      const accountsNeedingPreload = paymentAccounts.filter(
+        (acc) =>
+          acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
+      );
+      if (accountsNeedingPreload.length > 0) {
+        const imageMap = { ...paymentAccountImages };
+        await Promise.all(
+          accountsNeedingPreload.map(async (acc) => {
+            try {
+              if (acc.qr_code_image.startsWith("data:image/")) {
+                imageMap[acc.id] = acc.qr_code_image;
+                return;
+              }
+              const imageUrl =
+                acc.qr_code_image_url ||
+                (acc.qr_code_image
+                  ? `${window.location.origin}/storage/${acc.qr_code_image}`
+                  : null);
+              if (imageUrl) {
+                const base64 = await loadImageAsBase64(imageUrl);
+                imageMap[acc.id] = base64;
+              }
+            } catch (error) {
+              console.error("Preload image error", error);
+            }
+          }),
+        );
+        setPaymentAccountImages(imageMap);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      const images = exportRef.current.querySelectorAll(
+        "img.bill-export-image",
+      );
+      const imageReadyPromises = Array.from(images).map((img) => {
+        return new Promise((resolve) => {
+          if (img.complete && img.naturalHeight > 0) {
+            resolve();
+            return;
+          }
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+          setTimeout(() => resolve(), 5000);
+        });
+      });
+      await Promise.all(imageReadyPromises);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const canvas = await html2canvas(exportRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob(resolve, "image/png"),
+      );
+      if (!blob) throw new Error("Không tạo được file PNG");
+
+      await billsApi.sendTelegram(bill.id, blob);
+      alert("Đã gửi bill qua Telegram thành công!");
+    } catch (error) {
+      console.error("Error sending bill to Telegram:", error);
+      const detail =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "Lỗi không xác định";
+      alert("Gửi Telegram thất bại: " + detail);
+    } finally {
+      setSendingTelegram(false);
     }
   };
 
@@ -756,6 +862,49 @@ export default function BillDetail() {
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
                 </svg>
                 Xuất Bill
+              </>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={handleSendTelegramClick}
+            disabled={sendingTelegram || exporting}
+            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
+          >
+            {sendingTelegram ? (
+              <>
+                <svg
+                  className="animate-spin"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+                Đang gửi…
+              </>
+            ) : (
+              <>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
+                Gửi Telegram
               </>
             )}
           </button>

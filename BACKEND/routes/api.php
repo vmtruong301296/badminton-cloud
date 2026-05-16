@@ -82,6 +82,7 @@ Route::middleware('auth')->group(function () {
     Route::post('bills/{id}/players/{player_id}/pay', [BillController::class, 'markPayment']);
     Route::get('bills/{id}/sub-bills', [BillController::class, 'subBills']);
     Route::post('bills/{id}/sub-bills', [BillController::class, 'createSubBill']);
+    Route::post('bills/{id}/send-telegram', [BillController::class, 'sendTelegram']);
 
     // Debts (Nợ)
     Route::apiResource('debts', DebtController::class);

@@ -10,7 +10,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import PartyBillExport from "../../components/party/PartyBillExport";
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 
 const loadImageAsBase64 = async (url) => {
   try {

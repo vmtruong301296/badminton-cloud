@@ -11,9 +11,11 @@ use App\Models\BillShuttle;
 use App\Models\Menu;
 use App\Models\ShuttleType;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class BillController extends Controller
 {
@@ -546,6 +548,54 @@ class BillController extends Controller
         });
 
         return response()->json(['message' => 'Bill deleted successfully']);
+    }
+
+    /**
+     * Send exported bill PNG to a fixed Telegram chat configured via env.
+     * Frontend POSTs `file` (PNG of the bill) + optional `caption`.
+     */
+    public function sendTelegram(Request $request, string $id): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimetypes:image/png,image/jpeg|max:10240',
+        ]);
+
+        $token = config('services.telegram.bot_token');
+        $chatId = config('services.telegram.chat_id');
+        if (! $token || ! $chatId) {
+            return response()->json([
+                'error' => 'Telegram chưa được cấu hình (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID).',
+            ], 500);
+        }
+
+        $bill = Bill::findOrFail($id);
+        $date = $bill->date ? Carbon::parse($bill->date)->format('d/m/Y') : '';
+        $caption = trim(($request->input('caption') ?: '')."\nBill #{$bill->id}".($date ? " - {$date}" : ''));
+
+        $file = $request->file('file');
+        $filename = 'bill_'.$bill->id.'.png';
+
+        try {
+            $response = Http::timeout(30)
+                ->attach('document', file_get_contents($file->getRealPath()), $filename)
+                ->post("https://api.telegram.org/bot{$token}/sendDocument", [
+                    'chat_id' => $chatId,
+                    'caption' => $caption,
+                ]);
+
+            if (! $response->successful()) {
+                return response()->json([
+                    'error' => 'Telegram API trả về lỗi',
+                    'detail' => $response->json() ?: $response->body(),
+                ], 502);
+            }
+
+            return response()->json(['ok' => true]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => 'Không thể gửi Telegram: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

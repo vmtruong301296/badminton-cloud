@@ -64,6 +64,14 @@ export const billsApi = {
     api.post(`/bills/${billId}/players/${playerId}/pay`, data),
   getSubBills: (billId) => api.get(`/bills/${billId}/sub-bills`),
   createSubBill: (billId, data) => api.post(`/bills/${billId}/sub-bills`, data),
+  sendTelegram: (billId, fileBlob, caption) => {
+    const formData = new FormData();
+    formData.append("file", fileBlob, `bill_${billId}.png`);
+    if (caption) formData.append("caption", caption);
+    return api.post(`/bills/${billId}/send-telegram`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 // Debts
