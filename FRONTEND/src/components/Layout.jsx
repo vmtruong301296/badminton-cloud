@@ -46,6 +46,12 @@ export default function Layout({ children }) {
       permission: "party_bills.view",
     },
     {
+      path: "/party-bills/create",
+      label: "Tạo Bill tiệc",
+      icon: "🎉",
+      permission: "party_bills.create",
+    },
+    {
       path: "/players",
       label: "Người chơi",
       icon: "👥",

@@ -62,6 +62,7 @@ class RolePermissionSeeder extends Seeder
             // Party Bills
             ['name' => 'party_bills.view', 'display_name' => 'Xem bill tiệc', 'group' => 'party_bills'],
             ['name' => 'party_bills.create', 'display_name' => 'Tạo bill tiệc', 'group' => 'party_bills'],
+            ['name' => 'party_bills.update', 'display_name' => 'Sửa bill tiệc', 'group' => 'party_bills'],
             ['name' => 'party_bills.delete', 'display_name' => 'Xóa bill tiệc', 'group' => 'party_bills'],
 
             // Tournament Brackets
@@ -126,6 +127,8 @@ class RolePermissionSeeder extends Seeder
             'shuttles.view',
             'ratios.view',
             'party_bills.view',
+            'party_bills.create',
+            'party_bills.update',
             'tournament_brackets.view',
             'tournament_brackets.create_list',
             'tournament_brackets.organize',

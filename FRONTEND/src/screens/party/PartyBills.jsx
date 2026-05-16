@@ -1,1665 +1,1075 @@
-import { useEffect, useMemo, useState, useRef } from "react";
-import { partyBillsApi, playersApi, paymentAccountsApi } from "../../services/api";
-import { formatCurrencyRounded, formatDate, formatRatio, roundToNearestThousand } from "../../utils/formatters";
-import CurrencyInput from "../../components/common/CurrencyInput";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { partyBillsApi } from "../../services/api";
+import {
+  formatCurrencyRounded,
+  formatDate,
+  roundToNearestThousand,
+} from "../../utils/formatters";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
-import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
-import PartyBillExport from "../../components/party/PartyBillExport";
-import html2canvas from "html2canvas";
 
-const today = () => formatDate(new Date().toISOString().slice(0, 10));
+function normalize(str) {
+  return (str || "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase();
+}
+
+const formatDateForUnpaid = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}/${month}/${day}`;
+};
 
 export default function PartyBills() {
-	const [loading, setLoading] = useState(false);
-	const [saving, setSaving] = useState(false);
-	const [partyBills, setPartyBills] = useState([]);
-	const [allPartyBills, setAllPartyBills] = useState([]); // Store all bills for unpaid players calculation
-	const [filters, setFilters] = useState({ date_from: "", date_to: "", status: ["unpaid", "partial"], limit: 20, name: "" });
-	const [deleteConfirm, setDeleteConfirm] = useState({ isOpen: false, id: null });
-	const [expanded, setExpanded] = useState(null);
-	const [detailBill, setDetailBill] = useState(null);
-	const [detailOpen, setDetailOpen] = useState(false);
-	const [detailLoading, setDetailLoading] = useState(false);
-	const [payingIds, setPayingIds] = useState(new Set());
-	const [markingPayment, setMarkingPayment] = useState(new Set()); // Track players being marked as paid
-	const [uncheckPaymentConfirm, setUncheckPaymentConfirm] = useState({ isOpen: false, participantId: null, participantName: '' });
-	const [payOldBillsConfirm, setPayOldBillsConfirm] = useState({ isOpen: false, participantId: null, participantName: '', debtAmount: 0, oldBillIds: [] });
-	const [paymentAccounts, setPaymentAccounts] = useState([]);
-	const [paymentAccountImages, setPaymentAccountImages] = useState({}); // Store base64 images: { accountId: base64 }
-	const [exporting, setExporting] = useState(false);
-	const [selectAccountDialog, setSelectAccountDialog] = useState({ isOpen: false });
-	const [selectedAccountId, setSelectedAccountId] = useState(null);
-	const exportRef = useRef(null);
-	const [players, setPlayers] = useState([]);
-	const [playerSearch, setPlayerSearch] = useState("");
-	const [loadingPlayers, setLoadingPlayers] = useState(false);
-	const [showAddPlayer, setShowAddPlayer] = useState(false);
-	const [newPlayer, setNewPlayer] = useState({ name: "", gender: "male", default_ratio: 1 });
-
-	const [form, setForm] = useState({
-		date: today(),
-		name: "Tiệc",
-		note: "",
-		base_amount: 0,
-		extras: [{ name: "Bánh + Tôm", amount: 0 }],
-		participants: [],
-	});
-	const [editingBillId, setEditingBillId] = useState(null);
-
-	const totalExtra = useMemo(() => form.extras.reduce((sum, item) => sum + (Number(item.amount) || 0), 0), [form.extras]);
-
-	const sumRatios = useMemo(() => form.participants.reduce((sum, p) => sum + (Number(p.ratio_value) || 0), 0), [form.participants]);
-
-	const unitPrice = useMemo(() => {
-		const base = Number(form.base_amount) || 0;
-		return sumRatios > 0 ? Math.round((base + totalExtra) / sumRatios) : 0;
-	}, [form.base_amount, sumRatios, totalExtra]);
-
-	const participantWithShare = useMemo(() => {
-		return form.participants.map((p) => {
-			const ratio = Number(p.ratio_value) || 0;
-			const share = Math.round(ratio * unitPrice);
-			const paidAmount = Number(p.paid_amount) || 0;
-			const foodAmount = Number(p.food_amount) || 0;
-			const totalAmount = share + foodAmount - paidAmount; // Thành tiền = share + số tiền món ăn - số tiền đã chi
-			return { ...p, share, totalAmount };
-		});
-	}, [form.participants, unitPrice]);
-
-	// Format date to YYYY/MM/DD
-	const formatDateForUnpaid = (date) => {
-		if (!date) return "";
-		const d = new Date(date);
-		const year = d.getFullYear();
-		const month = String(d.getMonth() + 1).padStart(2, "0");
-		const day = String(d.getDate()).padStart(2, "0");
-		return `${year}/${month}/${day}`;
-	};
-
-	// Check if participant has overdue bills (quá 7 ngày)
-	const isParticipantOverdue = (participant) => {
-		if (!participant.unpaidDates || participant.unpaidDates.length === 0) return false;
-
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
-
-		return participant.unpaidDates.some((dateItem) => {
-			if (!dateItem.date) return false;
-
-			const billDate = new Date(dateItem.date);
-			billDate.setHours(0, 0, 0, 0);
-
-			const diffTime = today - billDate;
-			const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-			return diffDays >= 7;
-		});
-	};
-
-	// Calculate unpaid participants list
-	const unpaidParticipants = useMemo(() => {
-		const participantMap = new Map();
-
-		// Process all bills to collect unpaid participants
-		allPartyBills.forEach((bill) => {
-			if (!bill.participants) return;
-
-			bill.participants.forEach((participant) => {
-				if (participant.is_paid) return; // Skip paid participants
-
-				const userId = participant.user_id;
-				if (!userId) return; // Skip if no user_id
-
-				const userName = participant.name || "Unknown";
-
-				if (!participantMap.has(userId)) {
-					participantMap.set(userId, {
-						userId,
-						name: userName,
-						totalAmount: 0,
-						unpaidDates: [],
-					});
-				}
-
-				const participantData = participantMap.get(userId);
-				
-				// Calculate total amount for this participant in this bill
-				const shareAmount = participant.share_amount || 0;
-				const foodAmount = participant.food_amount || 0;
-				const paidAmount = participant.paid_amount || 0;
-				const totalAmount = shareAmount + foodAmount - paidAmount;
-				const roundedAmount = roundToNearestThousand(totalAmount);
-				
-				participantData.totalAmount += roundedAmount;
-
-				// Add bill date if participant hasn't paid
-				if (bill.date && roundedAmount > 0) {
-					participantData.unpaidDates.push({
-						date: bill.date,
-						amount: roundedAmount,
-						billId: bill.id,
-					});
-				}
-			});
-		});
-
-		// Convert map to array and sort dates (newest first)
-		return Array.from(participantMap.values())
-			.map((participant) => {
-				// Group by date and sum amounts for same date
-				const dateMap = new Map();
-				participant.unpaidDates.forEach((item) => {
-					const dateKey = item.date;
-					if (!dateMap.has(dateKey)) {
-						dateMap.set(dateKey, { date: dateKey, amount: 0 });
-					}
-					dateMap.get(dateKey).amount += item.amount;
-				});
-
-				return {
-					...participant,
-					unpaidDates: Array.from(dateMap.values()).sort((a, b) => {
-						return new Date(b.date) - new Date(a.date);
-					}),
-				};
-			})
-			.filter((participant) => participant.totalAmount > 0)
-			.sort((a, b) => {
-				// Sort by latest unpaid date (descending - newest first)
-				const aLatestDate = a.unpaidDates && a.unpaidDates.length > 0 ? new Date(a.unpaidDates[0].date) : new Date(0);
-				const bLatestDate = b.unpaidDates && b.unpaidDates.length > 0 ? new Date(b.unpaidDates[0].date) : new Date(0);
-				return bLatestDate - aLatestDate;
-			});
-	}, [allPartyBills]);
-
-	const filteredPartyBills = useMemo(() => {
-		let data = [...partyBills];
-
-		// Lọc theo ngày
-		if (filters.date_from) {
-			data = data.filter((b) => !b.date || b.date >= filters.date_from);
-		}
-		if (filters.date_to) {
-			data = data.filter((b) => !b.date || b.date <= filters.date_to);
-		}
-
-		// Lọc theo trạng thái thanh toán
-		if (filters.status && Array.isArray(filters.status) && filters.status.length > 0) {
-			data = data.filter((b) => {
-				const participants = b.participants || [];
-				const total = participants.length;
-				const paid = participants.filter((p) => p.is_paid).length;
-				
-				const statuses = [];
-				if (total > 0 && paid === total) {
-					statuses.push("paid");
-				} else if (paid > 0 && paid < total) {
-					statuses.push("partial");
-				} else if (paid === 0) {
-					statuses.push("unpaid");
-				}
-				
-				// Check if any of the bill's statuses match the selected filters
-				return statuses.some(status => filters.status.includes(status));
-			});
-		}
-
-		// Lọc theo tên tiệc (không dấu, không phân biệt hoa thường)
-		if (filters.name && filters.name.trim() !== "") {
-			const search = normalize(filters.name.trim());
-			data = data.filter((b) => {
-				const name = normalize(b.name || "");
-				return name.includes(search);
-			});
-		}
-
-		// Sắp xếp và giới hạn số lượng
-		data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-		if (filters.limit) data = data.slice(0, filters.limit);
-		return data;
-	}, [partyBills, filters]);
-
-	const getBillStatus = (bill) => {
-		const participants = bill.participants || [];
-		const total = participants.length;
-		const paid = participants.filter((p) => p.is_paid).length;
-		if (total === 0) return { text: "-", color: "bg-gray-100 text-gray-700" };
-		if (paid === total) return { text: "Đã thanh toán", color: "bg-green-100 text-green-800" };
-		if (paid > 0) return { text: "Thanh toán 1 phần", color: "bg-yellow-100 text-yellow-800" };
-		return { text: "Chưa thanh toán", color: "bg-gray-100 text-gray-800" };
-	};
-
-	const getUnpaidCount = (bill) => {
-		const participants = bill.participants || [];
-		return participants.filter((p) => !p.is_paid).length;
-	};
-
-	const loadPartyBills = async () => {
-		try {
-			setLoading(true);
-			const res = await partyBillsApi.getAll();
-			setPartyBills(res.data || []);
-			setAllPartyBills(res.data || []); // Store all bills for unpaid players calculation
-		} catch (error) {
-			console.error("Error loading party bills", error);
-			alert("Không tải được danh sách tiệc");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	useEffect(() => {
-		loadPartyBills();
-		loadPlayers();
-		loadPaymentAccounts();
-	}, []);
-
-	// Helper to convert image URL to base64 using fetch API (bypasses CORS)
-	const loadImageAsBase64 = async (url) => {
-		try {
-			// Convert storage URL to API route if needed
-			let apiUrl = url;
-			if (url.includes('/storage/')) {
-				const pathMatch = url.match(/\/storage\/(.+?)(?:\?|$)/);
-				if (pathMatch && pathMatch[1]) {
-					const cleanPath = pathMatch[1];
-					if (url.startsWith('http')) {
-						apiUrl = `/api/images/${cleanPath}`;
-					} else {
-						apiUrl = `/api/images/${cleanPath}`;
-					}
-				}
-			}
-
-			const response = await fetch(apiUrl, {
-				mode: 'cors',
-				credentials: 'omit',
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-
-			const blob = await response.blob();
-
-			return new Promise((resolve, reject) => {
-				const reader = new FileReader();
-				reader.onloadend = () => {
-					resolve(reader.result);
-				};
-				reader.onerror = (error) => {
-					reject(error);
-				};
-				reader.readAsDataURL(blob);
-			});
-		} catch (error) {
-			console.error('loadImageAsBase64 - Error:', error, 'URL:', url);
-			throw error;
-		}
-	};
-
-	const loadPaymentAccounts = async () => {
-		try {
-			const response = await paymentAccountsApi.getAll({ is_active: true });
-			setPaymentAccounts(response.data);
-
-			// Preload and convert images to base64
-			const imageMap = {};
-			const imagePromises = response.data
-				.filter(acc => acc.is_active && acc.qr_code_image)
-				.map(async (acc) => {
-					try {
-						if (acc.qr_code_image.startsWith('data:image/')) {
-							imageMap[acc.id] = acc.qr_code_image;
-							return;
-						}
-
-						const imageUrl = acc.qr_code_image_url ||
-							(acc.qr_code_image ? `${window.location.origin}/storage/${acc.qr_code_image}` : null);
-
-						if (imageUrl) {
-							const base64 = await loadImageAsBase64(imageUrl);
-							imageMap[acc.id] = base64;
-						}
-					} catch (error) {
-						console.error(`Failed to preload image for account ${acc.id}:`, error);
-					}
-				});
-
-			await Promise.all(imagePromises);
-			setPaymentAccountImages(imageMap);
-		} catch (error) {
-			console.error('Error loading payment accounts:', error);
-		}
-	};
-
-	const loadPlayers = async () => {
-		try {
-			setLoadingPlayers(true);
-			const res = await playersApi.getAll();
-			setPlayers(res.data || []);
-		} catch (error) {
-			console.error("Error loading players", error);
-		} finally {
-			setLoadingPlayers(false);
-		}
-	};
-
-	function normalize(str) {
-		return (str || "")
-			.toString()
-			.normalize("NFD")
-			.replace(/[\u0300-\u036f]/g, "")
-			.replace(/đ/g, "d")
-			.replace(/Đ/g, "D")
-			.toLowerCase();
-	}
-
-	const availablePlayers = useMemo(() => {
-		const search = normalize(playerSearch);
-		return players.filter((p) => {
-			const already = form.participants.some((sp) => sp.user_id === p.id);
-			if (already) return false;
-			if (!search) return true;
-			return normalize(p.name).includes(search);
-		});
-	}, [players, form.participants, playerSearch]);
-
-	const handleSelectPlayer = (player) => {
-		updateField("participants", [
-			...form.participants,
-			{
-				user_id: player.id,
-				name: player.name,
-				gender: player.gender,
-				ratio_value: 1, // Mặc định luôn là 1 cho chia tiệc
-				default_ratio_value: player.default_ratio_value ?? player.default_ratio ?? 1,
-				paid_amount: 0, // Số tiền đã chi
-				food_amount: 0, // Số tiền món ăn
-				note: "", // Ghi chú
-			},
-		]);
-	};
-
-	const handleCreatePlayer = async () => {
-		if (!newPlayer.name.trim()) {
-			alert("Nhập tên người chơi");
-			return;
-		}
-		const slug = newPlayer.name.trim().toLowerCase().replace(/\s+/g, "");
-		const email = `${slug || "player"}${Date.now()}@party.local`;
-		try {
-			const payload = {
-				name: newPlayer.name.trim(),
-				gender: newPlayer.gender,
-				default_ratio: newPlayer.default_ratio || 1,
-				email,
-				password: "password",
-			};
-			const res = await playersApi.create(payload);
-			await loadPlayers();
-			setShowAddPlayer(false);
-			setNewPlayer({ name: "", gender: "male", default_ratio: 1 });
-			// auto select với ratio_value = 1
-			handleSelectPlayer({
-				id: res.data.id,
-				name: res.data.name,
-				gender: res.data.gender,
-			});
-		} catch (error) {
-			console.error("Create player error", error);
-			alert("Không thể tạo người chơi mới");
-		}
-	};
-
-	const updateField = (field, value) => {
-		setForm((prev) => ({ ...prev, [field]: value }));
-	};
-
-	const updateExtra = (index, key, value) => {
-		setForm((prev) => {
-			const extras = [...prev.extras];
-			extras[index] = { ...extras[index], [key]: value };
-			return { ...prev, extras };
-		});
-	};
-
-	const updateParticipant = (index, key, value) => {
-		setForm((prev) => {
-			const participants = [...prev.participants];
-			participants[index] = { ...participants[index], [key]: value };
-			return { ...prev, participants };
-		});
-	};
-
-	const addExtra = () => updateField("extras", [...form.extras, { name: "", amount: 0 }]);
-	const removeExtra = (idx) =>
-		updateField(
-			"extras",
-			form.extras.filter((_, i) => i !== idx)
-		);
-
-	const addParticipant = () => updateField("participants", [...form.participants, { name: "", ratio_value: 1 }]);
-	const removeParticipant = (idx) =>
-		updateField(
-			"participants",
-			form.participants.filter((_, i) => i !== idx)
-		);
-
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		try {
-			setSaving(true);
-			const payload = {
-				date: form.date,
-				name: form.name,
-				note: form.note,
-				base_amount: Number(form.base_amount) || 0,
-				extras: form.extras
-					.filter((x) => (x.name || "") !== "" && Number(x.amount) > 0)
-					.map((x) => ({ name: x.name, amount: Number(x.amount) || 0 })),
-				participants: form.participants
-					.filter((p) => (p.name || "") !== "")
-					.map((p) => ({
-						user_id: p.user_id || null,
-						name: p.name,
-						ratio_value: Number(p.ratio_value) || 0,
-						paid_amount: Number(p.paid_amount) || 0,
-						food_amount: Number(p.food_amount) || 0,
-						note: p.note || "",
-						is_paid: p.is_paid || false,
-					})),
-			};
-
-			if (payload.participants.length === 0) {
-				alert("Vui lòng nhập ít nhất 1 người");
-				setSaving(false);
-				return;
-			}
-
-			if (!payload.name || payload.name.trim() === "") {
-				alert("Vui lòng nhập tên/nội dung tiệc");
-				setSaving(false);
-				return;
-			}
-
-			if (editingBillId) {
-				// Update existing bill
-				await partyBillsApi.update(editingBillId, payload);
-				await loadPartyBills();
-				alert("Đã cập nhật chia tiệc");
-			} else {
-				// Create new bill
-				await partyBillsApi.create(payload);
-				await loadPartyBills();
-				alert("Đã tạo chia tiệc");
-			}
-
-			// Reset form sau khi tạo/cập nhật thành công
-			setForm({
-				date: today(),
-				name: "Tiệc",
-				note: "",
-				base_amount: 0,
-				extras: [{ name: "Bánh + Tôm", amount: 0 }],
-				participants: [],
-			});
-			setEditingBillId(null);
-		} catch (error) {
-			console.error("Error saving party bill", error);
-			const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || (editingBillId ? "Cập nhật chia tiệc thất bại" : "Tạo chia tiệc thất bại");
-			alert(`Lỗi: ${errorMessage}`);
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	const handleDeletePartyBill = async (id) => {
-		try {
-			await partyBillsApi.delete(id);
-			// Cập nhật state local thay vì reload từ server
-			setPartyBills(prevBills => prevBills.filter(bill => bill.id !== id));
-			setAllPartyBills(prevBills => prevBills.filter(bill => bill.id !== id));
-			
-			// Nếu đang edit bill bị xóa, reset form
-			if (editingBillId === id) {
-				setForm({
-					date: today(),
-					name: "Tiệc",
-					note: "",
-					base_amount: 0,
-					extras: [{ name: "Bánh + Tôm", amount: 0 }],
-					participants: [],
-				});
-				setEditingBillId(null);
-			}
-		} catch (error) {
-			console.error("Delete party bill error", error);
-			alert("Không thể xóa tiệc");
-		}
-	};
-
-	const handleEdit = async (id) => {
-		try {
-			setSaving(true);
-			const res = await partyBillsApi.getById(id);
-			const bill = res.data;
-
-			// Kiểm tra xem bill đã được thanh toán chưa
-			const participants = bill.participants || [];
-			const allPaid = participants.length > 0 && participants.every((p) => p.is_paid === true);
-			
-			if (allPaid) {
-				alert("Không thể sửa bill tiệc đã thanh toán");
-				setSaving(false);
-				return;
-			}
-
-			// Load dữ liệu vào form
-			setForm({
-				date: bill.date ? bill.date.slice(0, 10) : today(),
-				name: bill.name || "Tiệc",
-				note: bill.note || "",
-				base_amount: bill.base_amount || 0,
-				extras: bill.extras && bill.extras.length > 0 
-					? bill.extras.map((ex) => ({ name: ex.name, amount: ex.amount || 0 }))
-					: [{ name: "Bánh + Tôm", amount: 0 }],
-				participants: bill.participants 
-					? bill.participants.map((p) => ({
-						user_id: p.user_id || null,
-						name: p.name || "",
-						ratio_value: p.ratio_value || 1,
-						paid_amount: p.paid_amount || 0,
-						food_amount: p.food_amount || 0,
-						note: p.note || "",
-						is_paid: p.is_paid || false,
-					}))
-					: [],
-			});
-			setEditingBillId(id);
-
-			// Scroll to form
-			window.scrollTo({ top: 0, behavior: 'smooth' });
-		} catch (error) {
-			console.error("Error loading bill for edit", error);
-			alert("Không thể tải dữ liệu để sửa");
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	const handleCancelEdit = () => {
-		setForm({
-			date: today(),
-			name: "Tiệc",
-			note: "",
-			base_amount: 0,
-			extras: [{ name: "Bánh + Tôm", amount: 0 }],
-			participants: [],
-		});
-		setEditingBillId(null);
-	};
-
-	const handleOpenDetail = async (id) => {
-		try {
-			setDetailLoading(true);
-			const res = await partyBillsApi.getById(id);
-			setDetailBill(res.data);
-			setDetailOpen(true);
-			setSelectedAccountId(null); // Reset selected account when opening detail
-		} catch (error) {
-			console.error("Load party bill detail error", error);
-			alert("Không thể tải chi tiết tiệc");
-		} finally {
-			setDetailLoading(false);
-		}
-	};
-
-	const handleMarkPayment = async (participant) => {
-		if (!detailBill) return;
-		
-		const isPaid = !participant.is_paid;
-		
-		// Nếu đang uncheck (từ checked -> unchecked), hiển thị confirm dialog
-		if (!isPaid) {
-			setUncheckPaymentConfirm({
-				isOpen: true,
-				participantId: participant.id,
-				participantName: participant.name || '',
-			});
-			return;
-		}
-		
-		// Nếu đang check (từ unchecked -> checked) và có nợ cũ
-		if (isPaid && participant.debt_amount > 0 && participant.debt_details && participant.debt_details.length > 0) {
-			// Lấy các bill_id từ debt_details (chỉ lấy các bill trước ngày của bill hiện tại)
-			// Backend đã filter các bill có date < currentBillDate, nên tất cả debt_details đều là nợ cũ
-			const currentBillDate = detailBill.date ? (typeof detailBill.date === 'string' ? detailBill.date.slice(0, 10) : detailBill.date) : null;
-			const oldBillIds = participant.debt_details
-				.filter(debt => {
-					// Chỉ lấy các bill có date < currentBillDate (nợ cũ sau ngày của bill hiện tại)
-					if (!debt.date || !currentBillDate) return false;
-					const debtDate = typeof debt.date === 'string' ? debt.date.slice(0, 10) : debt.date;
-					return debtDate < currentBillDate;
-				})
-				.map(debt => debt.bill_id)
-				.filter(id => id); // Loại bỏ null/undefined
-			
-			if (oldBillIds.length > 0) {
-				setPayOldBillsConfirm({
-					isOpen: true,
-					participantId: participant.id,
-					participantName: participant.name || '',
-					debtAmount: participant.debt_amount,
-					oldBillIds: oldBillIds,
-				});
-				return;
-			}
-		}
-		
-		// Nếu không có nợ cũ, gọi API trực tiếp
-		await executeMarkPayment(participant.id, isPaid, []);
-	};
-
-	const executeMarkPayment = async (participantId, isPaid, oldBillIds = []) => {
-		if (!detailBill) return;
-		
-		try {
-			const newSet = new Set(payingIds);
-			newSet.add(participantId);
-			setPayingIds(newSet);
-			
-			// Mark payment cho bill hiện tại
-			const res = await partyBillsApi.markPayment(detailBill.id, participantId, { is_paid: isPaid });
-			
-			// Nếu có bill cũ cần thanh toán, mark payment cho từng bill
-			if (oldBillIds.length > 0 && isPaid) {
-				const participant = detailBill.participants.find((p) => p.id === participantId);
-				if (participant && participant.user_id) {
-					// Lấy thông tin bill cũ từ debt_details để lấy bill_id và participant_id
-					const promises = oldBillIds.map(async (oldBillId) => {
-						try {
-							// Lấy bill cũ để lấy participant_id của user trong bill đó
-							const oldBillResponse = await partyBillsApi.getById(oldBillId);
-							const oldBill = oldBillResponse.data;
-							const oldParticipant = oldBill.participants?.find((p) => p.user_id === participant.user_id);
-							if (oldParticipant && !oldParticipant.is_paid) {
-								await partyBillsApi.markPayment(oldBillId, oldParticipant.id, {
-									is_paid: true,
-								});
-							}
-						} catch (error) {
-							console.error(`Error marking payment for old bill ${oldBillId}:`, error);
-						}
-					});
-					await Promise.all(promises);
-				}
-			}
-			
-			// Cập nhật state local cho detail bill với dữ liệu từ API response
-			const updated = detailBill.participants.map((p) => (p.id === participantId ? res.data.participant : p));
-			setDetailBill({ ...detailBill, participants: updated });
-			
-			// Cập nhật state local cho list bill (không cần reload từ server)
-			setPartyBills(prevBills => 
-				prevBills.map(bill => {
-					if (bill.id === detailBill.id) {
-						return {
-							...bill,
-							participants: updated
-						};
-					}
-					return bill;
-				})
-			);
-
-			// Cập nhật allPartyBills để cập nhật danh sách người chưa thanh toán
-			setAllPartyBills(prevBills => 
-				prevBills.map(bill => {
-					if (bill.id === detailBill.id) {
-						return {
-							...bill,
-							participants: updated
-						};
-					}
-					// Nếu có old bills được thanh toán, cập nhật luôn
-					if (oldBillIds.includes(bill.id) && isPaid) {
-						const participant = detailBill.participants.find((p) => p.id === participantId);
-						if (participant && participant.user_id) {
-							return {
-								...bill,
-								participants: bill.participants?.map(p => 
-									p.user_id === participant.user_id ? { ...p, is_paid: true } : p
-								)
-							};
-						}
-					}
-					return bill;
-				})
-			);
-		} catch (error) {
-			console.error("Mark payment error", error);
-			alert("Không thể cập nhật thanh toán");
-		} finally {
-			const newSet = new Set(payingIds);
-			newSet.delete(participantId);
-			setPayingIds(newSet);
-		}
-	};
-
-	const handlePayOldBillsConfirm = async () => {
-		await executeMarkPayment(
-			payOldBillsConfirm.participantId,
-			true,
-			payOldBillsConfirm.oldBillIds
-		);
-		setPayOldBillsConfirm({ isOpen: false, participantId: null, participantName: '', debtAmount: 0, oldBillIds: [] });
-	};
-
-	const handlePayCurrentOnly = async () => {
-		await executeMarkPayment(payOldBillsConfirm.participantId, true, []);
-		setPayOldBillsConfirm({ isOpen: false, participantId: null, participantName: '', debtAmount: 0, oldBillIds: [] });
-	};
-
-	const handleUncheckPaymentConfirm = async () => {
-		await executeMarkPayment(uncheckPaymentConfirm.participantId, false);
-		setUncheckPaymentConfirm({ isOpen: false, participantId: null, participantName: '' });
-	};
-
-	const handleUncheckPaymentCancel = () => {
-		setUncheckPaymentConfirm({ isOpen: false, participantId: null, participantName: '' });
-		// Reload để đảm bảo checkbox trở về trạng thái ban đầu
-		if (detailBill) {
-			handleOpenDetail(detailBill.id);
-		}
-	};
-
-	const handlePayOldBillsCancel = () => {
-		setPayOldBillsConfirm({ isOpen: false, participantId: null, participantName: '', debtAmount: 0, oldBillIds: [] });
-		// Reload để đảm bảo checkbox trở về trạng thái ban đầu
-		if (detailBill) {
-			handleOpenDetail(detailBill.id);
-		}
-	};
-
-	const handleExportBill = () => {
-		if (!detailBill) return;
-		setSelectAccountDialog({ isOpen: true });
-	};
-
-	const handleSelectAccountConfirm = async (accountId) => {
-		setSelectAccountDialog({ isOpen: false });
-		await executeExportBill(accountId);
-	};
-
-	const handleSelectAccountCancel = () => {
-		setSelectAccountDialog({ isOpen: false });
-		setSelectedAccountId(null); // Reset when dialog closes
-	};
-
-	const executeExportBill = async (accountId) => {
-		if (!detailBill) return;
-
-		setSelectedAccountId(accountId);
-		await new Promise(resolve => setTimeout(resolve, 300));
-
-		if (!exportRef.current) {
-			console.error('Export ref not available');
-			setExporting(false);
-			return;
-		}
-
-		try {
-			setExporting(true);
-
-			// Ensure all payment account images are preloaded before export
-			const accountsNeedingPreload = paymentAccounts
-				.filter(acc => acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id]);
-
-			if (accountsNeedingPreload.length > 0) {
-				const imageMap = { ...paymentAccountImages };
-
-				await Promise.all(accountsNeedingPreload.map(async (acc) => {
-					try {
-						if (acc.qr_code_image.startsWith('data:image/')) {
-							imageMap[acc.id] = acc.qr_code_image;
-							return;
-						}
-
-						const imageUrl = acc.qr_code_image_url ||
-							(acc.qr_code_image ? `${window.location.origin}/storage/${acc.qr_code_image}` : null);
-
-						if (imageUrl) {
-							const base64 = await loadImageAsBase64(imageUrl);
-							imageMap[acc.id] = base64;
-						}
-					} catch (error) {
-						console.error(`Failed to preload image for account ${acc.id} before export:`, error);
-					}
-				}));
-
-				setPaymentAccountImages(imageMap);
-				await new Promise(resolve => setTimeout(resolve, 300));
-			}
-
-			// Wait for all images to be ready
-			const images = exportRef.current.querySelectorAll('img.bill-export-image');
-			const imageReadyPromises = Array.from(images).map((img) => {
-				return new Promise((resolve) => {
-					if (img.complete && img.naturalHeight > 0) {
-						resolve();
-						return;
-					}
-
-					img.onload = () => resolve();
-					img.onerror = () => resolve();
-					setTimeout(() => resolve(), 5000);
-				});
-			});
-
-			await Promise.all(imageReadyPromises);
-			await new Promise(resolve => setTimeout(resolve, 1000));
-
-			const canvas = await html2canvas(exportRef.current, {
-				backgroundColor: '#ffffff',
-				scale: 2,
-				logging: false,
-				useCORS: true,
-				allowTaint: true,
-			});
-
-			// Convert canvas to image and download
-			const link = document.createElement('a');
-			link.download = `Bill_Tiec_${detailBill.id}_${formatDate(detailBill.date).replace(/\//g, '-')}.png`;
-			link.href = canvas.toDataURL('image/png');
-			link.click();
-
-			setExporting(false);
-		} catch (error) {
-			console.error('Error exporting bill:', error);
-			alert('Có lỗi xảy ra khi xuất bill');
-			setExporting(false);
-		}
-	};
-
-	// Mark payment for all unpaid bills of a participant
-	const handleMarkParticipantPayment = async (userId) => {
-		try {
-			setMarkingPayment((prev) => new Set(prev).add(userId));
-
-			// Find all bills where this participant hasn't paid
-			const unpaidBills = allPartyBills.filter((bill) => {
-				const participant = bill.participants?.find((p) => p.user_id === userId);
-				return participant && !participant.is_paid;
-			});
-
-			// Mark payment for all unpaid bills
-			const promises = unpaidBills.map(async (bill) => {
-				try {
-					const participant = bill.participants?.find((p) => p.user_id === userId);
-					if (participant) {
-						await partyBillsApi.markPayment(bill.id, participant.id, {
-							is_paid: true,
-						});
-					}
-				} catch (error) {
-					console.error(`Error marking payment for bill ${bill.id}:`, error);
-					throw error;
-				}
-			});
-
-			await Promise.all(promises);
-
-			// Update state directly without reloading
-			setAllPartyBills((prevBills) => {
-				return prevBills.map((bill) => {
-					const participantIndex = bill.participants?.findIndex((p) => p.user_id === userId);
-					if (participantIndex !== undefined && participantIndex !== -1) {
-						const updatedBill = { ...bill };
-						updatedBill.participants = [...(bill.participants || [])];
-						updatedBill.participants[participantIndex] = {
-							...updatedBill.participants[participantIndex],
-							is_paid: true,
-						};
-						return updatedBill;
-					}
-					return bill;
-				});
-			});
-
-			setPartyBills((prevBills) => {
-				return prevBills.map((bill) => {
-					const participantIndex = bill.participants?.findIndex((p) => p.user_id === userId);
-					if (participantIndex !== undefined && participantIndex !== -1) {
-						const updatedBill = { ...bill };
-						updatedBill.participants = [...(bill.participants || [])];
-						updatedBill.participants[participantIndex] = {
-							...updatedBill.participants[participantIndex],
-							is_paid: true,
-						};
-						return updatedBill;
-					}
-					return bill;
-				});
-			});
-		} catch (error) {
-			console.error("Error marking participant payment:", error);
-			alert("Có lỗi xảy ra khi đánh dấu thanh toán");
-		} finally {
-			setMarkingPayment((prev) => {
-				const newSet = new Set(prev);
-				newSet.delete(userId);
-				return newSet;
-			});
-		}
-	};
-
-	return (
-		<div className="space-y-8">
-			<div className="bg-white shadow rounded-lg p-6">
-				<div className="flex items-center justify-between mb-4">
-					<h2 className="text-xl font-semibold">{editingBillId ? "Sửa chia tiền tiệc" : "Chia tiền tiệc"}</h2>
-					{editingBillId && (
-						<button
-							type="button"
-							onClick={handleCancelEdit}
-							className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm">
-							Hủy sửa
-						</button>
-					)}
-				</div>
-
-				<form className="space-y-4" onSubmit={handleSubmit}>
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-						<div>
-							<label className="block text-sm text-gray-600 mb-1">Ngày</label>
-							<input
-								type="date"
-								value={form.date}
-								onChange={(e) => updateField("date", e.target.value)}
-								className="w-full border rounded px-3 py-2"
-								required
-							/>
-						</div>
-						<div>
-							<label className="block text-sm text-gray-600 mb-1">
-								Tên/Nội dung <span className="text-red-500">*</span>
-							</label>
-							<input
-								type="text"
-								value={form.name}
-								onChange={(e) => updateField("name", e.target.value)}
-								className="w-full border rounded px-3 py-2"
-								placeholder="Tiệc sinh nhật..."
-								required
-							/>
-						</div>
-						<div>
-							<label className="block text-sm text-gray-600 mb-1">
-								Tổng tiền tiệc <span className="text-red-500">*</span>
-							</label>
-							<CurrencyInput value={form.base_amount} onChange={(value) => updateField("base_amount", value)} className="w-full" />
-						</div>
-					</div>
-
-					<div>
-						<label className="block text-sm font-semibold text-gray-800 mb-2">Chi phí thêm</label>
-						<div className="space-y-2">
-							{form.extras.map((extra, idx) => (
-								<div key={idx} className="grid grid-cols-12 gap-2 items-center">
-									<input
-										type="text"
-										value={extra.name}
-										onChange={(e) => updateExtra(idx, "name", e.target.value)}
-										placeholder="Tên chi phí (ví dụ: Bánh kem)"
-										className="col-span-7 md:col-span-6 border rounded px-3 py-2"
-									/>
-									<CurrencyInput
-										value={extra.amount}
-										onChange={(value) => updateExtra(idx, "amount", value)}
-										className="col-span-4 md:col-span-3"
-										placeholder="0"
-									/>
-									<button type="button" onClick={() => removeExtra(idx)} className="col-span-1 text-red-500 hover:text-red-700">
-										✕
-									</button>
-								</div>
-							))}
-							<button type="button" onClick={addExtra} className="text-blue-600 text-sm hover:underline">
-								+ Thêm chi phí
-							</button>
-						</div>
-					</div>
-
-					<div>
-						<label className="block text-sm font-semibold text-gray-800 mb-2">Người tham gia</label>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<div className="md:col-span-1 border rounded p-3 bg-gray-50">
-								<div className="flex items-center justify-between mb-2">
-									<div className="text-sm font-semibold text-gray-700">Chọn người chơi</div>
-									<button type="button" onClick={() => setShowAddPlayer(true)} className="text-xs text-blue-600 hover:underline">
-										+ Thêm nhanh
-									</button>
-								</div>
-								<input
-									type="text"
-									value={playerSearch}
-									onChange={(e) => setPlayerSearch(e.target.value)}
-									placeholder="Tìm tên..."
-									className="w-full border rounded px-3 py-2 mb-2"
-								/>
-								<div className="max-h-[512px] overflow-y-auto space-y-1 text-sm">
-									{loadingPlayers ? (
-										<div className="text-gray-500 text-center py-4">Đang tải...</div>
-									) : availablePlayers.length === 0 ? (
-										<div className="text-gray-500 text-center py-4">Không tìm thấy</div>
-									) : (
-										availablePlayers.map((p) => (
-											<button
-												key={p.id}
-												type="button"
-												onClick={() => handleSelectPlayer(p)}
-												className="w-full text-left px-3 py-2 rounded border border-transparent hover:border-blue-300 hover:bg-blue-50">
-												<div className="font-medium text-gray-900">{p.name}</div>
-												<div className="text-xs text-gray-600 flex gap-2">
-													<span>{p.gender === "male" ? "Nam" : p.gender === "female" ? "Nữ" : "-"}</span>
-													<span>Mức: {formatRatio(p.default_ratio_value ?? 1)}</span>
-												</div>
-											</button>
-										))
-									)}
-								</div>
-							</div>
-
-							<div className="md:col-span-2 space-y-2">
-								{/* Header row - chỉ hiển thị trên desktop */}
-								<div className="hidden md:grid grid-cols-12 gap-2 px-2 py-2 bg-gray-50 border rounded text-xs font-semibold text-gray-700">
-									<div className="col-span-2">Tên</div>
-									<div className="col-span-1 text-right">Mức tính</div>
-									<div className="col-span-2 text-right">Đã chi</div>
-									<div className="col-span-2 text-right">Số tiền thêm</div>
-									<div className="col-span-2">Ghi chú</div>
-									<div className="col-span-2 text-right">Thành tiền</div>
-									<div className="col-span-1 text-center">Xóa</div>
-								</div>
-								{participantWithShare.map((p, idx) => (
-									<div key={idx} className="grid grid-cols-12 gap-2 items-center border rounded p-2 bg-white">
-										<div className="col-span-12 md:col-span-2">
-											<div className="text-sm font-semibold text-gray-800">{p.name}</div>
-										</div>
-										<input
-											type="number"
-											step="0.1"
-											min={0}
-											value={p.ratio_value}
-											onChange={(e) => updateParticipant(idx, "ratio_value", e.target.value)}
-											className="col-span-12 md:col-span-1 border rounded px-2 py-1.5 text-sm"
-											placeholder="Mức"
-										/>
-										<CurrencyInput
-											value={p.paid_amount || 0}
-											onChange={(value) => updateParticipant(idx, "paid_amount", value)}
-											className="col-span-12 md:col-span-2 text-sm"
-											placeholder="Đã chi"
-										/>
-										<CurrencyInput
-											value={p.food_amount || 0}
-											onChange={(value) => updateParticipant(idx, "food_amount", value)}
-											className="col-span-12 md:col-span-2 text-sm"
-											placeholder="Số tiền thêm"
-										/>
-										<input
-											type="text"
-											value={p.note || ""}
-											onChange={(e) => updateParticipant(idx, "note", e.target.value)}
-											className="col-span-12 md:col-span-2 border rounded px-2 py-1.5 text-sm"
-											placeholder="Ghi chú..."
-										/>
-										<div className="col-span-12 md:col-span-2 text-right font-semibold text-blue-700 text-sm">
-											{formatCurrencyRounded(p.totalAmount)}
-										</div>
-										<button
-											type="button"
-											onClick={() => removeParticipant(idx)}
-											className="col-span-12 md:col-span-1 text-red-500 hover:text-red-700 text-center">
-											✕
-										</button>
-									</div>
-								))}
-								<div className="text-sm text-gray-700 mb-2 pt-2 border-t">Tổng số người: {form.participants.length}</div>
-								<div className="flex items-center justify-between text-sm text-gray-700">
-									<div>SUM mức tính: {sumRatios}</div>
-									<div>Đơn giá chia: {formatCurrencyRounded(unitPrice)}</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-						<div className="p-3 bg-gray-50 rounded border">
-							<div className="text-gray-600">Tổng tiền tiệc</div>
-							<div className="text-lg font-semibold">{formatCurrencyRounded(Number(form.base_amount) || 0)}</div>
-						</div>
-						<div className="p-3 bg-gray-50 rounded border">
-							<div className="text-gray-600">Tổng chi phí thêm</div>
-							<div className="text-lg font-semibold">{formatCurrencyRounded(totalExtra)}</div>
-						</div>
-						<div className="p-3 bg-gray-50 rounded border">
-							<div className="text-gray-600">Tổng cộng</div>
-							<div className="text-lg font-semibold">{formatCurrencyRounded((Number(form.base_amount) || 0) + totalExtra)}</div>
-						</div>
-					</div>
-
-					<div className="flex justify-end space-x-3">
-						{editingBillId && (
-							<button 
-								type="button" 
-								onClick={handleCancelEdit} 
-								disabled={saving}
-								className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 disabled:opacity-50">
-								Hủy
-							</button>
-						)}
-						<button type="submit" disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50">
-							{saving ? "Đang lưu..." : editingBillId ? "Cập nhật chia tiệc" : "Lưu chia tiệc"}
-						</button>
-					</div>
-				</form>
-			</div>
-
-			{/* Main Content: Bills Table and Unpaid Participants */}
-			<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-				{/* Bills Table - Left Side (3/4 width) */}
-				<div className="lg:col-span-3">
-					<div className="bg-white shadow rounded-lg p-6">
-						<div className="flex items-center justify-between mb-4">
-							<h3 className="text-lg font-semibold">Danh sách tiệc</h3>
-							{loading && <div className="text-sm text-gray-500">Đang tải...</div>}
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-4">
-					<div>
-						<label className="block text-sm text-gray-700 mb-1">Từ ngày</label>
-						<input
-							type="date"
-							value={filters.date_from}
-							onChange={(e) => setFilters({ ...filters, date_from: e.target.value })}
-							className="w-full border rounded px-3 py-2"
-						/>
-					</div>
-					<div>
-						<label className="block text-sm text-gray-700 mb-1">Đến ngày</label>
-						<input
-							type="date"
-							value={filters.date_to}
-							onChange={(e) => setFilters({ ...filters, date_to: e.target.value })}
-							className="w-full border rounded px-3 py-2"
-						/>
-					</div>
-					<div>
-						<label className="block text-sm text-gray-700 mb-1">Trạng thái</label>
-						<div className="border rounded px-3 py-2 bg-white space-y-2">
-							<label className="flex items-center space-x-2 cursor-pointer">
-								<input
-									type="checkbox"
-									checked={Array.isArray(filters.status) && filters.status.includes("paid")}
-									onChange={(e) => {
-										const current = Array.isArray(filters.status) ? filters.status : [];
-										if (e.target.checked) {
-											setFilters({ ...filters, status: [...current, "paid"] });
-										} else {
-											setFilters({ ...filters, status: current.filter(s => s !== "paid") });
-										}
-									}}
-									className="rounded"
-								/>
-								<span className="text-sm">Đã thanh toán</span>
-							</label>
-							<label className="flex items-center space-x-2 cursor-pointer">
-								<input
-									type="checkbox"
-									checked={Array.isArray(filters.status) && filters.status.includes("partial")}
-									onChange={(e) => {
-										const current = Array.isArray(filters.status) ? filters.status : [];
-										if (e.target.checked) {
-											setFilters({ ...filters, status: [...current, "partial"] });
-										} else {
-											setFilters({ ...filters, status: current.filter(s => s !== "partial") });
-										}
-									}}
-									className="rounded"
-								/>
-								<span className="text-sm">Thanh toán 1 phần</span>
-							</label>
-							<label className="flex items-center space-x-2 cursor-pointer">
-								<input
-									type="checkbox"
-									checked={Array.isArray(filters.status) && filters.status.includes("unpaid")}
-									onChange={(e) => {
-										const current = Array.isArray(filters.status) ? filters.status : [];
-										if (e.target.checked) {
-											setFilters({ ...filters, status: [...current, "unpaid"] });
-										} else {
-											setFilters({ ...filters, status: current.filter(s => s !== "unpaid") });
-										}
-									}}
-									className="rounded"
-								/>
-								<span className="text-sm">Chưa thanh toán</span>
-							</label>
-						</div>
-					</div>
-					<div>
-						<label className="block text-sm text-gray-700 mb-1">Số tiệc hiển thị</label>
-						<select
-							value={filters.limit}
-							onChange={(e) => setFilters({ ...filters, limit: Number(e.target.value) })}
-							className="w-full border rounded px-3 py-2">
-							{[10, 20, 30, 50, 100].map((n) => (
-								<option key={n} value={n}>
-									{n}
-								</option>
-							))}
-						</select>
-					</div>
-					<div>
-						<label className="block text-sm text-gray-700 mb-1">Tên tiệc</label>
-						<input
-							type="text"
-							value={filters.name}
-							onChange={(e) => setFilters({ ...filters, name: e.target.value })}
-							placeholder="Nhập tên/nội dung tiệc..."
-							className="w-full border rounded px-3 py-2"
-						/>
-					</div>
-					<div className="flex items-end">
-						<button
-							type="button"
-							onClick={() => setFilters({ date_from: "", date_to: "", status: "all", limit: 20, name: "" })}
-							className="w-full px-3 py-2 border rounded bg-gray-100 hover:bg-gray-200">
-							Reset
-						</button>
-					</div>
-				</div>
-
-				<div className="overflow-x-auto">
-					<table className="min-w-full text-sm">
-						<thead>
-							<tr className="border-b">
-								<th className="text-left py-2 px-2">Ngày</th>
-								<th className="text-left py-2 px-2">Tên</th>
-								<th className="text-right py-2 px-2">Tổng tiền</th>
-								<th className="text-center py-2 px-2">Trạng thái</th>
-								<th className="text-center py-2 px-2">SL chưa TT</th>
-								<th className="text-center py-2 px-2">Thao tác</th>
-							</tr>
-						</thead>
-						<tbody>
-							{filteredPartyBills.map((bill) => {
-								// Tính tổng số tiền thêm của tất cả participants
-								const totalFoodAmount = (bill.participants || []).reduce((sum, p) => sum + (Number(p.food_amount) || 0), 0);
-								// Tổng tiền = total_amount + tổng số tiền thêm
-								const totalWithFood = (bill.total_amount || 0) + totalFoodAmount;
-								
-								return (
-								<tr key={bill.id} className="border-b hover:bg-gray-50 align-top">
-									<td className="py-2 px-2">{bill.date ? bill.date.slice(0, 10) : ""}</td>
-									<td className="py-2 px-2">
-										<div className="font-semibold">{bill.name || "-"}</div>
-										{bill.note && <div className="text-xs text-gray-500">{bill.note}</div>}
-									</td>
-									<td className="py-2 px-2 text-right">{formatCurrencyRounded(totalWithFood)}</td>
-									<td className="py-2 px-2 text-center">
-										{(() => {
-											const status = getBillStatus(bill);
-											return <span className={`px-2 py-1 rounded text-xs font-semibold ${status.color}`}>{status.text}</span>;
-										})()}
-									</td>
-									<td className="py-2 px-2 text-center">{getUnpaidCount(bill)}</td>
-													<td className="py-2 px-2 text-center space-x-2">
-										<button type="button" onClick={() => handleOpenDetail(bill.id)} className="text-indigo-600 hover:underline text-sm">
-											Xem
-										</button>
-										{(() => {
-											const participants = bill.participants || [];
-											const allPaid = participants.length > 0 && participants.every((p) => p.is_paid === true);
-											if (!allPaid) {
-												return (
-													<button
-														type="button"
-														onClick={() => handleEdit(bill.id)}
-														className="text-blue-600 hover:underline text-sm">
-														Sửa
-													</button>
-												);
-											}
-											return null;
-										})()}
-										<button
-											type="button"
-											onClick={() => setDeleteConfirm({ isOpen: true, id: bill.id })}
-											className="text-red-600 hover:underline text-sm">
-											Xóa
-										</button>
-									</td>
-								</tr>
-								);
-							})}
-							{filteredPartyBills.length === 0 && (
-								<tr>
-									<td colSpan="5" className="text-center py-4 text-gray-500">
-										Chưa có dữ liệu
-									</td>
-								</tr>
-							)}
-						</tbody>
-					</table>
-				</div>
-					</div>
-				</div>
-
-				{/* Unpaid Participants List - Right Side (1/4 width) */}
-				<div className="lg:col-span-1">
-					<div className="bg-white shadow rounded-lg overflow-hidden">
-						<div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
-							<h3 className="text-base sm:text-lg font-semibold text-gray-900">
-								DS chưa thanh toán ({unpaidParticipants.length})
-							</h3>
-							<div className="text-sm font-semibold text-red-600 mt-1">
-								Tổng: {formatCurrencyRounded(unpaidParticipants.reduce((sum, p) => sum + p.totalAmount, 0))}
-							</div>
-						</div>
-						<div className="divide-y divide-gray-200 max-h-[calc(100vh-300px)] overflow-y-auto">
-							{loading ? (
-								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">Đang tải...</div>
-							) : unpaidParticipants.length === 0 ? (
-								<div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">Không có người nào chưa thanh toán</div>
-							) : (
-								unpaidParticipants.map((participant) => {
-									const isMarking = markingPayment.has(participant.userId);
-									const isOverdue = isParticipantOverdue(participant);
-									return (
-										<div
-											key={participant.userId}
-											className={`px-4 sm:px-6 py-3 relative ${isOverdue
-													? "bg-red-100 hover:bg-red-200"
-													: "hover:bg-gray-50"
-												}`}>
-											<div className="pr-14 sm:pr-8 mb-2">
-												<div className="text-xs sm:text-sm font-semibold text-gray-900">
-													{participant.name}: <span className="text-red-600">{formatCurrencyRounded(participant.totalAmount)}</span>
-												</div>
-											</div>
-											<div className="text-xs sm:text-sm pr-14 sm:pr-8">
-												<div className="text-gray-700 font-medium mb-1">DS ngày thiếu:</div>
-												<div className="space-y-1 pl-2">
-													{participant.unpaidDates.map((dateItem, idx) => (
-														<div key={idx} className="text-gray-600">
-															{formatDateForUnpaid(dateItem.date)} : {formatCurrencyRounded(dateItem.amount)}
-														</div>
-													))}
-												</div>
-											</div>
-											<div className="absolute top-3 right-4 sm:right-4">
-												<input
-													type="checkbox"
-													checked={false}
-													onChange={() => handleMarkParticipantPayment(participant.userId)}
-													disabled={isMarking}
-													className="w-6 h-6 sm:w-5 sm:h-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-													title="Đánh dấu thanh toán tất cả bills"
-												/>
-											</div>
-											{isMarking && (
-												<div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
-													<div className="text-xs sm:text-sm text-gray-600">Đang xử lý...</div>
-												</div>
-											)}
-										</div>
-									);
-								})
-							)}
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<ConfirmDialog
-				isOpen={deleteConfirm.isOpen}
-				onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
-				onConfirm={async () => {
-					await handleDeletePartyBill(deleteConfirm.id);
-					setDeleteConfirm({ isOpen: false, id: null });
-				}}
-				title="Xác nhận xóa"
-				message="Bạn có chắc chắn muốn xóa tiệc này?"
-			/>
-
-      {detailOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
-						<div className="flex items-center justify-between px-6 py-4 border-b">
-							<div>
-								<h3 className="text-lg font-semibold">Chi tiết tiệc</h3>
-								{detailBill?.date && <div className="text-sm text-gray-600">Ngày: {detailBill.date.slice(0, 10)}</div>}
-							</div>
-							<div className="flex items-center space-x-3">
-								<button
-									type="button"
-									onClick={handleExportBill}
-									disabled={exporting || !detailBill}
-									className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
-									{exporting ? 'Đang xuất...' : '📄 Xuất Bill'}
-								</button>
-								<button 
-									type="button" 
-									onClick={() => {
-										setDetailOpen(false);
-										setSelectedAccountId(null); // Reset selected account when closing detail
-									}} 
-									className="text-gray-500 hover:text-gray-700">
-									✕
-								</button>
-							</div>
-						</div>
-
-						<div className="px-6 py-4 space-y-4">
-							{detailLoading ? (
-								<div className="text-center text-gray-500 py-6">Đang tải...</div>
-							) : (
-								<>
-									<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-										<div className="p-3 bg-gray-50 rounded border">
-											<div className="text-gray-600 text-sm">Tên/Nội dung</div>
-											<div className="text-base font-semibold">{detailBill?.name || "-"}</div>
-											{detailBill?.note && <div className="text-xs text-gray-500 mt-1">{detailBill.note}</div>}
-										</div>
-										<div className="p-3 bg-gray-50 rounded border">
-											<div className="text-gray-600 text-sm">Tổng tiền tiệc</div>
-											<div className="text-base font-semibold">{formatCurrencyRounded(detailBill?.base_amount || 0)}</div>
-										</div>
-										<div className="p-3 bg-gray-50 rounded border">
-											<div className="text-gray-600 text-sm">Tổng chi phí thêm</div>
-											<div className="text-base font-semibold">{formatCurrencyRounded(detailBill?.total_extra || 0)}</div>
-										</div>
-										<div className="p-3 bg-gray-50 rounded border">
-											<div className="text-gray-600 text-sm">Số tiền/người</div>
-											<div className="text-base font-semibold">{formatCurrencyRounded(detailBill?.unit_price || 0)}</div>
-										</div>
-									</div>
-
-									{detailBill?.extras?.length > 0 && (
-										<div className="border rounded p-4">
-											<div className="font-semibold mb-2">Chi phí thêm</div>
-											<div className="flex justify-between text-sm font-medium text-gray-700 mb-2">
-												<span>Tổng</span>
-												<span>{formatCurrencyRounded(detailBill.total_extra || 0)}</span>
-											</div>
-											<div className="space-y-1 text-sm text-gray-700">
-												{detailBill.extras.map((ex) => (
-													<div key={ex.id} className="flex justify-between">
-														<span>{ex.name}</span>
-														<span>{formatCurrencyRounded(ex.amount)}</span>
-													</div>
-												))}
-											</div>
-										</div>
-									)}
-
-									<div className="border rounded p-4">
-										<div className="font-semibold mb-3">Người tham gia</div>
-										<div className="overflow-x-auto">
-											<table className="min-w-full text-sm">
-												<thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 px-2">Tên</th>
-                            <th className="text-right py-2 px-2">Mức tính</th>
-                            <th className="text-right py-2 px-2">Đã chi</th>
-                            <th className="text-right py-2 px-2">Số tiền thêm</th>
-                            <th className="text-left py-2 px-2">Ghi chú</th>
-                            <th className="text-right py-2 px-2">Thành tiền</th>
-                            <th className="text-center py-2 px-2">Thanh toán</th>
-                          </tr>
-												</thead>
-												<tbody>
-													{detailBill?.participants?.map((p) => {
-														const shareAmount = p.share_amount || 0;
-														const foodAmount = p.food_amount || 0;
-														const paidAmount = p.paid_amount || 0;
-														const totalAmount = shareAmount + foodAmount - paidAmount;
-														return (
-															<tr key={p.id} className="border-b">
-																<td className="py-2 px-2">{p.name}</td>
-																<td className="py-2 px-2 text-right">{formatRatio(p.ratio_value)}</td>
-																<td className="py-2 px-2 text-right">{formatCurrencyRounded(paidAmount)}</td>
-																<td className="py-2 px-2 text-right">{formatCurrencyRounded(foodAmount)}</td>
-																<td className="py-2 px-2 text-left text-xs text-gray-600">{p.note || ""}</td>
-																<td className="py-2 px-2 text-right font-semibold">
-																	{formatCurrencyRounded(totalAmount)}
-																</td>
-																<td className="py-2 px-2 text-center">
-																	<input
-																		type="checkbox"
-																		checked={p.is_paid || false}
-																		disabled={payingIds.has(p.id)}
-																		onChange={() => handleMarkPayment(p)}
-																		className="w-5 h-5"
-																	/>
-																	{p.paid_at && (
-																		<div className="text-xs text-gray-500 mt-1">
-																			{new Date(p.paid_at).toLocaleString('vi-VN')}
-																		</div>
-																	)}
-																</td>
-															</tr>
-														);
-													})}
-													{(!detailBill?.participants || detailBill.participants.length === 0) && (
-														<tr>
-															<td colSpan="7" className="text-center py-3 text-gray-500">
-																Chưa có người tham gia
-															</td>
-														</tr>
-													)}
-												</tbody>
-											</table>
-										</div>
-									</div>
-								</>
-							)}
-						</div>
-					</div>
-				</div>
-			)}
-
-			{showAddPlayer && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowAddPlayer(false)}>
-					<div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
-						<div className="p-6 space-y-4">
-							<h3 className="text-lg font-semibold">Thêm nhanh người chơi</h3>
-							<div>
-								<label className="block text-sm text-gray-600 mb-1">Tên</label>
-								<input
-									type="text"
-									value={newPlayer.name}
-									onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
-									className="w-full border rounded px-3 py-2"
-									placeholder="Tên người chơi"
-								/>
-							</div>
-							<div className="grid grid-cols-2 gap-3">
-								<div>
-									<label className="block text-sm text-gray-600 mb-1">Giới tính</label>
-									<select
-										value={newPlayer.gender}
-										onChange={(e) => setNewPlayer({ ...newPlayer, gender: e.target.value })}
-										className="w-full border rounded px-3 py-2">
-										<option value="male">Nam</option>
-										<option value="female">Nữ</option>
-									</select>
-								</div>
-								<div>
-									<label className="block text-sm text-gray-600 mb-1">Mức tính</label>
-									<input
-										type="number"
-										step="0.1"
-										min={0}
-										value={newPlayer.default_ratio}
-										onChange={(e) => setNewPlayer({ ...newPlayer, default_ratio: e.target.value })}
-										className="w-full border rounded px-3 py-2"
-									/>
-								</div>
-							</div>
-							<div className="flex justify-end space-x-2">
-								<button type="button" onClick={() => setShowAddPlayer(false)} className="px-4 py-2 bg-gray-200 rounded">
-									Hủy
-								</button>
-								<button type="button" onClick={handleCreatePlayer} className="px-4 py-2 bg-blue-600 text-white rounded">
-									Lưu
-								</button>
-							</div>
-						</div>
-					</div>
-				</div>
-			)}
-
-			<ConfirmDialog
-				isOpen={uncheckPaymentConfirm.isOpen}
-				onClose={handleUncheckPaymentCancel}
-				onConfirm={handleUncheckPaymentConfirm}
-				title="Xác nhận hủy thanh toán"
-				message={`Bạn có chắc chắn muốn hủy trạng thái "Đã thanh toán" cho ${uncheckPaymentConfirm.participantName}?`}
-			/>
-
-			<PayOldBillsDialog
-				isOpen={payOldBillsConfirm.isOpen}
-				onClose={handlePayOldBillsCancel}
-				onPayCurrentOnly={handlePayCurrentOnly}
-				onPayAll={handlePayOldBillsConfirm}
-				playerName={payOldBillsConfirm.participantName}
-				debtAmount={payOldBillsConfirm.debtAmount}
-			/>
-
-			{/* Hidden export component for image generation */}
-			{selectedAccountId && detailBill && (
-				<div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-					<div ref={exportRef}>
-						<PartyBillExport 
-							bill={detailBill} 
-							paymentAccounts={paymentAccounts.filter(acc => acc.id === selectedAccountId)} 
-							paymentAccountImages={paymentAccountImages} 
-						/>
-					</div>
-				</div>
-			)}
-
-			<SelectPaymentAccountDialog
-				isOpen={selectAccountDialog.isOpen}
-				onClose={handleSelectAccountCancel}
-				onConfirm={handleSelectAccountConfirm}
-				paymentAccounts={paymentAccounts}
-			/>
-		</div>
-	);
+  const [loading, setLoading] = useState(true);
+  const [bills, setBills] = useState([]);
+  const [filters, setFilters] = useState({
+    date_from: "",
+    date_to: "",
+    status: ["partial", "unpaid"],
+    limit: 10,
+    name: "",
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [deleteConfirm, setDeleteConfirm] = useState({
+    isOpen: false,
+    id: null,
+  });
+  const [markingPayment, setMarkingPayment] = useState(new Set());
+
+  useEffect(() => {
+    loadBills();
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const loadBills = async () => {
+    try {
+      setLoading(true);
+      const res = await partyBillsApi.getAll();
+      setBills(res.data || []);
+    } catch (error) {
+      console.error("Error loading party bills", error);
+      alert("Không tải được danh sách tiệc");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getBillStatus = (bill) => {
+    const participants = bill.participants || [];
+    const total = participants.length;
+    const paid = participants.filter((p) => p.is_paid).length;
+    if (total === 0) return "unknown";
+    if (paid === total) return "paid";
+    if (paid > 0) return "partial";
+    return "unpaid";
+  };
+
+  const getStatusMeta = (status) => {
+    if (status === "paid")
+      return {
+        text: "Đã thanh toán",
+        cls: "bg-emerald-100 text-emerald-800",
+        dot: "bg-emerald-500",
+      };
+    if (status === "partial")
+      return {
+        text: "Thanh toán 1 phần",
+        cls: "bg-amber-100 text-amber-800",
+        dot: "bg-amber-500",
+      };
+    return {
+      text: "Chưa thanh toán",
+      cls: "bg-slate-100 text-slate-700",
+      dot: "bg-slate-400",
+    };
+  };
+
+  const getUnpaidCount = (bill) =>
+    (bill.participants || []).filter((p) => !p.is_paid).length;
+
+  const isBillOverdue = (bill) => {
+    if (!bill.date) return false;
+    const billDate = new Date(bill.date);
+    billDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((today - billDate) / (1000 * 60 * 60 * 24));
+    const hasUnpaid = (bill.participants || []).some((p) => !p.is_paid);
+    return diffDays >= 7 && hasUnpaid;
+  };
+
+  const isParticipantOverdue = (participant) => {
+    if (!participant.unpaidDates || participant.unpaidDates.length === 0)
+      return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return participant.unpaidDates.some((d) => {
+      if (!d.date) return false;
+      const date = new Date(d.date);
+      date.setHours(0, 0, 0, 0);
+      const diffDays = Math.floor((today - date) / (1000 * 60 * 60 * 24));
+      return diffDays >= 7;
+    });
+  };
+
+  // Calculate unpaid participants list
+  const unpaidParticipants = useMemo(() => {
+    const map = new Map();
+
+    bills.forEach((bill) => {
+      if (!bill.participants) return;
+      bill.participants.forEach((p) => {
+        if (p.is_paid) return;
+        const userId = p.user_id;
+        if (!userId) return;
+        const name = p.name || "Unknown";
+        if (!map.has(userId)) {
+          map.set(userId, {
+            userId,
+            name,
+            totalAmount: 0,
+            unpaidDates: [],
+          });
+        }
+        const data = map.get(userId);
+        const shareAmount = p.share_amount || 0;
+        const foodAmount = p.food_amount || 0;
+        const paidAmount = p.paid_amount || 0;
+        const rounded = roundToNearestThousand(
+          shareAmount + foodAmount - paidAmount,
+        );
+        data.totalAmount += rounded;
+        if (bill.date && rounded > 0) {
+          data.unpaidDates.push({
+            date: bill.date,
+            amount: rounded,
+            billId: bill.id,
+          });
+        }
+      });
+    });
+
+    return Array.from(map.values())
+      .map((p) => {
+        const dateMap = new Map();
+        p.unpaidDates.forEach((d) => {
+          if (!dateMap.has(d.date))
+            dateMap.set(d.date, { date: d.date, amount: 0 });
+          dateMap.get(d.date).amount += d.amount;
+        });
+        return {
+          ...p,
+          unpaidDates: Array.from(dateMap.values()).sort(
+            (a, b) => new Date(b.date) - new Date(a.date),
+          ),
+        };
+      })
+      .filter((p) => p.totalAmount > 0)
+      .sort((a, b) => {
+        const aDate =
+          a.unpaidDates.length > 0
+            ? new Date(a.unpaidDates[0].date)
+            : new Date(0);
+        const bDate =
+          b.unpaidDates.length > 0
+            ? new Date(b.unpaidDates[0].date)
+            : new Date(0);
+        return bDate - aDate;
+      });
+  }, [bills]);
+
+  const filteredBills = useMemo(() => {
+    let data = [...bills];
+    if (filters.date_from) {
+      data = data.filter((b) => !b.date || b.date >= filters.date_from);
+    }
+    if (filters.date_to) {
+      data = data.filter((b) => !b.date || b.date <= filters.date_to);
+    }
+    if (
+      filters.status &&
+      Array.isArray(filters.status) &&
+      filters.status.length > 0
+    ) {
+      data = data.filter((b) => filters.status.includes(getBillStatus(b)));
+    }
+    if (filters.name && filters.name.trim() !== "") {
+      const q = normalize(filters.name.trim());
+      data = data.filter((b) => normalize(b.name || "").includes(q));
+    }
+    data.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+    return data;
+  }, [bills, filters]);
+
+  const totalBillsCount = filteredBills.length;
+  const totalPages = Math.max(1, Math.ceil(totalBillsCount / filters.limit));
+  const paginatedBills = useMemo(() => {
+    const start = (currentPage - 1) * filters.limit;
+    return filteredBills.slice(start, start + filters.limit);
+  }, [filteredBills, currentPage, filters.limit]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
+
+  const handleDelete = async (id) => {
+    try {
+      await partyBillsApi.delete(id);
+      setBills((prev) => prev.filter((b) => b.id !== id));
+    } catch (error) {
+      console.error("Delete party bill error", error);
+      alert("Không thể xóa tiệc");
+    }
+  };
+
+  const handleMarkParticipantPayment = async (userId) => {
+    try {
+      setMarkingPayment((prev) => new Set(prev).add(userId));
+      const unpaidBills = bills.filter((bill) => {
+        const p = bill.participants?.find((x) => x.user_id === userId);
+        return p && !p.is_paid;
+      });
+      await Promise.all(
+        unpaidBills.map(async (bill) => {
+          const p = bill.participants?.find((x) => x.user_id === userId);
+          if (p) {
+            await partyBillsApi.markPayment(bill.id, p.id, { is_paid: true });
+          }
+        }),
+      );
+
+      setBills((prev) =>
+        prev.map((bill) => {
+          const idx = bill.participants?.findIndex((p) => p.user_id === userId);
+          if (idx !== undefined && idx !== -1) {
+            const next = { ...bill };
+            next.participants = [...(bill.participants || [])];
+            next.participants[idx] = {
+              ...next.participants[idx],
+              is_paid: true,
+            };
+            return next;
+          }
+          return bill;
+        }),
+      );
+    } catch (error) {
+      console.error("Mark participant payment error", error);
+      alert("Có lỗi khi đánh dấu thanh toán");
+    } finally {
+      setMarkingPayment((prev) => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
+    }
+  };
+
+  return (
+    <div className="px-2 sm:px-0 pb-24 md:pb-0">
+      {/* Header */}
+      <header className="mb-5 sm:mb-8">
+        <div className="flex items-center justify-between gap-3 sm:items-end sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="hidden text-xs font-medium uppercase tracking-[0.18em] text-emerald-700/80 sm:block">
+              Quản lý chia tiệc
+            </p>
+            <h1 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:mt-1 sm:text-4xl">
+              Danh sách Bills tiệc
+            </h1>
+            <p className="mt-0.5 text-xs text-slate-500 sm:mt-1.5 sm:text-sm">
+              {loading ? (
+                <span className="skeleton inline-block h-3.5 w-24 align-middle" />
+              ) : (
+                <>
+                  <span className="font-tabular font-semibold text-slate-700">
+                    {totalBillsCount}
+                  </span>{" "}
+                  bill hiển thị
+                  {filters.date_from || filters.date_to ? " theo bộ lọc" : ""}
+                </>
+              )}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <Link
+              to="/party-bills/create"
+              className="hidden h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover sm:inline-flex"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              Tạo Bill tiệc
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Filters */}
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-card">
+        <div className="flex flex-col gap-5 p-4 sm:p-5">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1fr_auto_auto] lg:items-end lg:gap-4">
+            <div>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Từ ngày
+              </label>
+              <input
+                type="date"
+                value={filters.date_from}
+                onChange={(e) =>
+                  setFilters({ ...filters, date_from: e.target.value })
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Đến ngày
+              </label>
+              <input
+                type="date"
+                value={filters.date_to}
+                onChange={(e) =>
+                  setFilters({ ...filters, date_to: e.target.value })
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+              />
+            </div>
+            <div className="col-span-2 lg:col-span-1">
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Tên tiệc
+              </label>
+              <input
+                type="text"
+                value={filters.name}
+                onChange={(e) =>
+                  setFilters({ ...filters, name: e.target.value })
+                }
+                placeholder="Tìm theo tên/nội dung tiệc..."
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Số bill / trang
+              </label>
+              <select
+                value={filters.limit}
+                onChange={(e) =>
+                  setFilters({ ...filters, limit: parseInt(e.target.value) })
+                }
+                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm font-medium text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-28"
+              >
+                {[10, 20, 30, 50].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2 flex items-end lg:col-span-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters({
+                    date_from: "",
+                    date_to: "",
+                    status: [],
+                    limit: 10,
+                    name: "",
+                  })
+                }
+                className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 sm:px-4 lg:w-auto"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                </svg>
+                <span className="sm:hidden">Xóa lọc</span>
+                <span className="hidden sm:inline">Xóa bộ lọc</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Status chips */}
+          <div>
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              Trạng thái
+            </label>
+            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
+              {[
+                {
+                  value: "paid",
+                  short: "Đã TT",
+                  label: "Đã thanh toán",
+                  activeCls:
+                    "border-emerald-300 bg-emerald-50 text-emerald-800",
+                  dotCls: "bg-emerald-500",
+                },
+                {
+                  value: "partial",
+                  short: "1 phần",
+                  label: "Thanh toán 1 phần",
+                  activeCls: "border-amber-300 bg-amber-50 text-amber-800",
+                  dotCls: "bg-amber-500",
+                },
+                {
+                  value: "unpaid",
+                  short: "Chưa TT",
+                  label: "Chưa thanh toán",
+                  activeCls: "border-slate-300 bg-slate-100 text-slate-800",
+                  dotCls: "bg-slate-400",
+                },
+              ].map((opt) => {
+                const isActive =
+                  Array.isArray(filters.status) &&
+                  filters.status.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => {
+                      const next = isActive
+                        ? filters.status.filter((s) => s !== opt.value)
+                        : [...filters.status, opt.value];
+                      setFilters({ ...filters, status: next });
+                    }}
+                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:h-11 sm:gap-2 sm:px-4 sm:text-sm ${
+                      isActive
+                        ? opt.activeCls
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${opt.dotCls}`}
+                      aria-hidden
+                    />
+                    <span className="sm:hidden">{opt.short}</span>
+                    <span className="hidden sm:inline">{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main content: bills list (3/4) + unpaid sidebar (1/4) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-4">
+        {/* Bills column */}
+        <div className="lg:col-span-3">
+          {loading ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-card">
+              <div className="hidden md:block">
+                <div className="grid grid-cols-6 gap-3 border-b border-slate-100 px-4 py-3">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="skeleton h-3 w-20" />
+                  ))}
+                </div>
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-6 items-center gap-3 border-b border-slate-50 px-4 py-4 last:border-0"
+                  >
+                    {[...Array(6)].map((_, j) => (
+                      <div
+                        key={j}
+                        className="skeleton h-4"
+                        style={{ width: `${50 + ((i * j) % 4) * 12}%` }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="md:hidden space-y-3 p-3">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-slate-100 p-4"
+                  >
+                    <div className="skeleton h-3 w-20 mb-3" />
+                    <div className="skeleton h-6 w-32 mb-2" />
+                    <div className="skeleton h-4 w-24 mb-4" />
+                    <div className="skeleton h-11 w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : paginatedBills.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-card">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M9 11l3 3L22 4" />
+                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+                </svg>
+              </div>
+              <h3 className="font-display text-xl font-semibold text-slate-900">
+                Chưa có bill tiệc nào
+              </h3>
+              <p className="mt-1.5 text-sm text-slate-500">
+                Thử xóa bộ lọc hoặc tạo bill tiệc mới để bắt đầu.
+              </p>
+              <Link
+                to="/party-bills/create"
+                className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Tạo bill đầu tiên
+              </Link>
+            </div>
+          ) : (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Ngày
+                      </th>
+                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Tên/Nội dung
+                      </th>
+                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Tổng tiền
+                      </th>
+                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Trạng thái
+                      </th>
+                      <th className="px-5 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Chưa TT
+                      </th>
+                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                        Thao tác
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 bg-white">
+                    {paginatedBills.map((bill) => {
+                      const status = getBillStatus(bill);
+                      const meta = getStatusMeta(status);
+                      const totalFood = (bill.participants || []).reduce(
+                        (sum, p) => sum + (Number(p.food_amount) || 0),
+                        0,
+                      );
+                      const totalWithFood =
+                        (bill.total_amount || 0) + totalFood;
+                      const unpaidCount = getUnpaidCount(bill);
+                      const overdue = isBillOverdue(bill);
+                      return (
+                        <tr
+                          key={bill.id}
+                          className={`transition ${
+                            overdue
+                              ? "bg-rose-50/60 hover:bg-rose-100/60"
+                              : status === "paid"
+                                ? "bg-emerald-50/30 hover:bg-emerald-50/50"
+                                : "hover:bg-slate-50"
+                          }`}
+                        >
+                          <td className="px-5 py-4 text-sm text-slate-700">
+                            {bill.date ? bill.date.slice(0, 10) : "-"}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="font-medium text-slate-900">
+                              {bill.name || "-"}
+                            </div>
+                            {bill.note && (
+                              <div className="mt-0.5 text-xs text-slate-500 line-clamp-1">
+                                {bill.note}
+                              </div>
+                            )}
+                          </td>
+                          <td className="font-tabular px-5 py-4 text-right text-sm font-semibold text-slate-900">
+                            {formatCurrencyRounded(totalWithFood)}
+                          </td>
+                          <td className="px-5 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.cls}`}
+                            >
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}
+                              />
+                              {meta.text}
+                            </span>
+                          </td>
+                          <td className="font-tabular px-5 py-4 text-center text-sm text-slate-700">
+                            {unpaidCount}
+                          </td>
+                          <td className="px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <Link
+                                to={`/party-bills/${bill.id}`}
+                                className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+                              >
+                                Chi tiết
+                              </Link>
+                              {status !== "paid" && (
+                                <Link
+                                  to={`/party-bills/${bill.id}/edit`}
+                                  className="text-sm font-medium text-amber-700 hover:text-amber-900"
+                                >
+                                  Sửa
+                                </Link>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setDeleteConfirm({
+                                    isOpen: true,
+                                    id: bill.id,
+                                  })
+                                }
+                                className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                              >
+                                Xóa
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-3 p-3">
+                {paginatedBills.map((bill) => {
+                  const status = getBillStatus(bill);
+                  const meta = getStatusMeta(status);
+                  const totalFood = (bill.participants || []).reduce(
+                    (sum, p) => sum + (Number(p.food_amount) || 0),
+                    0,
+                  );
+                  const totalWithFood = (bill.total_amount || 0) + totalFood;
+                  const unpaidCount = getUnpaidCount(bill);
+                  const overdue = isBillOverdue(bill);
+                  return (
+                    <article
+                      key={bill.id}
+                      className={`overflow-hidden rounded-2xl border transition ${
+                        overdue
+                          ? "border-rose-300 ring-1 ring-rose-100"
+                          : status === "paid"
+                            ? "border-emerald-300 ring-1 ring-emerald-50"
+                            : "border-slate-200"
+                      }`}
+                    >
+                      <div
+                        className={`p-4 ${
+                          overdue
+                            ? "bg-rose-50/70"
+                            : status === "paid"
+                              ? "bg-emerald-50/50"
+                              : "bg-white"
+                        }`}
+                      >
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                              {formatDate(bill.date)}
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <h3 className="truncate font-display text-base font-semibold text-slate-900">
+                                {bill.name || "—"}
+                              </h3>
+                              {overdue && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500" />
+                                  Quá hạn
+                                </span>
+                              )}
+                            </div>
+                            {bill.note && (
+                              <div className="mt-1 text-xs text-slate-500 line-clamp-1">
+                                {bill.note}
+                              </div>
+                            )}
+                          </div>
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.cls}`}
+                          >
+                            <span
+                              className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}
+                            />
+                            {meta.text}
+                          </span>
+                        </div>
+
+                        <div className="font-display font-tabular text-2xl font-semibold leading-tight text-slate-900">
+                          {formatCurrencyRounded(totalWithFood)}
+                        </div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          {unpaidCount > 0 ? (
+                            <>
+                              <span className="font-semibold text-slate-700">
+                                {unpaidCount}
+                              </span>{" "}
+                              người chưa thanh toán
+                            </>
+                          ) : (
+                            <span className="font-medium text-emerald-700">
+                              Tất cả đã thanh toán
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-4 flex gap-2 border-t border-slate-200/70 pt-3">
+                          <Link
+                            to={`/party-bills/${bill.id}`}
+                            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-card transition active:scale-[0.98] hover:bg-emerald-700"
+                          >
+                            Chi tiết
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                            >
+                              <path d="M5 12h14M13 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                          {status !== "paid" && (
+                            <Link
+                              to={`/party-bills/${bill.id}/edit`}
+                              aria-label={`Sửa bill #${bill.id}`}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-amber-700 transition active:scale-[0.96] hover:border-amber-200 hover:bg-amber-50"
+                            >
+                              <svg
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                aria-hidden
+                              >
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                            </Link>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setDeleteConfirm({ isOpen: true, id: bill.id })
+                            }
+                            aria-label={`Xóa bill #${bill.id}`}
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition active:scale-[0.96] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                          >
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden
+                            >
+                              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-4 sm:px-6">
+                  <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
+                    <div className="text-sm text-slate-600">
+                      Trang{" "}
+                      <span className="font-tabular font-semibold text-slate-900">
+                        {currentPage}
+                      </span>
+                      {" / "}
+                      <span className="font-tabular font-semibold text-slate-900">
+                        {totalPages}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) => Math.max(1, prev - 1))
+                        }
+                        disabled={currentPage === 1}
+                        aria-label="Trang trước"
+                        className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                        <span className="hidden sm:inline">Trước</span>
+                      </button>
+                      <div className="flex items-center gap-1">
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1,
+                        ).map((page) => {
+                          if (
+                            page === 1 ||
+                            page === totalPages ||
+                            (page >= currentPage - 1 && page <= currentPage + 1)
+                          ) {
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                aria-current={
+                                  currentPage === page ? "page" : undefined
+                                }
+                                className={`inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-medium font-tabular transition ${
+                                  currentPage === page
+                                    ? "border-emerald-600 bg-emerald-600 text-white shadow-card"
+                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          } else if (
+                            page === currentPage - 2 ||
+                            page === currentPage + 2
+                          ) {
+                            return (
+                              <span
+                                key={page}
+                                className="px-1 text-slate-400"
+                                aria-hidden
+                              >
+                                …
+                              </span>
+                            );
+                          }
+                          return null;
+                        })}
+                      </div>
+                      <button
+                        onClick={() =>
+                          setCurrentPage((prev) =>
+                            Math.min(totalPages, prev + 1),
+                          )
+                        }
+                        disabled={currentPage === totalPages}
+                        aria-label="Trang sau"
+                        className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                      >
+                        <span className="hidden sm:inline">Sau</span>
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Unpaid sidebar */}
+        <div className="lg:col-span-1">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card lg:sticky lg:top-20">
+            <div className="border-b border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-5 sm:py-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Chưa thanh toán
+              </p>
+              <h3 className="font-display mt-0.5 text-lg font-semibold text-slate-900">
+                {unpaidParticipants.length} người
+              </h3>
+              <div className="mt-1 font-tabular text-sm font-semibold text-rose-600">
+                Tổng:{" "}
+                {formatCurrencyRounded(
+                  unpaidParticipants.reduce((sum, p) => sum + p.totalAmount, 0),
+                )}
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100 max-h-[calc(100vh-300px)] overflow-y-auto">
+              {loading ? (
+                <div className="px-4 sm:px-5 py-8 text-center text-sm text-slate-500">
+                  Đang tải...
+                </div>
+              ) : unpaidParticipants.length === 0 ? (
+                <div className="px-4 sm:px-5 py-8 text-center text-sm text-slate-500">
+                  Tất cả đã thanh toán 🎉
+                </div>
+              ) : (
+                unpaidParticipants.map((p) => {
+                  const isMarking = markingPayment.has(p.userId);
+                  const overdue = isParticipantOverdue(p);
+                  return (
+                    <div
+                      key={p.userId}
+                      className={`relative px-4 sm:px-5 py-3 ${
+                        overdue ? "bg-rose-50/70" : "hover:bg-slate-50/60"
+                      }`}
+                    >
+                      <div className="mb-2 pr-12">
+                        <div className="text-sm font-semibold text-slate-900">
+                          {p.name}:{" "}
+                          <span className="font-tabular text-rose-600">
+                            {formatCurrencyRounded(p.totalAmount)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="pr-12 text-xs text-slate-600">
+                        <div className="mb-1 font-medium text-slate-700">
+                          DS ngày thiếu:
+                        </div>
+                        <div className="space-y-0.5 pl-2">
+                          {p.unpaidDates.map((d, idx) => (
+                            <div key={idx}>
+                              {formatDateForUnpaid(d.date)} :{" "}
+                              <span className="font-tabular">
+                                {formatCurrencyRounded(d.amount)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="absolute right-4 top-3">
+                        <input
+                          type="checkbox"
+                          checked={false}
+                          onChange={() =>
+                            handleMarkParticipantPayment(p.userId)
+                          }
+                          disabled={isMarking}
+                          className="h-6 w-6 cursor-pointer accent-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          title="Đánh dấu thanh toán tất cả bills"
+                        />
+                      </div>
+                      {isMarking && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/75 text-xs text-slate-600">
+                          Đang xử lý...
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        onClose={() => setDeleteConfirm({ isOpen: false, id: null })}
+        onConfirm={async () => {
+          await handleDelete(deleteConfirm.id);
+          setDeleteConfirm({ isOpen: false, id: null });
+        }}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa bill tiệc này?"
+      />
+
+      {/* Mobile FAB */}
+      <Link
+        to="/party-bills/create"
+        aria-label="Tạo Bill tiệc mới"
+        className="fab-enter fixed bottom-5 right-5 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-700 md:hidden"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </Link>
+    </div>
+  );
 }
