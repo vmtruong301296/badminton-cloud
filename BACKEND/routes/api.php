@@ -95,6 +95,7 @@ Route::middleware('auth')->group(function () {
     // Party Bills (Chia tiền tiệc)
     Route::apiResource('party-bills', PartyBillController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('party-bills/{id}/participants/{participantId}/pay', [PartyBillController::class, 'markPayment']);
+    Route::post('party-bills/{id}/send-telegram', [PartyBillController::class, 'sendTelegram']);
 
     // Roles (Quyền)
     Route::apiResource('roles', RoleController::class);

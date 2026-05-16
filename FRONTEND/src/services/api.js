@@ -101,6 +101,14 @@ export const partyBillsApi = {
   delete: (id) => api.delete(`/party-bills/${id}`),
   markPayment: (billId, participantId, data) =>
     api.post(`/party-bills/${billId}/participants/${participantId}/pay`, data),
+  sendTelegram: (billId, fileBlob, caption) => {
+    const formData = new FormData();
+    formData.append("file", fileBlob, `party_bill_${billId}.png`);
+    if (caption) formData.append("caption", caption);
+    return api.post(`/party-bills/${billId}/send-telegram`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+  },
 };
 
 // Roles
