@@ -639,7 +639,7 @@ export default function PartyBillDetail() {
             type="button"
             onClick={handleExportBill}
             disabled={exporting}
-            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
+            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
           >
             {exporting ? (
               <>
@@ -682,7 +682,7 @@ export default function PartyBillDetail() {
             type="button"
             onClick={handleSendTelegramClick}
             disabled={sendingTelegram || exporting}
-            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
+            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
           >
             {sendingTelegram ? (
               <>
@@ -725,7 +725,7 @@ export default function PartyBillDetail() {
             <button
               type="button"
               onClick={() => navigate(`/party-bills/${id}/edit`)}
-              className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800 hover:shadow-card-hover sm:h-11 sm:flex-none sm:px-4"
+              className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:h-11 sm:flex-none sm:px-4"
             >
               <svg
                 width="16"
@@ -748,7 +748,7 @@ export default function PartyBillDetail() {
             type="button"
             onClick={() => setDeleteConfirm(true)}
             aria-label="Xóa bill"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 sm:h-11 sm:w-11"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 sm:h-11 sm:w-11"
           >
             <svg
               width="18"

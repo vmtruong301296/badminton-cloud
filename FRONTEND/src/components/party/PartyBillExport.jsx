@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { formatCurrencyRounded, formatDate, formatRatio } from "../../utils/formatters";
+import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio } from "../../utils/formatters";
 
 export default function PartyBillExport({ bill, paymentAccounts = [], paymentAccountImages = {} }) {
 	// Get active payment accounts (memoized to avoid re-renders)
@@ -15,7 +15,7 @@ export default function PartyBillExport({ bill, paymentAccounts = [], paymentAcc
 				{/* Cột trái: Nội dung phiếu thu tiệc */}
 				<div className="col-span-2">
 					<div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
-						<h1 className="text-3xl font-bold mb-2">Bill Tiệc: {formatDate(bill.date)}</h1>
+						<h1 className="text-3xl font-bold mb-2">Bill Ngày: {formatDate(bill.date)}</h1>
 					</div>
 
 					{/* Bill Info */}
@@ -44,7 +44,7 @@ export default function PartyBillExport({ bill, paymentAccounts = [], paymentAcc
 						</div>
 						<div className="col-span-1 text-right">
 							<div className="text-sm text-gray-600 mb-1">Số tiền/người</div>
-							<div className="text-lg font-semibold">{formatCurrencyRounded(bill.unit_price || 0)}</div>
+							<div className="text-lg font-semibold text-green-600">{formatCurrencyRounded(bill.unit_price || 0)}</div>
 						</div>
 					</div>
 
@@ -100,10 +100,12 @@ export default function PartyBillExport({ bill, paymentAccounts = [], paymentAcc
 														<div>
 															<div className="font-semibold mb-1">{formatCurrencyRounded(participant.debt_amount || 0)}</div>
 															{participant.debt_details && participant.debt_details.length > 0 && (
-																<div className="text-xs text-gray-600 space-y-1">
+																<div className="text-xs text-gray-600 space-y-2">
 																	{participant.debt_details.map((debt, idx) => (
-																		<div key={idx} className="text-right">
-																			{debt.date}: {formatCurrencyRounded(debt.amount)}
+																		<div key={idx} className="text-right border border-gray-300 rounded p-1.5 bg-gray-50">
+																			<div className="font-medium">
+																				{formatDateDisplay(debt.date)}: {formatCurrencyRounded(debt.amount)}
+																			</div>
 																		</div>
 																	))}
 																</div>
@@ -150,15 +152,6 @@ export default function PartyBillExport({ bill, paymentAccounts = [], paymentAcc
 
 									return (
 										<div key={account.id} className="text-center p-4 bg-gray-50 rounded-lg border">
-											{account.bank_name && (
-												<div className="font-semibold mb-2">{account.bank_name}</div>
-											)}
-											{account.account_number && (
-												<div className="text-sm mb-2">STK: {account.account_number}</div>
-											)}
-											{account.account_name && (
-												<div className="text-sm mb-2">Chủ TK: {account.account_name}</div>
-											)}
 											{account.qr_code_image && imageSrc && (
 												<div className="mt-3 w-full">
 													<img
