@@ -1672,15 +1672,33 @@ export default function BillDetail() {
         debtAmount={payOldBillsConfirm.debtAmount}
       />
 
-      {/* Hidden export component for image generation */}
-      {selectedAccountId && (
-        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+      {/* Hidden export component — always rendered when bill is loaded
+          so layout/styles are committed long before the user clicks Export.
+          Use translateX(-200%) (not left: -9999px or opacity: 0) so the
+          browser still fully paints the element with its real colors —
+          html2canvas reads computed styles + paints from this rendered
+          state, so the output PNG keeps full CSS regardless of timing. */}
+      {bill && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+            transform: "translateX(-200%)",
+          }}
+        >
           <div ref={exportRef}>
             <BillExport
               bill={bill}
-              paymentAccounts={paymentAccounts.filter(
-                (acc) => acc.id === selectedAccountId,
-              )}
+              paymentAccounts={
+                selectedAccountId
+                  ? paymentAccounts.filter(
+                      (acc) => acc.id === selectedAccountId,
+                    )
+                  : []
+              }
               paymentAccountImages={paymentAccountImages}
             />
           </div>

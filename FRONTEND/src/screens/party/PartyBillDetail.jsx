@@ -1180,14 +1180,29 @@ export default function PartyBillDetail() {
         paymentAccounts={paymentAccounts}
       />
 
-      {selectedAccountId && bill && (
-        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+      {/* Always rendered when bill is loaded, translated off-screen.
+          Avoids the conditional-mount race that left exports unstyled. */}
+      {bill && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+            transform: "translateX(-200%)",
+          }}
+        >
           <div ref={exportRef}>
             <PartyBillExport
               bill={bill}
-              paymentAccounts={paymentAccounts.filter(
-                (acc) => acc.id === selectedAccountId,
-              )}
+              paymentAccounts={
+                selectedAccountId
+                  ? paymentAccounts.filter(
+                      (acc) => acc.id === selectedAccountId,
+                    )
+                  : []
+              }
               paymentAccountImages={paymentAccountImages}
             />
           </div>
