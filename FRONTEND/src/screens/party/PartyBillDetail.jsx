@@ -12,6 +12,21 @@ import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAcc
 import PartyBillExport from "../../components/party/PartyBillExport";
 import html2canvas from "html2canvas-pro";
 
+/**
+ * Reset the off-screen wrapper to natural flow inside the html2canvas
+ * cloned document so the captured subtree has a valid bounding box.
+ * See BillDetail.jsx for the full explanation.
+ */
+const resetExportWrapperPosition = (clonedDoc) => {
+  const wrappers = clonedDoc.querySelectorAll("[data-bill-export-wrapper]");
+  wrappers.forEach((w) => {
+    w.style.position = "static";
+    w.style.left = "0";
+    w.style.top = "0";
+    w.style.transform = "none";
+  });
+};
+
 const loadImageAsBase64 = async (url) => {
   try {
     let apiUrl = url;
@@ -390,6 +405,7 @@ export default function PartyBillDetail() {
         logging: false,
         useCORS: true,
         allowTaint: true,
+        onclone: resetExportWrapperPosition,
       });
       const link = document.createElement("a");
       link.download = `Bill_Tiec_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
@@ -480,6 +496,7 @@ export default function PartyBillDetail() {
         logging: false,
         useCORS: true,
         allowTaint: true,
+        onclone: resetExportWrapperPosition,
       });
 
       const blob = await new Promise((resolve) =>
@@ -1187,6 +1204,7 @@ export default function PartyBillDetail() {
       {bill && (
         <div
           aria-hidden
+          data-bill-export-wrapper
           style={{
             position: "fixed",
             top: 0,

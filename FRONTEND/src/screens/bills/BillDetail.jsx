@@ -15,6 +15,25 @@ import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
 import html2canvas from "html2canvas-pro";
 
+/**
+ * html2canvas-pro onclone callback. The export DOM is hidden in the live
+ * page via position:fixed + left:-9999px so the user doesn't see it.
+ * When html2canvas clones the document, that off-screen positioning is
+ * carried into the clone and the cloned subtree gets a bounding box
+ * outside the iframe's render area — which is why captures came out
+ * empty/unstyled. Reset the wrapper to natural flow in the clone only
+ * (the visible page is untouched).
+ */
+const resetExportWrapperPosition = (clonedDoc) => {
+  const wrappers = clonedDoc.querySelectorAll("[data-bill-export-wrapper]");
+  wrappers.forEach((w) => {
+    w.style.position = "static";
+    w.style.left = "0";
+    w.style.top = "0";
+    w.style.transform = "none";
+  });
+};
+
 export default function BillDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -540,6 +559,7 @@ export default function BillDetail() {
         logging: false,
         useCORS: true,
         allowTaint: true, // Allow taint since we're using base64
+        onclone: resetExportWrapperPosition,
       });
 
       // Convert canvas to image and download
@@ -636,6 +656,7 @@ export default function BillDetail() {
         logging: false,
         useCORS: true,
         allowTaint: true,
+        onclone: resetExportWrapperPosition,
       });
 
       const blob = await new Promise((resolve) =>
@@ -1681,6 +1702,7 @@ export default function BillDetail() {
       {bill && (
         <div
           aria-hidden
+          data-bill-export-wrapper
           style={{
             position: "fixed",
             top: 0,
