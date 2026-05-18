@@ -522,8 +522,17 @@ export default function BillDetail() {
 
       await Promise.all(imageReadyPromises);
 
-      // Additional delay to ensure everything is rendered
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Wait for fonts (Fraunces / DM Sans from Google Fonts) to be ready —
+      // otherwise html2canvas may capture before fonts load and produce an
+      // unstyled PNG. Then wait for two animation frames to let the browser
+      // commit layout from the conditional render, plus a small buffer.
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: "#ffffff",
@@ -612,7 +621,14 @@ export default function BillDetail() {
         });
       });
       await Promise.all(imageReadyPromises);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: "#ffffff",

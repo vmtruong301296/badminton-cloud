@@ -375,7 +375,14 @@ export default function PartyBillDetail() {
         });
       });
       await Promise.all(imageReadyPromises);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: "#ffffff",
@@ -458,7 +465,14 @@ export default function PartyBillDetail() {
         });
       });
       await Promise.all(imageReadyPromises);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(resolve)),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(exportRef.current, {
         backgroundColor: "#ffffff",
