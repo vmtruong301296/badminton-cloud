@@ -1672,21 +1672,20 @@ export default function BillDetail() {
         debtAmount={payOldBillsConfirm.debtAmount}
       />
 
-      {/* Hidden export component — always rendered when bill is loaded
-          so layout/styles are committed long before the user clicks Export.
-          Use translateX(-200%) (not left: -9999px or opacity: 0) so the
-          browser still fully paints the element with its real colors —
-          html2canvas reads computed styles + paints from this rendered
-          state, so the output PNG keeps full CSS regardless of timing. */}
+      {/* Hidden export component — always rendered when bill is loaded so
+          layout/styles are committed long before the user clicks Export.
+          IMPORTANT: do NOT use transform on the wrapper, or html2canvas-pro
+          will pick up the transformed bounding box of the cloned subtree
+          and render an empty area. Position off-screen with left:-9999px
+          (no transform) so the cloned subtree keeps natural coordinates. */}
       {bill && (
         <div
           aria-hidden
           style={{
             position: "fixed",
             top: 0,
-            left: 0,
+            left: "-9999px",
             pointerEvents: "none",
-            transform: "translateX(-200%)",
           }}
         >
           <div ref={exportRef}>

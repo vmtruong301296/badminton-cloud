@@ -1180,17 +1180,18 @@ export default function PartyBillDetail() {
         paymentAccounts={paymentAccounts}
       />
 
-      {/* Always rendered when bill is loaded, translated off-screen.
-          Avoids the conditional-mount race that left exports unstyled. */}
+      {/* Always rendered when bill is loaded, positioned off-screen.
+          No transform on the wrapper — html2canvas-pro clones the parent
+          chain and would render an empty area if the parent has a
+          translate that pushes the bounding box outside the viewport. */}
       {bill && (
         <div
           aria-hidden
           style={{
             position: "fixed",
             top: 0,
-            left: 0,
+            left: "-9999px",
             pointerEvents: "none",
-            transform: "translateX(-200%)",
           }}
         >
           <div ref={exportRef}>
