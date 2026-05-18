@@ -13,26 +13,7 @@ import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
-import html2canvas from "html2canvas-pro";
-
-/**
- * html2canvas-pro onclone callback. The export DOM is hidden in the live
- * page via position:fixed + left:-9999px so the user doesn't see it.
- * When html2canvas clones the document, that off-screen positioning is
- * carried into the clone and the cloned subtree gets a bounding box
- * outside the iframe's render area — which is why captures came out
- * empty/unstyled. Reset the wrapper to natural flow in the clone only
- * (the visible page is untouched).
- */
-const resetExportWrapperPosition = (clonedDoc) => {
-  const wrappers = clonedDoc.querySelectorAll("[data-bill-export-wrapper]");
-  wrappers.forEach((w) => {
-    w.style.position = "static";
-    w.style.left = "0";
-    w.style.top = "0";
-    w.style.transform = "none";
-  });
-};
+import { toPng, toBlob } from "html-to-image";
 
 export default function BillDetail() {
   const { id } = useParams();
@@ -541,31 +522,26 @@ export default function BillDetail() {
 
       await Promise.all(imageReadyPromises);
 
-      // Wait for fonts (Fraunces / DM Sans from Google Fonts) to be ready —
-      // otherwise html2canvas may capture before fonts load and produce an
-      // unstyled PNG. Then wait for two animation frames to let the browser
-      // commit layout from the conditional render, plus a small buffer.
+      // Wait for fonts + paint before capture. html-to-image uses SVG
+      // foreignObject so styles/fonts are serialized into the snapshot
+      // atomically — no iframe-clone race condition like html2canvas.
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
       }
       await new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       );
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(exportRef.current, {
+      const dataUrl = await toPng(exportRef.current, {
         backgroundColor: "#ffffff",
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true, // Allow taint since we're using base64
-        onclone: resetExportWrapperPosition,
+        pixelRatio: 2,
+        cacheBust: true,
       });
 
-      // Convert canvas to image and download
       const link = document.createElement("a");
       link.download = `Bill_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
 
       setExporting(false);
@@ -648,20 +624,13 @@ export default function BillDetail() {
       await new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       );
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(exportRef.current, {
+      const blob = await toBlob(exportRef.current, {
         backgroundColor: "#ffffff",
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        onclone: resetExportWrapperPosition,
+        pixelRatio: 2,
+        cacheBust: true,
       });
-
-      const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/png"),
-      );
       if (!blob) throw new Error("Không tạo được file PNG");
 
       await billsApi.sendTelegram(bill.id, blob);
@@ -1694,15 +1663,12 @@ export default function BillDetail() {
       />
 
       {/* Hidden export component — always rendered when bill is loaded so
-          layout/styles are committed long before the user clicks Export.
-          IMPORTANT: do NOT use transform on the wrapper, or html2canvas-pro
-          will pick up the transformed bounding box of the cloned subtree
-          and render an empty area. Position off-screen with left:-9999px
-          (no transform) so the cloned subtree keeps natural coordinates. */}
+          layout/styles are committed before the user clicks Export. html-to-image
+          snapshots the target node directly via SVG foreignObject, so wrapper
+          position does not affect capture. */}
       {bill && (
         <div
           aria-hidden
-          data-bill-export-wrapper
           style={{
             position: "fixed",
             top: 0,

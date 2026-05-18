@@ -10,22 +10,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import PartyBillExport from "../../components/party/PartyBillExport";
-import html2canvas from "html2canvas-pro";
-
-/**
- * Reset the off-screen wrapper to natural flow inside the html2canvas
- * cloned document so the captured subtree has a valid bounding box.
- * See BillDetail.jsx for the full explanation.
- */
-const resetExportWrapperPosition = (clonedDoc) => {
-  const wrappers = clonedDoc.querySelectorAll("[data-bill-export-wrapper]");
-  wrappers.forEach((w) => {
-    w.style.position = "static";
-    w.style.left = "0";
-    w.style.top = "0";
-    w.style.transform = "none";
-  });
-};
+import { toPng, toBlob } from "html-to-image";
 
 const loadImageAsBase64 = async (url) => {
   try {
@@ -397,19 +382,16 @@ export default function PartyBillDetail() {
       await new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       );
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(exportRef.current, {
+      const dataUrl = await toPng(exportRef.current, {
         backgroundColor: "#ffffff",
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        onclone: resetExportWrapperPosition,
+        pixelRatio: 2,
+        cacheBust: true,
       });
       const link = document.createElement("a");
       link.download = `Bill_Tiec_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = dataUrl;
       link.click();
     } catch (error) {
       console.error("Error exporting bill", error);
@@ -488,20 +470,13 @@ export default function PartyBillDetail() {
       await new Promise((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(resolve)),
       );
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const canvas = await html2canvas(exportRef.current, {
+      const blob = await toBlob(exportRef.current, {
         backgroundColor: "#ffffff",
-        scale: 2,
-        logging: false,
-        useCORS: true,
-        allowTaint: true,
-        onclone: resetExportWrapperPosition,
+        pixelRatio: 2,
+        cacheBust: true,
       });
-
-      const blob = await new Promise((resolve) =>
-        canvas.toBlob(resolve, "image/png"),
-      );
       if (!blob) throw new Error("Không tạo được file PNG");
 
       await partyBillsApi.sendTelegram(bill.id, blob);
@@ -1198,13 +1173,11 @@ export default function PartyBillDetail() {
       />
 
       {/* Always rendered when bill is loaded, positioned off-screen.
-          No transform on the wrapper — html2canvas-pro clones the parent
-          chain and would render an empty area if the parent has a
-          translate that pushes the bounding box outside the viewport. */}
+          html-to-image snapshots the target node directly via SVG
+          foreignObject, so wrapper position does not affect capture. */}
       {bill && (
         <div
           aria-hidden
-          data-bill-export-wrapper
           style={{
             position: "fixed",
             top: 0,
