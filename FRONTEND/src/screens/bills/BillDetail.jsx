@@ -14,6 +14,7 @@ import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAcc
 import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
 import { toPng, toBlob } from "html-to-image";
+import { waitForImagesReady } from "../../utils/exportImage";
 
 export default function BillDetail() {
   const { id } = useParams();
@@ -475,52 +476,10 @@ export default function BillDetail() {
         await new Promise((resolve) => setTimeout(resolve, 300));
       }
 
-      // Images should now be preloaded as base64, wait for DOM to be ready
       const images = exportRef.current.querySelectorAll(
         "img.bill-export-image",
       );
-      console.log("Found QR code images for export:", images.length);
-
-      // Log image sources
-      Array.from(images).forEach((img, index) => {
-        console.log(
-          `Image ${index}: src type:`,
-          img.src.startsWith("data:") ? "base64" : "URL",
-          "complete:",
-          img.complete,
-        );
-      });
-
-      // Wait for all images to be ready
-      const imageReadyPromises = Array.from(images).map((img, index) => {
-        return new Promise((resolve) => {
-          if (img.complete && img.naturalHeight > 0) {
-            console.log(
-              `Image ${index}: Ready (base64: ${img.src.startsWith("data:")})`,
-            );
-            resolve();
-            return;
-          }
-
-          img.onload = () => {
-            console.log(`Image ${index}: Loaded`);
-            resolve();
-          };
-
-          img.onerror = () => {
-            console.error(`Image ${index}: Failed to load`);
-            resolve(); // Continue even if image fails
-          };
-
-          // Timeout after 5 seconds
-          setTimeout(() => {
-            console.warn(`Image ${index}: Timeout`);
-            resolve();
-          }, 5000);
-        });
-      });
-
-      await Promise.all(imageReadyPromises);
+      await waitForImagesReady(images);
 
       // Wait for fonts + paint before capture. html-to-image uses SVG
       // foreignObject so styles/fonts are serialized into the snapshot
@@ -605,18 +564,7 @@ export default function BillDetail() {
       const images = exportRef.current.querySelectorAll(
         "img.bill-export-image",
       );
-      const imageReadyPromises = Array.from(images).map((img) => {
-        return new Promise((resolve) => {
-          if (img.complete && img.naturalHeight > 0) {
-            resolve();
-            return;
-          }
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
-          setTimeout(() => resolve(), 5000);
-        });
-      });
-      await Promise.all(imageReadyPromises);
+      await waitForImagesReady(images);
 
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;

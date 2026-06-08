@@ -11,6 +11,7 @@ import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import PartyBillExport from "../../components/party/PartyBillExport";
 import { toPng, toBlob } from "html-to-image";
+import { waitForImagesReady } from "../../utils/exportImage";
 
 const loadImageAsBase64 = async (url) => {
   try {
@@ -363,18 +364,7 @@ export default function PartyBillDetail() {
       const images = exportRef.current.querySelectorAll(
         "img.bill-export-image",
       );
-      const imageReadyPromises = Array.from(images).map((img) => {
-        return new Promise((resolve) => {
-          if (img.complete && img.naturalHeight > 0) {
-            resolve();
-            return;
-          }
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
-          setTimeout(() => resolve(), 5000);
-        });
-      });
-      await Promise.all(imageReadyPromises);
+      await waitForImagesReady(images);
 
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
@@ -451,18 +441,7 @@ export default function PartyBillDetail() {
       const images = exportRef.current.querySelectorAll(
         "img.bill-export-image",
       );
-      const imageReadyPromises = Array.from(images).map((img) => {
-        return new Promise((resolve) => {
-          if (img.complete && img.naturalHeight > 0) {
-            resolve();
-            return;
-          }
-          img.onload = () => resolve();
-          img.onerror = () => resolve();
-          setTimeout(() => resolve(), 5000);
-        });
-      });
-      await Promise.all(imageReadyPromises);
+      await waitForImagesReady(images);
 
       if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
