@@ -943,7 +943,7 @@ export default function BillDetail() {
                 #{bill.id}
               </h3>
             </div>
-            <div className="flex-1 p-3 sm:p-4">
+            <div className="flex-1 p-3 sm:p-4 lg:min-h-0 lg:overflow-y-auto">
               <BillContent
                 bill={bill}
                 showHeader={false}
