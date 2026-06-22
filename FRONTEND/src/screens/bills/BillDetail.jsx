@@ -13,8 +13,11 @@ import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
-import { toPng, toBlob } from "html-to-image";
-import { waitForImagesReady } from "../../utils/exportImage";
+import {
+  waitForImagesReady,
+  nodeToPng,
+  nodeToBlob,
+} from "../../utils/exportImage";
 
 export default function BillDetail() {
   const { id } = useParams();
@@ -492,7 +495,7 @@ export default function BillDetail() {
       );
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const dataUrl = await toPng(exportRef.current, {
+      const dataUrl = await nodeToPng(exportRef.current, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
         cacheBust: true,
@@ -574,7 +577,7 @@ export default function BillDetail() {
       );
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-      const blob = await toBlob(exportRef.current, {
+      const blob = await nodeToBlob(exportRef.current, {
         backgroundColor: "#ffffff",
         pixelRatio: 2,
         cacheBust: true,
