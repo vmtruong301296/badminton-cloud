@@ -656,7 +656,7 @@ export default function EditBill() {
                                         })
                                       }
                                       min={0}
-                                      step={0.1}
+                                      step={0.01}
                                       className="w-full"
                                     />
                                   </div>
