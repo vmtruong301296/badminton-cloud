@@ -1,13 +1,20 @@
-import { useState, useEffect } from 'react';
-import { shuttlesApi } from '../../services/api';
-import { formatCurrency, formatNumber } from '../../utils/formatters';
-import CurrencyInput from '../../components/common/CurrencyInput';
-import { useAuth } from '../../contexts/AuthContext';
+import { useState, useEffect } from "react";
+import { shuttlesApi } from "../../services/api";
+import { formatCurrency, formatNumber } from "../../utils/formatters";
+import CurrencyInput from "../../components/common/CurrencyInput";
+import { useAuth } from "../../contexts/AuthContext";
 
 const BALLS_PER_TUBE = 12;
+// Ngưỡng cảnh báo sắp hết cầu: dưới 10 ống
+const LOW_STOCK_TUBES = 10;
+const LOW_STOCK_BALLS = LOW_STOCK_TUBES * BALLS_PER_TUBE;
+
+function isLowStock(shuttle) {
+  return (shuttle.stock_quantity ?? 0) < LOW_STOCK_BALLS;
+}
 
 function todayInputDate() {
-  return new Date().toISOString().split('T')[0];
+  return new Date().toISOString().split("T")[0];
 }
 
 export default function ShuttlesManagement() {
@@ -18,12 +25,16 @@ export default function ShuttlesManagement() {
   const [editingShuttle, setEditingShuttle] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
+    name: "",
     price: 0,
   });
 
   const [stockModalShuttle, setStockModalShuttle] = useState(null);
-  const [stockForm, setStockForm] = useState({ tubes: 0, balls: 0, entered_at: todayInputDate() });
+  const [stockForm, setStockForm] = useState({
+    tubes: 0,
+    balls: 0,
+    entered_at: todayInputDate(),
+  });
   const [stockSaving, setStockSaving] = useState(false);
 
   const [historyModalShuttle, setHistoryModalShuttle] = useState(null);
@@ -49,7 +60,7 @@ export default function ShuttlesManagement() {
       const response = await shuttlesApi.getAll();
       setShuttles(response.data);
     } catch (error) {
-      console.error('Error loading shuttles:', error);
+      console.error("Error loading shuttles:", error);
     } finally {
       setLoading(false);
     }
@@ -71,22 +82,22 @@ export default function ShuttlesManagement() {
       }
       setShowForm(false);
       setEditingShuttle(null);
-      setFormData({ name: '', price: 0 });
+      setFormData({ name: "", price: 0 });
       loadShuttles();
     } catch (error) {
-      console.error('Error saving shuttle:', error);
-      alert('Có lỗi xảy ra');
+      console.error("Error saving shuttle:", error);
+      alert("Có lỗi xảy ra");
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Bạn có chắc muốn xóa?')) return;
+    if (!confirm("Bạn có chắc muốn xóa?")) return;
     try {
       await shuttlesApi.delete(id);
       loadShuttles();
     } catch (error) {
-      console.error('Error deleting shuttle:', error);
-      alert('Có lỗi xảy ra');
+      console.error("Error deleting shuttle:", error);
+      alert("Có lỗi xảy ra");
     }
   };
 
@@ -101,7 +112,7 @@ export default function ShuttlesManagement() {
     const tubes = Number(stockForm.tubes) || 0;
     const balls = Number(stockForm.balls) || 0;
     if (tubes * BALLS_PER_TUBE + balls <= 0) {
-      alert('Nhập ít nhất số ống hoặc số quả.');
+      alert("Nhập ít nhất số ống hoặc số quả.");
       return;
     }
     try {
@@ -114,8 +125,11 @@ export default function ShuttlesManagement() {
       setStockModalShuttle(null);
       loadShuttles();
     } catch (error) {
-      console.error('Error adding stock:', error);
-      const msg = error.response?.data?.message || error.response?.data?.error || 'Có lỗi xảy ra';
+      console.error("Error adding stock:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Có lỗi xảy ra";
       alert(msg);
     } finally {
       setStockSaving(false);
@@ -125,14 +139,17 @@ export default function ShuttlesManagement() {
   const openPriceModal = async (shuttle) => {
     setPriceModalShuttle(shuttle);
     setPriceRows([]);
-    setNewPriceForm({ effective_from: todayInputDate(), price: shuttle.price || 0 });
+    setNewPriceForm({
+      effective_from: todayInputDate(),
+      price: shuttle.price || 0,
+    });
     try {
       setPriceLoading(true);
       const res = await shuttlesApi.getPrices(shuttle.id);
       setPriceRows(res.data || []);
     } catch (error) {
-      console.error('Error loading price tiers:', error);
-      alert('Không tải được lịch giá');
+      console.error("Error loading price tiers:", error);
+      alert("Không tải được lịch giá");
     } finally {
       setPriceLoading(false);
     }
@@ -151,8 +168,11 @@ export default function ShuttlesManagement() {
       setPriceRows(res.data || []);
       await loadShuttles();
     } catch (error) {
-      console.error('Error saving price tier:', error);
-      const msg = error.response?.data?.message || error.response?.data?.error || 'Có lỗi xảy ra';
+      console.error("Error saving price tier:", error);
+      const msg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Có lỗi xảy ra";
       alert(msg);
     } finally {
       setPriceSaving(false);
@@ -160,15 +180,15 @@ export default function ShuttlesManagement() {
   };
 
   const deletePriceTier = async (priceId) => {
-    if (!priceModalShuttle || !confirm('Xóa mốc giá này?')) return;
+    if (!priceModalShuttle || !confirm("Xóa mốc giá này?")) return;
     try {
       await shuttlesApi.deletePrice(priceModalShuttle.id, priceId);
       const res = await shuttlesApi.getPrices(priceModalShuttle.id);
       setPriceRows(res.data || []);
       await loadShuttles();
     } catch (error) {
-      console.error('Error deleting price tier:', error);
-      alert('Không xóa được mốc giá');
+      console.error("Error deleting price tier:", error);
+      alert("Không xóa được mốc giá");
     }
   };
 
@@ -180,8 +200,8 @@ export default function ShuttlesManagement() {
       const res = await shuttlesApi.getStockEntries(shuttle.id);
       setHistoryEntries(res.data || []);
     } catch (error) {
-      console.error('Error loading stock history:', error);
-      alert('Không tải được lịch sử nhập kho');
+      console.error("Error loading stock history:", error);
+      alert("Không tải được lịch sử nhập kho");
     } finally {
       setHistoryLoading(false);
     }
@@ -190,18 +210,18 @@ export default function ShuttlesManagement() {
   const stockPreviewTotal = (tubes, balls) =>
     (Number(tubes) || 0) * BALLS_PER_TUBE + (Number(balls) || 0);
 
-  const canEditStock = hasPermission('shuttles.update');
+  const canEditStock = hasPermission("shuttles.update");
 
   return (
     <div className="px-2 sm:px-0">
       <div className="flex flex-row justify-between items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
         <h2 className="text-xl sm:text-2xl font-bold">Quản lý Loại quả cầu</h2>
-        {hasPermission('shuttles.create') && (
+        {hasPermission("shuttles.create") && (
           <button
             onClick={() => {
               setShowForm(true);
               setEditingShuttle(null);
-              setFormData({ name: '', price: 0 });
+              setFormData({ name: "", price: 0 });
             }}
             className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base whitespace-nowrap"
           >
@@ -214,7 +234,7 @@ export default function ShuttlesManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
             <h3 className="text-lg font-semibold mb-4">
-              {editingShuttle ? 'Sửa loại cầu' : 'Thêm loại cầu'}
+              {editingShuttle ? "Sửa loại cầu" : "Thêm loại cầu"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -222,16 +242,22 @@ export default function ShuttlesManagement() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Giá (VND) *</label>
+                <label className="block text-sm font-medium mb-1">
+                  Giá (VND) *
+                </label>
                 <CurrencyInput
                   value={formData.price}
-                  onChange={(value) => setFormData({ ...formData, price: value })}
+                  onChange={(value) =>
+                    setFormData({ ...formData, price: value })
+                  }
                   className="w-full"
                 />
               </div>
@@ -261,47 +287,70 @@ export default function ShuttlesManagement() {
       {stockModalShuttle && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-1">Nhập kho — {stockModalShuttle.name}</h3>
-            <p className="text-sm text-gray-600 mb-4">1 ống = {BALLS_PER_TUBE} quả</p>
+            <h3 className="text-lg font-semibold mb-1">
+              Nhập kho — {stockModalShuttle.name}
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              1 ống = {BALLS_PER_TUBE} quả
+            </p>
             <form onSubmit={submitStock} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Số ống</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Số ống
+                  </label>
                   <input
                     type="number"
                     min={0}
                     value={stockForm.tubes}
                     onChange={(e) =>
-                      setStockForm({ ...stockForm, tubes: parseInt(e.target.value, 10) || 0 })
+                      setStockForm({
+                        ...stockForm,
+                        tubes: parseInt(e.target.value, 10) || 0,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Số quả (lẻ)</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Số quả (lẻ)
+                  </label>
                   <input
                     type="number"
                     min={0}
                     value={stockForm.balls}
                     onChange={(e) =>
-                      setStockForm({ ...stockForm, balls: parseInt(e.target.value, 10) || 0 })
+                      setStockForm({
+                        ...stockForm,
+                        balls: parseInt(e.target.value, 10) || 0,
+                      })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Ngày nhập</label>
+                <label className="block text-sm font-medium mb-1">
+                  Ngày nhập
+                </label>
                 <input
                   type="date"
                   value={stockForm.entered_at}
-                  onChange={(e) => setStockForm({ ...stockForm, entered_at: e.target.value })}
+                  onChange={(e) =>
+                    setStockForm({ ...stockForm, entered_at: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
               <div className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900">
-                Tổng nhập:{' '}
-                <strong>{formatNumber(stockPreviewTotal(stockForm.tubes, stockForm.balls))}</strong> quả
+                Tổng nhập:{" "}
+                <strong>
+                  {formatNumber(
+                    stockPreviewTotal(stockForm.tubes, stockForm.balls),
+                  )}
+                </strong>{" "}
+                quả
               </div>
               <div className="flex justify-end space-x-2">
                 <button
@@ -317,7 +366,7 @@ export default function ShuttlesManagement() {
                   disabled={stockSaving}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                 >
-                  {stockSaving ? 'Đang lưu...' : 'Lưu nhập kho'}
+                  {stockSaving ? "Đang lưu..." : "Lưu nhập kho"}
                 </button>
               </div>
             </form>
@@ -329,7 +378,9 @@ export default function ShuttlesManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-4 gap-2">
-              <h3 className="text-lg font-semibold">Lên giá — {priceModalShuttle.name}</h3>
+              <h3 className="text-lg font-semibold">
+                Lên giá — {priceModalShuttle.name}
+              </h3>
               <button
                 type="button"
                 onClick={() => setPriceModalShuttle(null)}
@@ -339,7 +390,8 @@ export default function ShuttlesManagement() {
               </button>
             </div>
             <p className="text-sm text-gray-600 mb-4">
-              Bill dùng <strong>ngày đánh</strong> để chọn mốc giá: áp dụng mốc có ngày hiệu lực mới nhất không sau ngày đó.
+              Bill dùng <strong>ngày đánh</strong> để chọn mốc giá: áp dụng mốc
+              có ngày hiệu lực mới nhất không sau ngày đó.
             </p>
             {priceLoading ? (
               <div className="py-6 text-center text-gray-500">Đang tải...</div>
@@ -350,15 +402,21 @@ export default function ShuttlesManagement() {
                     <tr className="border-b bg-gray-50 text-left">
                       <th className="py-2 pr-2">Áp dụng từ</th>
                       <th className="py-2 pr-2">Giá</th>
-                      {hasPermission('shuttles.update') && <th className="py-2 w-16" />}
+                      {hasPermission("shuttles.update") && (
+                        <th className="py-2 w-16" />
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {priceRows.map((row) => (
                       <tr key={row.id} className="border-b border-gray-100">
-                        <td className="py-2 pr-2 whitespace-nowrap">{row.effective_from}</td>
-                        <td className="py-2 pr-2">{formatCurrency(row.price)}</td>
-                        {hasPermission('shuttles.update') && (
+                        <td className="py-2 pr-2 whitespace-nowrap">
+                          {row.effective_from}
+                        </td>
+                        <td className="py-2 pr-2">
+                          {formatCurrency(row.price)}
+                        </td>
+                        {hasPermission("shuttles.update") && (
                           <td className="py-2">
                             <button
                               type="button"
@@ -373,26 +431,40 @@ export default function ShuttlesManagement() {
                     ))}
                   </tbody>
                 </table>
-                {hasPermission('shuttles.update') && (
-                  <form onSubmit={submitNewPrice} className="space-y-3 border-t pt-4">
-                    <p className="text-sm font-medium text-gray-800">Thêm / cập nhật mốc giá</p>
+                {hasPermission("shuttles.update") && (
+                  <form
+                    onSubmit={submitNewPrice}
+                    className="space-y-3 border-t pt-4"
+                  >
+                    <p className="text-sm font-medium text-gray-800">
+                      Thêm / cập nhật mốc giá
+                    </p>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Ngày hiệu lực *</label>
+                      <label className="block text-sm font-medium mb-1">
+                        Ngày hiệu lực *
+                      </label>
                       <input
                         type="date"
                         value={newPriceForm.effective_from}
                         onChange={(e) =>
-                          setNewPriceForm({ ...newPriceForm, effective_from: e.target.value })
+                          setNewPriceForm({
+                            ...newPriceForm,
+                            effective_from: e.target.value,
+                          })
                         }
                         required
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Giá (VND) *</label>
+                      <label className="block text-sm font-medium mb-1">
+                        Giá (VND) *
+                      </label>
                       <CurrencyInput
                         value={newPriceForm.price}
-                        onChange={(value) => setNewPriceForm({ ...newPriceForm, price: value })}
+                        onChange={(value) =>
+                          setNewPriceForm({ ...newPriceForm, price: value })
+                        }
                         className="w-full"
                       />
                     </div>
@@ -401,7 +473,7 @@ export default function ShuttlesManagement() {
                       disabled={priceSaving}
                       className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                     >
-                      {priceSaving ? 'Đang lưu...' : 'Lưu mốc giá'}
+                      {priceSaving ? "Đang lưu..." : "Lưu mốc giá"}
                     </button>
                   </form>
                 )}
@@ -415,7 +487,9 @@ export default function ShuttlesManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             <div className="flex justify-between items-start mb-4 gap-2">
-              <h3 className="text-lg font-semibold">Lịch sử nhập kho — {historyModalShuttle.name}</h3>
+              <h3 className="text-lg font-semibold">
+                Lịch sử nhập kho — {historyModalShuttle.name}
+              </h3>
               <button
                 type="button"
                 onClick={() => setHistoryModalShuttle(null)}
@@ -426,9 +500,13 @@ export default function ShuttlesManagement() {
             </div>
             <div className="overflow-y-auto flex-1">
               {historyLoading ? (
-                <div className="py-8 text-center text-gray-500">Đang tải...</div>
+                <div className="py-8 text-center text-gray-500">
+                  Đang tải...
+                </div>
               ) : historyEntries.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">Chưa có lịch sử nhập</div>
+                <div className="py-8 text-center text-gray-500">
+                  Chưa có lịch sử nhập
+                </div>
               ) : (
                 <table className="min-w-full text-sm">
                   <thead>
@@ -443,11 +521,17 @@ export default function ShuttlesManagement() {
                   <tbody>
                     {historyEntries.map((row) => (
                       <tr key={row.id} className="border-b border-gray-100">
-                        <td className="py-2 pr-2 whitespace-nowrap">{row.entered_at}</td>
+                        <td className="py-2 pr-2 whitespace-nowrap">
+                          {row.entered_at}
+                        </td>
                         <td className="py-2 pr-2">{row.tubes}</td>
                         <td className="py-2 pr-2">{row.balls}</td>
-                        <td className="py-2 pr-2 font-medium">{formatNumber(row.total_balls)}</td>
-                        <td className="py-2 text-gray-700">{row.creator?.name || '—'}</td>
+                        <td className="py-2 pr-2 font-medium">
+                          {formatNumber(row.total_balls)}
+                        </td>
+                        <td className="py-2 text-gray-700">
+                          {row.creator?.name || "—"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -462,6 +546,31 @@ export default function ShuttlesManagement() {
         <div className="text-center py-8">Đang tải...</div>
       ) : (
         <>
+          {shuttles.some(isLowStock) && (
+            <div className="mb-4 rounded-lg border-2 border-red-500 bg-red-50 p-4 animate-pulse">
+              <div className="flex items-start gap-3">
+                <span className="text-2xl leading-none">⚠️</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-red-700">
+                    Cảnh báo: Sắp hết cầu — cần nhập thêm!
+                  </h3>
+                  <p className="mt-1 text-sm text-red-700">
+                    Các loại cầu dưới {LOW_STOCK_TUBES} ống:{" "}
+                    <strong>
+                      {shuttles
+                        .filter(isLowStock)
+                        .map(
+                          (s) =>
+                            `${s.name} (${formatNumber(s.stock_quantity ?? 0)} quả)`,
+                        )
+                        .join(", ")}
+                    </strong>
+                    . Vui lòng bấm <strong>“Nhập kho”</strong> để bổ sung.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -483,10 +592,23 @@ export default function ShuttlesManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {shuttles.map((shuttle) => (
                   <tr key={shuttle.id}>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{shuttle.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{formatCurrency(shuttle.price)}</td>
+                    <td className="px-6 py-4 whitespace-nowrap font-medium">
+                      {shuttle.name}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-semibold text-gray-900">{formatNumber(shuttle.stock_quantity ?? 0)}</span>
+                      {formatCurrency(shuttle.price)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span
+                        className={`font-semibold ${isLowStock(shuttle) ? "text-red-600" : "text-gray-900"}`}
+                      >
+                        {formatNumber(shuttle.stock_quantity ?? 0)}
+                      </span>
+                      {isLowStock(shuttle) && (
+                        <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                          ⚠️ Sắp hết (&lt; {LOW_STOCK_TUBES} ống)
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {canEditStock && (
@@ -514,7 +636,7 @@ export default function ShuttlesManagement() {
                           </button>
                         </>
                       )}
-                      {hasPermission('shuttles.update') && (
+                      {hasPermission("shuttles.update") && (
                         <button
                           type="button"
                           onClick={() => handleEdit(shuttle)}
@@ -523,7 +645,7 @@ export default function ShuttlesManagement() {
                           Sửa
                         </button>
                       )}
-                      {hasPermission('shuttles.delete') && (
+                      {hasPermission("shuttles.delete") && (
                         <button
                           type="button"
                           onClick={() => handleDelete(shuttle.id)}
@@ -541,13 +663,29 @@ export default function ShuttlesManagement() {
 
           <div className="md:hidden space-y-3">
             {shuttles.map((shuttle) => (
-              <div key={shuttle.id} className="bg-white shadow rounded-lg p-4">
+              <div
+                key={shuttle.id}
+                className={`bg-white shadow rounded-lg p-4 ${isLowStock(shuttle) ? "border-2 border-red-500" : ""}`}
+              >
                 <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-900">{shuttle.name}</h3>
-                  <span className="text-lg font-bold text-gray-900">{formatCurrency(shuttle.price)}</span>
+                  <h3 className="font-semibold text-gray-900">
+                    {shuttle.name}
+                  </h3>
+                  <span className="text-lg font-bold text-gray-900">
+                    {formatCurrency(shuttle.price)}
+                  </span>
                 </div>
                 <div className="text-sm text-gray-700 mb-3">
-                  Tồn kho: <strong>{formatNumber(shuttle.stock_quantity ?? 0)}</strong> quả
+                  Tồn kho:{" "}
+                  <strong className={isLowStock(shuttle) ? "text-red-600" : ""}>
+                    {formatNumber(shuttle.stock_quantity ?? 0)}
+                  </strong>{" "}
+                  quả
+                  {isLowStock(shuttle) && (
+                    <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                      ⚠️ Sắp hết (&lt; {LOW_STOCK_TUBES} ống)
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
                   {canEditStock && (
@@ -575,7 +713,7 @@ export default function ShuttlesManagement() {
                       </button>
                     </>
                   )}
-                  {hasPermission('shuttles.update') && (
+                  {hasPermission("shuttles.update") && (
                     <button
                       type="button"
                       onClick={() => handleEdit(shuttle)}
@@ -584,7 +722,7 @@ export default function ShuttlesManagement() {
                       Sửa
                     </button>
                   )}
-                  {hasPermission('shuttles.delete') && (
+                  {hasPermission("shuttles.delete") && (
                     <button
                       type="button"
                       onClick={() => handleDelete(shuttle.id)}
