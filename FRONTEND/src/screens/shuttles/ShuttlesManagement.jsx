@@ -5,13 +5,9 @@ import CurrencyInput from "../../components/common/CurrencyInput";
 import { useAuth } from "../../contexts/AuthContext";
 
 const BALLS_PER_TUBE = 12;
-// Ngưỡng cảnh báo sắp hết cầu: dưới 10 ống
+// Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống
 const LOW_STOCK_TUBES = 10;
 const LOW_STOCK_BALLS = LOW_STOCK_TUBES * BALLS_PER_TUBE;
-
-function isLowStock(shuttle) {
-  return (shuttle.stock_quantity ?? 0) < LOW_STOCK_BALLS;
-}
 
 function todayInputDate() {
   return new Date().toISOString().split("T")[0];
@@ -546,7 +542,10 @@ export default function ShuttlesManagement() {
         <div className="text-center py-8">Đang tải...</div>
       ) : (
         <>
-          {shuttles.some(isLowStock) && (
+          {shuttles.reduce(
+            (sum, s) => sum + (Number(s.stock_quantity) || 0),
+            0,
+          ) < LOW_STOCK_BALLS && (
             <div className="mb-4 rounded-lg border-2 border-red-500 bg-red-50 p-4 animate-pulse">
               <div className="flex items-start gap-3">
                 <span className="text-2xl leading-none">⚠️</span>
@@ -555,17 +554,18 @@ export default function ShuttlesManagement() {
                     Cảnh báo: Sắp hết cầu — cần nhập thêm!
                   </h3>
                   <p className="mt-1 text-sm text-red-700">
-                    Các loại cầu dưới {LOW_STOCK_TUBES} ống:{" "}
+                    Tổng số lượng cầu còn lại{" "}
                     <strong>
-                      {shuttles
-                        .filter(isLowStock)
-                        .map(
-                          (s) =>
-                            `${s.name} (${formatNumber(s.stock_quantity ?? 0)} quả)`,
-                        )
-                        .join(", ")}
-                    </strong>
-                    . Vui lòng bấm <strong>“Nhập kho”</strong> để bổ sung.
+                      {formatNumber(
+                        shuttles.reduce(
+                          (sum, s) => sum + (Number(s.stock_quantity) || 0),
+                          0,
+                        ),
+                      )}{" "}
+                      quả
+                    </strong>{" "}
+                    — dưới {LOW_STOCK_TUBES} ống. Vui lòng bấm{" "}
+                    <strong>“Nhập kho”</strong> để bổ sung.
                   </p>
                 </div>
               </div>
@@ -599,16 +599,9 @@ export default function ShuttlesManagement() {
                       {formatCurrency(shuttle.price)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`font-semibold ${isLowStock(shuttle) ? "text-red-600" : "text-gray-900"}`}
-                      >
+                      <span className="font-semibold text-gray-900">
                         {formatNumber(shuttle.stock_quantity ?? 0)}
                       </span>
-                      {isLowStock(shuttle) && (
-                        <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
-                          ⚠️ Sắp hết (&lt; {LOW_STOCK_TUBES} ống)
-                        </span>
-                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {canEditStock && (
@@ -663,10 +656,7 @@ export default function ShuttlesManagement() {
 
           <div className="md:hidden space-y-3">
             {shuttles.map((shuttle) => (
-              <div
-                key={shuttle.id}
-                className={`bg-white shadow rounded-lg p-4 ${isLowStock(shuttle) ? "border-2 border-red-500" : ""}`}
-              >
+              <div key={shuttle.id} className="bg-white shadow rounded-lg p-4">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-gray-900">
                     {shuttle.name}
@@ -677,15 +667,8 @@ export default function ShuttlesManagement() {
                 </div>
                 <div className="text-sm text-gray-700 mb-3">
                   Tồn kho:{" "}
-                  <strong className={isLowStock(shuttle) ? "text-red-600" : ""}>
-                    {formatNumber(shuttle.stock_quantity ?? 0)}
-                  </strong>{" "}
+                  <strong>{formatNumber(shuttle.stock_quantity ?? 0)}</strong>{" "}
                   quả
-                  {isLowStock(shuttle) && (
-                    <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
-                      ⚠️ Sắp hết (&lt; {LOW_STOCK_TUBES} ống)
-                    </span>
-                  )}
                 </div>
                 <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
                   {canEditStock && (
