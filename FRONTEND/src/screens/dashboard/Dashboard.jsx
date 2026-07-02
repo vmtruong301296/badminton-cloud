@@ -11,6 +11,13 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { useAuth } from "../../contexts/AuthContext";
 
 const BALLS_PER_TUBE = 12;
+// Ngưỡng cảnh báo sắp hết cầu: dưới 10 ống
+const LOW_STOCK_TUBES = 10;
+const LOW_STOCK_BALLS = LOW_STOCK_TUBES * BALLS_PER_TUBE;
+
+function isLowStock(shuttle) {
+  return (Number(shuttle.stock_quantity) || 0) < LOW_STOCK_BALLS;
+}
 
 /** Hiển thị tồn kho: quả + gợi ý ống (12 quả/ống). */
 function formatShuttleStockDisplay(totalBalls) {
@@ -416,6 +423,12 @@ export default function Dashboard() {
         0,
       ),
     [shuttleTypesWithStock],
+  );
+
+  /** Loại cầu sắp hết (dưới 10 ống) — kể cả đã hết, để nhắc nhập thêm. */
+  const lowStockShuttles = useMemo(
+    () => shuttleTypes.filter(isLowStock),
+    [shuttleTypes],
   );
 
   // Calculate displayed bills and total main bills count
@@ -1742,6 +1755,19 @@ export default function Dashboard() {
                 Tổng: {formatShuttleStockDisplay(totalShuttleStockBalls)}
               </div>
             </div>
+            {lowStockShuttles.length > 0 && (
+              <div className="border-b-2 border-red-500 bg-red-50 px-4 sm:px-6 py-3 animate-pulse">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg leading-none">⚠️</span>
+                  <p className="text-xs sm:text-sm font-semibold text-red-700">
+                    Sắp hết cầu (dưới {LOW_STOCK_TUBES} ống) — cần nhập thêm:{" "}
+                    <span className="font-bold">
+                      {lowStockShuttles.map((s) => s.name).join(", ")}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
             <div className="divide-y divide-gray-200 max-h-[min(40vh,320px)] lg:max-h-[min(35vh,280px)] overflow-y-auto">
               {loadingShuttles ? (
                 <div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
@@ -1758,15 +1784,25 @@ export default function Dashboard() {
               ) : (
                 shuttleTypesWithStock.map((st) => {
                   const q = Number(st.stock_quantity) || 0;
+                  const low = isLowStock(st);
                   return (
                     <div
                       key={st.id}
-                      className="px-4 sm:px-6 py-3 hover:bg-gray-50"
+                      className={`px-4 sm:px-6 py-3 hover:bg-gray-50 ${low ? "bg-red-50" : ""}`}
                     >
-                      <div className="text-xs sm:text-sm font-semibold text-gray-900">
-                        {st.name}
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs sm:text-sm font-semibold text-gray-900">
+                          {st.name}
+                        </div>
+                        {low && (
+                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] sm:text-xs font-bold text-red-700">
+                            ⚠️ Sắp hết
+                          </span>
+                        )}
                       </div>
-                      <div className="text-xs sm:text-sm mt-0.5 text-gray-700">
+                      <div
+                        className={`text-xs sm:text-sm mt-0.5 ${low ? "text-red-600 font-semibold" : "text-gray-700"}`}
+                      >
                         {formatShuttleStockDisplay(q)}
                       </div>
                     </div>
