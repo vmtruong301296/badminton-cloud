@@ -360,8 +360,11 @@ export default function EditBill() {
     }
 
     const validShuttles = formData.shuttles.filter((s) => s.shuttle_type_id);
-    if (validShuttles.length === 0) {
-      alert("Vui lòng thêm ít nhất một loại cầu hợp lệ");
+    const courtTotal = Number(formData.court_total) || 0;
+    if (validShuttles.length === 0 && courtTotal <= 0) {
+      alert(
+        "Vui lòng thêm ít nhất một loại cầu hợp lệ hoặc nhập tổng tiền sân lớn hơn 0",
+      );
       return;
     }
 
