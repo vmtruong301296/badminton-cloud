@@ -524,6 +524,24 @@ export default function EditBill() {
                         }
                         className="w-full"
                       />
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {[140000, 280000, 420000].map((amount) => (
+                          <button
+                            key={amount}
+                            type="button"
+                            onClick={() =>
+                              setFormData({ ...formData, court_total: amount })
+                            }
+                            className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                              Number(formData.court_total) === amount
+                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-600"
+                            }`}
+                          >
+                            {amount.toLocaleString("vi-VN")}đ
+                          </button>
+                        ))}
+                      </div>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
                       <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
