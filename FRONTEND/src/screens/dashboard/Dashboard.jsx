@@ -657,13 +657,13 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Filters */}
+      {/* Filters — toolbar gọn 1 hàng trên desktop */}
       <section className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="flex flex-col gap-5 p-4 sm:p-5">
-          {/* Date row */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_auto_auto] lg:items-end lg:gap-4">
+        <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-3 lg:flex lg:gap-3">
             <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Từ ngày
               </label>
               <input
@@ -672,11 +672,11 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setFilters({ ...filters, date_from: e.target.value })
                 }
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 sm:px-3.5"
+                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-40"
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
                 Đến ngày
               </label>
               <input
@@ -685,63 +685,14 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setFilters({ ...filters, date_to: e.target.value })
                 }
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 sm:px-3.5"
+                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-40"
               />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                Số bill / trang
-              </label>
-              <select
-                value={filters.limit}
-                onChange={(e) =>
-                  setFilters({ ...filters, limit: parseInt(e.target.value) })
-                }
-                className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm font-medium text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 sm:px-3.5 lg:w-28"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={30}>30</option>
-                <option value={40}>40</option>
-                <option value={50}>50</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={() =>
-                  setFilters({
-                    date_from: "",
-                    date_to: "",
-                    player_id: "",
-                    status: [],
-                    limit: 10,
-                  })
-                }
-                className="inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:px-4 lg:w-auto"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                </svg>
-                <span className="sm:hidden">Xóa lọc</span>
-                <span className="hidden sm:inline">Xóa bộ lọc</span>
-              </button>
             </div>
           </div>
 
-          {/* Status chips — 3 cols mobile (1 row), wrap on desktop */}
+          {/* Status chips */}
           <div>
-            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
               Trạng thái
             </label>
             <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
@@ -781,7 +732,7 @@ export default function Dashboard() {
                         : [...filters.status, opt.value];
                       setFilters({ ...filters, status: next });
                     }}
-                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:h-11 sm:gap-2 sm:px-4 sm:text-sm ${
+                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-3.5 sm:text-sm ${
                       isActive
                         ? opt.activeCls
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -796,6 +747,59 @@ export default function Dashboard() {
                   </button>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Limit + Clear — đẩy sang phải trên desktop */}
+          <div className="grid grid-cols-2 gap-3 lg:ml-auto lg:flex lg:items-end lg:gap-3">
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                Số bill / trang
+              </label>
+              <select
+                value={filters.limit}
+                onChange={(e) =>
+                  setFilters({ ...filters, limit: parseInt(e.target.value) })
+                }
+                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm font-medium text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-24"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={40}>40</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters({
+                    date_from: "",
+                    date_to: "",
+                    player_id: "",
+                    status: [],
+                    limit: 10,
+                  })
+                }
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 lg:w-auto"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                </svg>
+                <span className="sm:hidden">Xóa lọc</span>
+                <span className="hidden sm:inline">Xóa bộ lọc</span>
+              </button>
             </div>
           </div>
         </div>

@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
-import { playersApi } from '../../services/api';
-import { formatRatio, formatCurrency } from '../../utils/formatters';
+import { useState, useEffect } from "react";
+import { playersApi } from "../../services/api";
+import { formatRatio, formatCurrency } from "../../utils/formatters";
 
-export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) {
+export default function PlayerSelector({
+  selectedPlayers,
+  onSelect,
+  onRemove,
+}) {
   const [players, setPlayers] = useState([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newPlayer, setNewPlayer] = useState({
-    name: '',
-    gender: 'male',
+    name: "",
+    gender: "male",
     default_ratio: 1,
   });
 
@@ -23,7 +27,7 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
       const response = await playersApi.getAll();
       setPlayers(response.data);
     } catch (error) {
-      console.error('Error loading players:', error);
+      console.error("Error loading players:", error);
     } finally {
       setLoading(false);
     }
@@ -32,10 +36,10 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
   // Hàm loại bỏ dấu tiếng Việt
   const removeVietnameseTones = (str) => {
     return str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/đ/g, 'd')
-      .replace(/Đ/g, 'D');
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
   };
 
   const filteredPlayers = players.filter((p) => {
@@ -61,13 +65,13 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
       include_debt: false,
       menus: [],
     });
-    setSearch('');
+    setSearch("");
   };
 
   const openAddModal = () => {
     setNewPlayer({
-      name: '',
-      gender: 'male',
+      name: "",
+      gender: "male",
       default_ratio: 1,
     });
     setShowAddModal(true);
@@ -80,14 +84,44 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
   const handleCreatePlayer = async (e) => {
     e.preventDefault();
     e.stopPropagation(); // Ngăn event bubble lên form cha
-    
+
     if (!newPlayer.name.trim()) {
-      alert('Vui lòng nhập tên người chơi');
+      alert("Vui lòng nhập tên người chơi");
       return;
     }
 
-    const slug = newPlayer.name.trim().toLowerCase().replace(/\s+/g, '');
-    const email = `${slug || 'player'}${Date.now()}@badminton.local`;
+    // Kiểm tra trùng tên: nếu đã tồn tại thì không tạo mới, chọn luôn người có sẵn
+    const nameKey = newPlayer.name.trim().toLowerCase();
+    const existing = players.find(
+      (p) => (p.name || "").trim().toLowerCase() === nameKey,
+    );
+    if (existing) {
+      const alreadyInBill = selectedPlayers.some(
+        (p) => p.user_id === existing.id,
+      );
+      if (alreadyInBill) {
+        alert(`Người chơi "${existing.name}" đã có trong bill.`);
+        closeAddModal();
+        return;
+      }
+      alert(
+        `Người chơi "${existing.name}" đã tồn tại. Đã chọn người này thay vì tạo mới.`,
+      );
+      handleSelect({
+        id: existing.id,
+        name: existing.name,
+        gender: existing.gender,
+        default_ratio_value:
+          existing.default_ratio_value ?? existing.default_ratio ?? 1,
+        current_debt_amount: existing.current_debt_amount ?? 0,
+        debt_date: existing.debt_date ?? null,
+      });
+      closeAddModal();
+      return;
+    }
+
+    const slug = newPlayer.name.trim().toLowerCase().replace(/\s+/g, "");
+    const email = `${slug || "player"}${Date.now()}@badminton.local`;
 
     try {
       const payload = {
@@ -95,7 +129,7 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
         gender: newPlayer.gender,
         default_ratio: newPlayer.default_ratio,
         email,
-        password: 'password',
+        password: "password",
       };
       const response = await playersApi.create(payload);
 
@@ -105,15 +139,16 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
         id: response.data.id,
         name: response.data.name,
         gender: response.data.gender,
-        default_ratio_value: response.data.default_ratio ?? newPlayer.default_ratio ?? 1,
+        default_ratio_value:
+          response.data.default_ratio ?? newPlayer.default_ratio ?? 1,
         current_debt_amount: 0,
         debt_date: null,
       });
 
       closeAddModal();
     } catch (error) {
-      console.error('Error creating player:', error);
-      alert('Không thể tạo người chơi mới. Vui lòng thử lại.');
+      console.error("Error creating player:", error);
+      alert("Không thể tạo người chơi mới. Vui lòng thử lại.");
     }
   };
 
@@ -144,7 +179,7 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
           <div className="max-h-96 overflow-y-auto">
             {filteredPlayers.length === 0 ? (
               <div className="text-center py-4 text-gray-500">
-                {search ? 'Không tìm thấy' : 'Không còn người chơi nào'}
+                {search ? "Không tìm thấy" : "Không còn người chơi nào"}
               </div>
             ) : (
               <div className="space-y-1">
@@ -154,19 +189,30 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
                     type="button"
                     onClick={() => handleSelect(player)}
                     className={`w-full text-left px-3 py-2 hover:bg-blue-100 rounded border border-transparent hover:border-blue-300 transition-colors ${
-                      index % 2 === 0 ? 'bg-white' : 'bg-blue-50'
+                      index % 2 === 0 ? "bg-white" : "bg-blue-50"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="font-medium text-gray-900">
                         {player.name}
-                        {player.bill_count !== undefined && player.bill_count > 0 && (
-                          <span className="text-gray-500 font-normal ml-1">({player.bill_count})</span>
-                        )}
+                        {player.bill_count !== undefined &&
+                          player.bill_count > 0 && (
+                            <span className="text-gray-500 font-normal ml-1">
+                              ({player.bill_count})
+                            </span>
+                          )}
                       </div>
                       <div className="text-xs text-gray-500 flex items-center gap-3">
                         <span>
-                          {player.gender === 'male' ? 'Nam' : player.gender === 'female' ? 'Nữ' : '-'} : <span className="font-semibold">{formatRatio(player.default_ratio_value || 1.0)}</span>
+                          {player.gender === "male"
+                            ? "Nam"
+                            : player.gender === "female"
+                              ? "Nữ"
+                              : "-"}{" "}
+                          :{" "}
+                          <span className="font-semibold">
+                            {formatRatio(player.default_ratio_value || 1.0)}
+                          </span>
                         </span>
                         {player.current_debt_amount > 0 && (
                           <span className="text-red-600">
@@ -201,9 +247,23 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
               >
                 <div className="flex justify-between items-center">
                   <div className="flex-1 flex items-center gap-3 flex-wrap">
-                    <div className="font-semibold text-gray-900">{player.name}</div>
+                    <div className="font-semibold text-gray-900">
+                      {player.name}
+                    </div>
                     <div className="text-xs text-gray-500">
-                      {player.gender === 'male' ? 'Nam' : player.gender === 'female' ? 'Nữ' : '-'} : <span className="font-semibold">{formatRatio(player.ratio_value ?? player.default_ratio_value ?? 1.0)}</span>
+                      {player.gender === "male"
+                        ? "Nam"
+                        : player.gender === "female"
+                          ? "Nữ"
+                          : "-"}{" "}
+                      :{" "}
+                      <span className="font-semibold">
+                        {formatRatio(
+                          player.ratio_value ??
+                            player.default_ratio_value ??
+                            1.0,
+                        )}
+                      </span>
                     </div>
                     {player.menus && player.menus.length > 0 && (
                       <div className="text-xs text-green-600">
@@ -233,25 +293,31 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
 
       {/* Modal thêm nhanh người chơi */}
       {showAddModal && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           onClick={closeAddModal}
         >
-          <div 
+          <div
             className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Thêm nhanh người chơi</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Thêm nhanh người chơi
+              </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Tên
+                  </label>
                   <input
                     type="text"
                     value={newPlayer.name}
-                    onChange={(e) => setNewPlayer({ ...newPlayer, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewPlayer({ ...newPlayer, name: e.target.value })
+                    }
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleCreatePlayer(e);
                       }
@@ -262,10 +328,14 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Giới tính
+                  </label>
                   <select
                     value={newPlayer.gender}
-                    onChange={(e) => setNewPlayer({ ...newPlayer, gender: e.target.value })}
+                    onChange={(e) =>
+                      setNewPlayer({ ...newPlayer, gender: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="male">Nam</option>
@@ -273,15 +343,22 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mức tính mặc định</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Mức tính mặc định
+                  </label>
                   <input
                     type="number"
                     step="0.1"
                     min="0"
                     value={newPlayer.default_ratio}
-                    onChange={(e) => setNewPlayer({ ...newPlayer, default_ratio: parseFloat(e.target.value) || 1 })}
+                    onChange={(e) =>
+                      setNewPlayer({
+                        ...newPlayer,
+                        default_ratio: parseFloat(e.target.value) || 1,
+                      })
+                    }
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         e.preventDefault();
                         handleCreatePlayer(e);
                       }
@@ -306,7 +383,8 @@ export default function PlayerSelector({ selectedPlayers, onSelect, onRemove }) 
                   </button>
                 </div>
                 <p className="text-xs text-gray-500">
-                  Ghi chú: tài khoản tạo nhanh dùng mật khẩu mặc định "password".
+                  Ghi chú: tài khoản tạo nhanh dùng mật khẩu mặc định
+                  "password".
                 </p>
               </div>
             </div>
