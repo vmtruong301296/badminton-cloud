@@ -541,6 +541,30 @@ export default function EditBill() {
                             {amount.toLocaleString("vi-VN")}đ
                           </button>
                         ))}
+                        {(() => {
+                          const raw = Number(formData.court_total) || 0;
+                          const suggestion = raw * 1000;
+                          if (
+                            raw <= 0 ||
+                            raw >= 1000 ||
+                            [140000, 280000, 420000].includes(suggestion)
+                          )
+                            return null;
+                          return (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  court_total: suggestion,
+                                })
+                              }
+                              className="rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-500"
+                            >
+                              → {suggestion.toLocaleString("vi-VN")}đ
+                            </button>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div className="col-span-2 sm:col-span-1">
