@@ -2,9 +2,9 @@
  * Format number as Vietnamese currency (VND)
  */
 export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
@@ -14,7 +14,7 @@ export const formatCurrency = (amount) => {
  * Format number with thousand separators
  */
 export const formatNumber = (num) => {
-  return new Intl.NumberFormat('vi-VN').format(num);
+  return new Intl.NumberFormat("vi-VN").format(num);
 };
 
 export const roundToNearestThousand = (value) => {
@@ -28,21 +28,50 @@ export const formatCurrencyRounded = (value) => {
 };
 
 /**
+ * Round a list of amounts to the nearest thousand while keeping their sum
+ * equal to the rounded grand total. Rounding each value independently makes
+ * the displayed rows drift from the displayed total (e.g. 472.000 split three
+ * ways shows 157.000 × 3 = 471.000). This distributes the ±1000 remainder to
+ * the largest amounts first so the per-person rows always sum back to the
+ * total. Returns rounded amounts in the same order as the input.
+ */
+export const apportionToNearestThousand = (values) => {
+  const nums = values.map((v) => Number(v) || 0);
+  const rounded = nums.map(roundToNearestThousand);
+  const target = roundToNearestThousand(nums.reduce((s, n) => s + n, 0));
+  let diff = target - rounded.reduce((s, n) => s + n, 0);
+  if (diff === 0 || rounded.length === 0) return rounded;
+  // Apply the leftover in 1000-đồng steps, largest amounts first.
+  const order = nums
+    .map((n, i) => [n, i])
+    .sort((a, b) => b[0] - a[0])
+    .map(([, i]) => i);
+  const step = diff > 0 ? 1000 : -1000;
+  let k = 0;
+  while (diff !== 0) {
+    rounded[order[k % order.length]] += step;
+    diff -= step;
+    k += 1;
+  }
+  return rounded;
+};
+
+/**
  * Parse currency string to number
  */
 export const parseCurrency = (str) => {
-  return parseInt(str.replace(/[^\d]/g, '')) || 0;
+  return parseInt(str.replace(/[^\d]/g, "")) || 0;
 };
 
 /**
  * Format date to YYYY-MM-DD (for input fields)
  */
 export const formatDate = (date) => {
-  if (!date) return '';
+  if (!date) return "";
   const d = new Date(date);
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 };
 
@@ -50,11 +79,11 @@ export const formatDate = (date) => {
  * Format date to dd/mm/yyyy (for display)
  */
 export const formatDateDisplay = (date) => {
-  if (!date) return '';
+  if (!date) return "";
   const d = new Date(date);
   const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
   return `${day}/${month}/${year}`;
 };
 
@@ -63,9 +92,9 @@ export const formatDateDisplay = (date) => {
  * Examples: 1.000 -> 1, 0.700 -> 0.7, 1.5 -> 1.5
  */
 export const formatRatio = (value) => {
-  if (value === null || value === undefined) return '';
+  if (value === null || value === undefined) return "";
   const num = parseFloat(value);
-  if (isNaN(num)) return '';
+  if (isNaN(num)) return "";
   // Remove trailing zeros by converting to number and back to string
   return num.toString();
 };
@@ -83,7 +112,7 @@ export const shuttleUnitPrice = (type) => {
 export const calculateBillPreview = (courtTotal, shuttles, players) => {
   // Calculate total shuttle price
   const totalShuttlePrice = shuttles.reduce((sum, s) => {
-    return sum + (s.price * s.quantity);
+    return sum + s.price * s.quantity;
   }, 0);
 
   // Total amount
@@ -98,7 +127,10 @@ export const calculateBillPreview = (courtTotal, shuttles, players) => {
   // Calculate per player
   const playersWithAmounts = players.map((player) => {
     const shareAmount = Math.round((player.ratio_value || 0) * unitPrice);
-    const menuTotal = (player.menus || []).reduce((sum, m) => sum + (m.subtotal || 0), 0);
+    const menuTotal = (player.menus || []).reduce(
+      (sum, m) => sum + (m.subtotal || 0),
+      0,
+    );
     const debtAmount = player.debt_amount || 0;
     const playerTotalAmount = shareAmount + menuTotal + debtAmount;
 
@@ -113,7 +145,10 @@ export const calculateBillPreview = (courtTotal, shuttles, players) => {
 
   // Calculate rounding difference
   // Note: Only share amounts are included in rounding, menu and debt are exact
-  const calculatedShareTotal = playersWithAmounts.reduce((sum, p) => sum + p.share_amount, 0);
+  const calculatedShareTotal = playersWithAmounts.reduce(
+    (sum, p) => sum + p.share_amount,
+    0,
+  );
   const roundingDifference = totalAmount - calculatedShareTotal;
 
   return {
@@ -125,4 +160,3 @@ export const calculateBillPreview = (courtTotal, shuttles, players) => {
     rounding_difference: roundingDifference,
   };
 };
-
