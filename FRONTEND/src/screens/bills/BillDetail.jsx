@@ -7,7 +7,6 @@ import {
   formatDate,
   formatDateDisplay,
   formatRatio,
-  apportionToNearestThousand,
 } from "../../utils/formatters";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
@@ -1152,15 +1151,6 @@ export default function BillDetail() {
                       },
                     );
 
-                    // Round each row to the nearest thousand while keeping the
-                    // column summing exactly to the total (avoids 157k×3=471k
-                    // rows under a 472k footer).
-                    const rowDisplayAmounts = apportionToNearestThousand(
-                      sortedPlayers.map(
-                        (p) => (p.total_amount || 0) + (p.debt_amount || 0),
-                      ),
-                    );
-
                     return sortedPlayers.map((player, index) => (
                       <tr
                         key={player.id}
@@ -1245,7 +1235,10 @@ export default function BillDetail() {
                           )}
                         </td>
                         <td className="text-right py-3 font-semibold text-green-600">
-                          {formatCurrency(rowDisplayAmounts[index])}
+                          {formatCurrencyRounded(
+                            (player.total_amount || 0) +
+                              (player.debt_amount || 0),
+                          )}
                         </td>
                         <td className="text-center py-3">
                           <input
@@ -1314,15 +1307,9 @@ export default function BillDetail() {
                   },
                 );
 
-                // Keep rounded rows summing to the total (see desktop table).
-                const rowDisplayAmounts = apportionToNearestThousand(
-                  sortedPlayers.map(
-                    (p) => (p.total_amount || 0) + (p.debt_amount || 0),
-                  ),
-                );
-
                 return sortedPlayers.map((player, index) => {
-                  const total = rowDisplayAmounts[index];
+                  const total =
+                    (player.total_amount || 0) + (player.debt_amount || 0);
                   return (
                     <article
                       key={player.id}
