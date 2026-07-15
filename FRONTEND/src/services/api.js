@@ -6,6 +6,9 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
   withCredentials: true, // Important for session-based authentication
+  // Bound every request so a slow/unreachable backend fails instead of hanging
+  // forever (30s is generous enough to survive a Worker cold start).
+  timeout: 30000,
 });
 
 // Players

@@ -78,7 +78,37 @@ function MasterRouteGuard({ children }) {
   return children;
 }
 
+function ConnectionError({ onRetry }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6">
+      <div className="text-center max-w-sm">
+        <div className="text-red-600 text-xl font-semibold mb-2">
+          Không kết nối được máy chủ
+        </div>
+        <div className="text-gray-600 mb-4">
+          Máy chủ phản hồi chậm hoặc không truy cập được. Vui lòng thử lại.
+        </div>
+        <button
+          onClick={onRetry}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Thử lại
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function AppRoutes() {
+  const { loading, authError, checkAuth } = useAuth();
+
+  // Backend unreachable/timed out during the auth bootstrap: show a retry
+  // screen instead of an indefinite "Đang tải…". A normal 401 does not set
+  // authError, so unauthenticated users still fall through to /login.
+  if (!loading && authError) {
+    return <ConnectionError onRetry={checkAuth} />;
+  }
+
   return (
     <Routes>
       <Route path="/login" element={<LoginRoute />} />
