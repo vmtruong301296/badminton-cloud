@@ -7,3 +7,5 @@
 import-dump.php
 *.sql
 
+.gstack/
+FRONTEND/ai-tools-research/
