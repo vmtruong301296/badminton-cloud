@@ -502,6 +502,12 @@ export default function CreateBill() {
                   selectedPlayers={formData.players}
                   onSelect={handleSelectPlayer}
                   onRemove={handleRemovePlayer}
+                  parentPlayerIds={
+                    parentBillId
+                      ? (parentBill?.bill_players?.map((bp) => bp.user_id) ??
+                        [])
+                      : undefined
+                  }
                 />
 
                 {formData.players.length > 0 && (

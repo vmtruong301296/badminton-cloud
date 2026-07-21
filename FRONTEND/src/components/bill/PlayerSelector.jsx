@@ -6,6 +6,10 @@ export default function PlayerSelector({
   selectedPlayers,
   onSelect,
   onRemove,
+  // Danh sách user_id người chơi từ bill chính (chỉ dùng khi tạo bill con).
+  // Khi chưa search: danh sách mặc định chỉ hiện những người này.
+  // Khi search: tìm trong toàn bộ người chơi để chọn thêm người ngoài bill chính.
+  parentPlayerIds = null,
 }) {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState("");
@@ -42,15 +46,23 @@ export default function PlayerSelector({
       .replace(/Đ/g, "D");
   };
 
+  const parentIdSet = Array.isArray(parentPlayerIds)
+    ? new Set(parentPlayerIds)
+    : null;
+  const hasSearch = search.trim().length > 0;
+
   const filteredPlayers = players.filter((p) => {
     const isSelected = selectedPlayers.some((sp) => sp.user_id === p.id);
-    if (!search.trim()) {
-      return !isSelected;
+    if (isSelected) return false;
+    if (!hasSearch) {
+      // Chưa search: nếu là bill con thì chỉ hiện người chơi từ bill chính
+      if (parentIdSet) return parentIdSet.has(p.id);
+      return true;
     }
+    // Có search: tìm trong toàn bộ người chơi (kể cả ngoài bill chính)
     const searchNoTones = removeVietnameseTones(search.toLowerCase());
     const playerNameNoTones = removeVietnameseTones(p.name.toLowerCase());
-    const matchesSearch = playerNameNoTones.includes(searchNoTones);
-    return !isSelected && matchesSearch;
+    return playerNameNoTones.includes(searchNoTones);
   });
 
   const handleSelect = (player) => {
@@ -168,7 +180,11 @@ export default function PlayerSelector({
         </div>
         <input
           type="text"
-          placeholder="Tìm kiếm người chơi..."
+          placeholder={
+            parentIdSet
+              ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
+              : "Tìm kiếm người chơi..."
+          }
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 bg-white"
@@ -179,7 +195,11 @@ export default function PlayerSelector({
           <div className="max-h-96 overflow-y-auto">
             {filteredPlayers.length === 0 ? (
               <div className="text-center py-4 text-gray-500">
-                {search ? "Không tìm thấy" : "Không còn người chơi nào"}
+                {search
+                  ? "Không tìm thấy"
+                  : parentIdSet
+                    ? "Bill chính chưa có người chơi — hãy tìm kiếm để chọn thêm"
+                    : "Không còn người chơi nào"}
               </div>
             ) : (
               <div className="space-y-1">
