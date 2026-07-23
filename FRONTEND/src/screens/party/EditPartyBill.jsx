@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { partyBillsApi, playersApi } from "../../services/api";
 import { formatCurrencyRounded, formatRatio } from "../../utils/formatters";
+import {
+  useGenderDefaultRatios,
+  ratioForGender,
+} from "../../utils/genderRatio";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
@@ -27,11 +31,29 @@ export default function EditPartyBill() {
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const [showAddPlayer, setShowAddPlayer] = useState(false);
+  const genderRatios = useGenderDefaultRatios();
   const [newPlayer, setNewPlayer] = useState({
     name: "",
     gender: "male",
     default_ratio: 1,
   });
+
+  // Đổi giới tính -> mức tính tự nhảy về mặc định của giới tính đó (Nam 1, Nữ 0.7)
+  const handleGenderChange = (gender) =>
+    setNewPlayer((prev) => ({
+      ...prev,
+      gender,
+      default_ratio: ratioForGender(genderRatios, gender),
+    }));
+
+  const openAddPlayer = () => {
+    setNewPlayer({
+      name: "",
+      gender: "male",
+      default_ratio: ratioForGender(genderRatios, "male"),
+    });
+    setShowAddPlayer(true);
+  };
 
   const [form, setForm] = useState({
     date: todayStr(),
@@ -491,7 +513,7 @@ export default function EditPartyBill() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setShowAddPlayer(true)}
+                      onClick={openAddPlayer}
                       className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
                     >
                       + Thêm nhanh
@@ -837,9 +859,7 @@ export default function EditPartyBill() {
                   </label>
                   <select
                     value={newPlayer.gender}
-                    onChange={(e) =>
-                      setNewPlayer({ ...newPlayer, gender: e.target.value })
-                    }
+                    onChange={(e) => handleGenderChange(e.target.value)}
                     className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
                   >
                     <option value="male">Nam</option>

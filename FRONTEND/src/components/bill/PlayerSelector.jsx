@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { playersApi } from "../../services/api";
 import { formatRatio, formatCurrency } from "../../utils/formatters";
+import {
+  useGenderDefaultRatios,
+  ratioForGender,
+} from "../../utils/genderRatio";
 
 export default function PlayerSelector({
   selectedPlayers,
@@ -15,11 +19,20 @@ export default function PlayerSelector({
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const genderRatios = useGenderDefaultRatios();
   const [newPlayer, setNewPlayer] = useState({
     name: "",
     gender: "male",
     default_ratio: 1,
   });
+
+  // Đổi giới tính -> mức tính tự nhảy về mặc định của giới tính đó (Nam 1, Nữ 0.7)
+  const handleGenderChange = (gender) =>
+    setNewPlayer((prev) => ({
+      ...prev,
+      gender,
+      default_ratio: ratioForGender(genderRatios, gender),
+    }));
 
   useEffect(() => {
     loadPlayers();
@@ -84,7 +97,7 @@ export default function PlayerSelector({
     setNewPlayer({
       name: "",
       gender: "male",
-      default_ratio: 1,
+      default_ratio: ratioForGender(genderRatios, "male"),
     });
     setShowAddModal(true);
   };
@@ -353,9 +366,7 @@ export default function PlayerSelector({
                   </label>
                   <select
                     value={newPlayer.gender}
-                    onChange={(e) =>
-                      setNewPlayer({ ...newPlayer, gender: e.target.value })
-                    }
+                    onChange={(e) => handleGenderChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   >
                     <option value="male">Nam</option>
