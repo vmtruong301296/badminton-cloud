@@ -29,6 +29,12 @@ function formatShuttleStockDisplay(totalBalls) {
   return `${tubes} ống + ${rem} quả (${formatNumber(n)} quả)`;
 }
 
+/** Tháng hiện tại ở định dạng YYYY-MM cho <input type="month">. */
+function currentMonthValue() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export default function Dashboard() {
   const { hasPermission } = useAuth();
   const [bills, setBills] = useState([]);
@@ -47,11 +53,9 @@ export default function Dashboard() {
   });
   const [markingPayment, setMarkingPayment] = useState(new Set()); // Track players being marked as paid
   const [currentPage, setCurrentPage] = useState(1);
-  const [statsMonth, setStatsMonth] = useState(() => {
-    // Default to current month (YYYY-MM format)
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  });
+  const [statsMonth, setStatsMonth] = useState(currentMonthValue);
+  const [statsYear, setStatsYear] = useState(() => new Date().getFullYear());
+  const [statsMode, setStatsMode] = useState("month"); // 'month' | 'year'
   const [statsModalOpen, setStatsModalOpen] = useState(false);
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [loadingShuttles, setLoadingShuttles] = useState(true);
@@ -488,8 +492,27 @@ export default function Dashboard() {
     };
   }, [bills, filters.limit, currentPage]);
 
-  // Calculate monthly statistics
-  const monthlyStats = useMemo(() => {
+  /** Mở thống kê: luôn bắt đầu ở tháng hiện tại, kể cả lần trước xem theo năm. */
+  const openStatsModal = () => {
+    setStatsMode("month");
+    setStatsMonth(currentMonthValue());
+    setStatsYear(new Date().getFullYear());
+    setStatsModalOpen(true);
+  };
+
+  // Các năm có bill (kèm năm hiện tại), mới -> cũ. Dùng cho dropdown thống kê theo năm.
+  const availableYears = useMemo(() => {
+    const years = new Set([new Date().getFullYear()]);
+    (allBills || []).forEach((bill) => {
+      if (!bill.date) return;
+      const billYear = new Date(bill.date).getFullYear();
+      if (!Number.isNaN(billYear)) years.add(billYear);
+    });
+    return Array.from(years).sort((a, b) => b - a);
+  }, [allBills]);
+
+  // Calculate statistics for the selected period (month or year)
+  const periodStats = useMemo(() => {
     if (!allBills || allBills.length === 0) {
       return {
         shuttles: [],
@@ -497,12 +520,19 @@ export default function Dashboard() {
       };
     }
 
-    // Parse selected month
-    const [year, month] = statsMonth.split("-").map(Number);
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
+    // Khoảng ngày của kỳ đang xem: cả tháng hoặc cả năm
+    let startDate;
+    let endDate;
+    if (statsMode === "year") {
+      startDate = new Date(statsYear, 0, 1);
+      endDate = new Date(statsYear, 11, 31, 23, 59, 59);
+    } else {
+      const [year, month] = statsMonth.split("-").map(Number);
+      startDate = new Date(year, month - 1, 1);
+      endDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
+    }
 
-    // Filter bills in selected month
+    // Filter bills in selected period
     const billsInMonth = allBills.filter((bill) => {
       if (!bill.date) return false;
       const billDate = new Date(bill.date);
@@ -583,7 +613,7 @@ export default function Dashboard() {
       totalOngCau,
       remainingShuttles,
     };
-  }, [allBills, statsMonth]);
+  }, [allBills, statsMode, statsMonth, statsYear]);
 
   return (
     <div className="px-2 sm:px-0 pb-24 md:pb-0">
@@ -612,7 +642,7 @@ export default function Dashboard() {
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
-              onClick={() => setStatsModalOpen(true)}
+              onClick={openStatsModal}
               className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-card transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:h-11 sm:gap-2 sm:px-4"
             >
               <svg
@@ -629,8 +659,7 @@ export default function Dashboard() {
                 <path d="M3 3v18h18" />
                 <path d="M7 14l4-4 4 3 5-6" />
               </svg>
-              <span className="hidden sm:inline">Thống kê tháng</span>
-              <span className="sm:hidden">Thống kê</span>
+              <span>Thống kê</span>
             </button>
             {hasPermission("bills.create") && (
               <Link
@@ -1901,18 +1930,52 @@ export default function Dashboard() {
             <div className="p-6">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Thống kê tháng
+                  Thống kê
                 </h3>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Chọn kỳ thống kê: theo tháng hoặc cả năm */}
+                  <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
+                    {[
+                      { value: "month", label: "Tháng" },
+                      { value: "year", label: "Năm" },
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setStatsMode(option.value)}
+                        className={`px-3 py-2 text-sm font-medium transition ${
+                          statsMode === option.value
+                            ? "bg-blue-600 text-white"
+                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                   <label className="text-sm font-medium text-gray-700">
-                    Chọn tháng:
+                    {statsMode === "year" ? "Chọn năm:" : "Chọn tháng:"}
                   </label>
-                  <input
-                    type="month"
-                    value={statsMonth}
-                    onChange={(e) => setStatsMonth(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                  />
+                  {statsMode === "year" ? (
+                    <select
+                      value={statsYear}
+                      onChange={(e) => setStatsYear(Number(e.target.value))}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      {availableYears.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="month"
+                      value={statsMonth}
+                      onChange={(e) => setStatsMonth(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    />
+                  )}
                   <button
                     onClick={() => setStatsModalOpen(false)}
                     className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
@@ -1928,13 +1991,14 @@ export default function Dashboard() {
                   <h4 className="text-base font-semibold mb-3 text-gray-900">
                     Tổng số lượng cầu
                   </h4>
-                  {monthlyStats.shuttles.length === 0 ? (
+                  {periodStats.shuttles.length === 0 ? (
                     <div className="text-sm text-gray-500">
-                      Không có dữ liệu cầu trong tháng này
+                      Không có dữ liệu cầu trong{" "}
+                      {statsMode === "year" ? "năm" : "tháng"} này
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {monthlyStats.shuttles.map((shuttle, index) => (
+                      {periodStats.shuttles.map((shuttle, index) => (
                         <div
                           key={index}
                           className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0"
@@ -1952,7 +2016,7 @@ export default function Dashboard() {
                           Tổng cộng:
                         </span>
                         <span className="text-sm font-bold text-gray-900">
-                          {monthlyStats.totalShuttles} quả
+                          {periodStats.totalShuttles} quả
                         </span>
                       </div>
                       {/* Ổng cầu */}
@@ -1961,10 +2025,10 @@ export default function Dashboard() {
                           Tổng ống cầu:
                         </span>
                         <span className="text-sm font-bold text-blue-900">
-                          {monthlyStats.totalOngCau} ống
-                          {monthlyStats.remainingShuttles > 0 && (
+                          {periodStats.totalOngCau} ống
+                          {periodStats.remainingShuttles > 0 && (
                             <span className="text-xs text-gray-600 ml-1">
-                              ({monthlyStats.remainingShuttles} quả lẻ)
+                              ({periodStats.remainingShuttles} quả lẻ)
                             </span>
                           )}
                         </span>
@@ -1979,15 +2043,16 @@ export default function Dashboard() {
                 {/* Player Statistics - Chiếm 6 phần */}
                 <div className="lg:col-span-6 bg-gray-50 p-4 rounded-lg">
                   <h4 className="text-base font-semibold mb-3 text-gray-900">
-                    Tổng tiền theo người chơi ({monthlyStats.players.length})
+                    Tổng tiền theo người chơi ({periodStats.players.length})
                   </h4>
-                  {monthlyStats.players.length === 0 ? (
+                  {periodStats.players.length === 0 ? (
                     <div className="text-sm text-gray-500">
-                      Không có dữ liệu người chơi trong tháng này
+                      Không có dữ liệu người chơi trong{" "}
+                      {statsMode === "year" ? "năm" : "tháng"} này
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                      {monthlyStats.players.map((player, index) => (
+                      {periodStats.players.map((player, index) => (
                         <div
                           key={index}
                           className="py-2 border-b border-gray-200 last:border-0 mr-4"
@@ -2013,7 +2078,7 @@ export default function Dashboard() {
                         </span>
                         <span className="text-sm font-bold text-gray-900">
                           {formatCurrencyRounded(
-                            monthlyStats.players.reduce(
+                            periodStats.players.reduce(
                               (sum, p) => sum + p.totalAmount,
                               0,
                             ),
