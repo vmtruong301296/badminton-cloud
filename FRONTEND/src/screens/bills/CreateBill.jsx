@@ -14,6 +14,7 @@ import DatePicker from "../../components/common/DatePicker";
 import PlayerSelector from "../../components/bill/PlayerSelector";
 import ShuttleRow from "../../components/bill/ShuttleRow";
 import MenuItemPicker from "../../components/bill/MenuItemPicker";
+import QuickAddMenu from "../../components/bill/QuickAddMenu";
 import BillSummary from "../../components/bill/BillSummary";
 
 export default function CreateBill() {
@@ -69,6 +70,12 @@ export default function CreateBill() {
       cancelled = true;
     };
   }, []);
+
+  /** Menu vừa tạo nhanh -> chèn lên đầu để mọi MenuItemPicker thấy ngay. */
+  const handleMenuAdded = (menu) => {
+    if (!menu) return;
+    setMenus((prev) => [menu, ...prev]);
+  };
 
   useEffect(() => {
     if (parentBillId) {
@@ -512,9 +519,12 @@ export default function CreateBill() {
 
                 {formData.players.length > 0 && (
                   <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-6 sm:pt-6">
-                    <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 sm:mb-4">
-                      Chi tiết người chơi
-                    </p>
+                    <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        Chi tiết người chơi
+                      </p>
+                      <QuickAddMenu menus={menus} onCreated={handleMenuAdded} />
+                    </div>
                     <div className="space-y-3 sm:space-y-4">
                       {formData.players.map((player, index) => (
                         <article

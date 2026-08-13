@@ -15,7 +15,9 @@ class MenuController extends Controller
      */
     public function index(): JsonResponse
     {
-        $menus = Menu::all();
+        // Menu mới tạo lên đầu. Sắp xếp theo id thay vì created_at vì id luôn
+        // phản ánh đúng thứ tự tạo và không bị null ở các bản ghi import từ dump.
+        $menus = Menu::orderByDesc('id')->get();
 
         return response()->json($menus);
     }
