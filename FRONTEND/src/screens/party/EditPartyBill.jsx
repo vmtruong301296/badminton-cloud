@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { partyBillsApi, playersApi } from "../../services/api";
-import { formatCurrencyRounded, formatRatio } from "../../utils/formatters";
+import {
+  formatCurrency,
+  formatCurrencyRounded,
+  formatRatio,
+} from "../../utils/formatters";
 import {
   useGenderDefaultRatios,
   ratioForGender,
@@ -28,6 +32,7 @@ export default function EditPartyBill() {
   const [saving, setSaving] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [players, setPlayers] = useState([]);
+  const [lockedExtras, setLockedExtras] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [playerSearch, setPlayerSearch] = useState("");
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -93,13 +98,9 @@ export default function EditPartyBill() {
         name: bill.name || "Tiệc",
         note: bill.note || "",
         base_amount: bill.base_amount || 0,
-        extras:
-          bill.extras && bill.extras.length > 0
-            ? bill.extras.map((ex) => ({
-                name: ex.name,
-                amount: ex.amount || 0,
-              }))
-            : [],
+        extras: (bill.extras ?? [])
+          .filter((ex) => !ex.car_rental_comparison_id)
+          .map((ex) => ({ name: ex.name, amount: ex.amount || 0 })),
         participants: bill.participants
           ? bill.participants.map((p) => ({
               user_id: p.user_id || null,
@@ -114,6 +115,11 @@ export default function EditPartyBill() {
             }))
           : [],
       });
+      // Dòng do màn Thuê xe sở hữu: hiện chỉ đọc, KHÔNG đưa vào form và
+      // KHÔNG gửi lên payload — backend tự giữ chúng.
+      setLockedExtras(
+        (bill.extras ?? []).filter((ex) => ex.car_rental_comparison_id),
+      );
     } catch (error) {
       console.error("Error loading bill for edit", error);
       alert("Không thể tải dữ liệu để sửa");
@@ -490,6 +496,31 @@ export default function EditPartyBill() {
                     </div>
                   </div>
                 ))}
+                {lockedExtras.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    {lockedExtras.map((extra) => (
+                      <div
+                        key={extra.id}
+                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                      >
+                        <span className="text-gray-700">
+                          🚗 {extra.name}
+                          <span className="text-gray-500">
+                            {" "}
+                            · đến từ màn Thuê xe
+                          </span>
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          {formatCurrency(extra.amount)}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="text-xs text-gray-500">
+                      Sửa các khoản này ở màn Thuê xe. Chúng vẫn được tính vào
+                      tổng.
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
 

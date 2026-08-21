@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { partyBillsApi, paymentAccountsApi } from "../../services/api";
 import {
   formatCurrencyRounded,
@@ -822,7 +822,18 @@ export default function PartyBillDetail() {
                   key={ex.id}
                   className="flex items-center justify-between py-2.5 text-sm"
                 >
-                  <span className="text-slate-700">{ex.name}</span>
+                  <span className="text-slate-700">
+                    {ex.car_rental_comparison_id ? "🚗 " : ""}
+                    {ex.name}
+                    {ex.car_rental_comparison_id && (
+                      <Link
+                        to="/car-rental"
+                        className="ml-2 text-xs text-blue-600 underline"
+                      >
+                        xem chuyến xe
+                      </Link>
+                    )}
+                  </span>
                   <span className="font-tabular font-semibold text-slate-900">
                     {formatCurrencyRounded(ex.amount)}
                   </span>
