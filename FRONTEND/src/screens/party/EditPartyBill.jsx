@@ -232,10 +232,20 @@ export default function EditPartyBill() {
     }
   };
 
+  const lockedExtraTotal = useMemo(
+    () =>
+      lockedExtras.reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
+    [lockedExtras],
+  );
+
+  // Dòng do thuê xe sở hữu không nằm trong form nhưng vẫn là tiền thật của
+  // bill: phải cộng vào đây, không thì đơn giá và phần chia của từng người
+  // hiện ra thấp hơn con số backend tính khi lưu.
   const totalExtra = useMemo(
     () =>
-      form.extras.reduce((sum, item) => sum + (Number(item.amount) || 0), 0),
-    [form.extras],
+      form.extras.reduce((sum, item) => sum + (Number(item.amount) || 0), 0) +
+      lockedExtraTotal,
+    [form.extras, lockedExtraTotal],
   );
 
   const sumRatios = useMemo(
