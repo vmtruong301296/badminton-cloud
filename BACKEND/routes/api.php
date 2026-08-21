@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\BracketController;
+use App\Http\Controllers\Api\CarRentalController;
 use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\MenuController;
 use App\Http\Controllers\Api\PartyBillController;
@@ -94,6 +95,10 @@ Route::middleware('auth')->group(function () {
 
     // Party Bills (Chia tiền tiệc)
     Route::apiResource('party-bills', PartyBillController::class)->only(['index', 'store', 'show', 'update', 'destroy']);
+
+    // Car Rentals (So sánh chi phí thuê xe)
+    Route::apiResource('car-rentals', CarRentalController::class)
+        ->only(['index', 'store', 'show', 'update', 'destroy']);
     Route::post('party-bills/{id}/participants/{participantId}/pay', [PartyBillController::class, 'markPayment']);
     Route::post('party-bills/{id}/send-telegram', [PartyBillController::class, 'sendTelegram']);
 
