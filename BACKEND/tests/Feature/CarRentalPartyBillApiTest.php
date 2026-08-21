@@ -156,6 +156,26 @@ class CarRentalPartyBillApiTest extends TestCase
         $this->assertSame(0, \App\Models\CarRentalComparison::count(), 'phải rollback cả lần thuê xe');
     }
 
+    public function test_xoa_lan_thue_xe_khi_bill_da_thanh_toan_het_thi_422_va_khong_doi_gi(): void
+    {
+        $bill = $this->bill();
+        $user = $this->user();
+        $id = $this->actingAs($user)
+            ->postJson('/api/car-rentals', $this->payload(['party_bill_id' => $bill->id]))
+            ->json('id');
+
+        $bill->participants()->update(['is_paid' => true]);
+
+        $this->actingAs($user)
+            ->deleteJson("/api/car-rentals/{$id}")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('party_bill_id');
+
+        $this->assertSame(1, \App\Models\CarRentalComparison::count(), 'không được xóa lần thuê xe');
+        $this->assertSame(1, PartyBillExtra::count(), 'dòng do thuê xe sở hữu phải còn');
+        $this->assertSame(1380000, $bill->fresh()->total_extra);
+    }
+
     public function test_party_bill_id_khong_ton_tai_bi_422(): void
     {
         $this->actingAs($this->user())
@@ -183,6 +203,12 @@ class CarRentalPartyBillApiTest extends TestCase
         $this->assertCount(2, $fresh->extras, 'dòng do thuê xe sở hữu phải còn');
         $this->assertSame(1480000, $fresh->total_extra, '1.380.000 xe + 100.000 bánh');
         $this->assertSame(3480000, $fresh->total_amount);
+
+        $this->assertSame(
+            3480000,
+            $bill->fresh(['participants'])->participants->first()->share_amount,
+            'share phải tính lại từ DB sau khi sửa bill, không phải từ payload'
+        );
     }
 
     public function test_bo_qua_car_rental_comparison_id_client_bia_ra(): void
