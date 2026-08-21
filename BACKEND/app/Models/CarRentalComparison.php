@@ -19,6 +19,8 @@ class CarRentalComparison extends Model
         'saving_amount',
         'total_shared_cost',
         'created_by',
+        'party_bill_id',
+        'selected_sort_order',
     ];
 
     protected function casts(): array
@@ -31,6 +33,11 @@ class CarRentalComparison extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function partyBill(): BelongsTo
+    {
+        return $this->belongsTo(PartyBill::class, 'party_bill_id');
     }
 
     public function options(): HasMany

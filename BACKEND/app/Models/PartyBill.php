@@ -40,5 +40,10 @@ class PartyBill extends Model
     {
         return $this->hasMany(PartyBillParticipant::class);
     }
+
+    public function carRentals(): HasMany
+    {
+        return $this->hasMany(CarRentalComparison::class, 'party_bill_id');
+    }
 }
 
