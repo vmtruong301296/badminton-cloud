@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CarRentalComparison;
 use App\Models\PartyBill;
+use App\Models\PartyBillExtra;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -82,5 +83,29 @@ class CarRentalPartyBillSchemaTest extends TestCase
         $extra = $bill->extras()->create(['name' => 'Bánh', 'amount' => 100000]);
 
         $this->assertNull($extra->fresh()->car_rental_comparison_id);
+    }
+
+    public function test_xoa_lan_thue_xe_thi_dong_extra_bi_xoa_theo(): void
+    {
+        $bill = $this->bill();
+        $comparison = $this->comparison($bill->id);
+
+        $cuaThueXe = $bill->extras()->create([
+            'name' => 'Chuyến Đà Lạt',
+            'amount' => 1880000,
+            'car_rental_comparison_id' => $comparison->id,
+        ]);
+        $thuCong = $bill->extras()->create(['name' => 'Bánh', 'amount' => 100000]);
+
+        $comparison->delete();
+
+        $this->assertNull(
+            PartyBillExtra::find($cuaThueXe->id),
+            'dòng do thuê xe sở hữu phải bị xóa theo'
+        );
+        $this->assertNotNull(
+            PartyBillExtra::find($thuCong->id),
+            'dòng người dùng tự nhập không được xóa lây'
+        );
     }
 }
