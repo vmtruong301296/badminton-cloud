@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { carRentalsApi } from "../../services/api";
 import { formatCurrency, formatDateDisplay, formatNumber } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
@@ -197,9 +198,9 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                   {item.party_bill && (
                     <div>
                       Gắn với bill tiệc:{" "}
-                      <a href={`/party-bills/${item.party_bill.id}`} className="text-blue-600 underline">
+                      <Link to={`/party-bills/${item.party_bill.id}`} className="text-blue-600 underline">
                         {item.party_bill.name || `Bill #${item.party_bill.id}`}
-                      </a>
+                      </Link>
                     </div>
                   )}
                 </div>

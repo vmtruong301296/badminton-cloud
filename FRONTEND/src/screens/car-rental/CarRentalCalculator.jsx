@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { calculateCarRental } from "../../utils/carRentalCost";
 import { carRentalsApi, fuelPricesApi, partyBillsApi } from "../../services/api";
 import { formatCurrency, formatNumber } from "../../utils/formatters";
@@ -324,6 +325,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
 
   const hasKmLimit = options.some((option) => option.km_limit_per_day !== null);
 
+  // Nguồn sự thật cho "đã gắn bill" là party_bill_id, KHÔNG phải việc tra
+  // được tên bill hay chưa — danh sách partyBills có thể tải lỗi/chưa xong.
+  const isAttached = trip.party_bill_id !== "";
   const linkedBill = partyBills.find(
     (bill) => String(bill.id) === String(trip.party_bill_id)
   );
@@ -343,8 +347,18 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   const addOption = () =>
     setOptions((prev) => [...prev, makeOption({ name: `Phương án ${prev.length + 1}` })]);
 
-  const removeOption = (index) =>
-    setOptions((prev) => (prev.length <= 2 ? prev : prev.filter((_, i) => i !== index)));
+  // Bỏ phương án làm dịch chỉ số các phương án phía sau. Nếu "Xe thực tế
+  // thuê" đang trỏ vào phương án bị xóa hoặc vào một vị trí bị dịch chuyển,
+  // KHÔNG giữ nguyên số cũ (dễ trỏ nhầm xe) — về lại "Phương án rẻ nhất".
+  const removeOption = (index) => {
+    if (options.length <= 2) return;
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+    setTrip((prev) =>
+      prev.selected_sort_order !== "" && Number(prev.selected_sort_order) >= index
+        ? { ...prev, selected_sort_order: "" }
+        : prev
+    );
+  };
 
   const setSharedCostField = (index, field, value) => {
     setSharedCosts((prev) =>
@@ -507,9 +521,16 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
             <select
               className={inputClass}
               value={trip.party_bill_id}
-              onChange={(event) =>
-                setTrip((prev) => ({ ...prev, party_bill_id: event.target.value }))
-              }
+              onChange={(event) => {
+                const value = event.target.value;
+                setTrip((prev) => ({
+                  ...prev,
+                  party_bill_id: value,
+                  // Bỏ gắn thì xóa luôn lựa chọn "xe thực tế thuê" cũ — không
+                  // để nó âm thầm theo qua lần gắn bill khác.
+                  selected_sort_order: value === "" ? "" : prev.selected_sort_order,
+                }));
+              }}
             >
               <option value="">— Không gắn —</option>
               {partyBills.map((bill) => (
@@ -526,7 +547,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
             )}
           </div>
 
-          {trip.party_bill_id !== "" && (
+          {isAttached && (
             <div>
               <label className={labelClass}>Xe thực tế thuê</label>
               <select
@@ -830,7 +851,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           </div>
         </div>
 
-        {(result.total_shared_cost > 0 || trip.people_count > 0 || linkedBill) && (
+        {(result.total_shared_cost > 0 || trip.people_count > 0 || isAttached) && (
           <div className="mt-5 pt-4 border-t border-slate-200">
             <h3 className="font-semibold text-gray-900 mb-2">Tổng chi phí chuyến đi</h3>
 
@@ -865,7 +886,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                     <span className="font-semibold">
                       {formatCurrency(option.trip_total_cost)}
                     </span>
-                    {trip.people_count > 0 && !linkedBill && (
+                    {trip.people_count > 0 && !isAttached && (
                       <span className="text-gray-600">
                         {" · "}
                         {formatCurrency(option.per_person_cost)}/người
@@ -876,12 +897,14 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
               ))}
             </div>
 
-            {linkedBill ? (
+            {isAttached ? (
               <div className="mt-3 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
                 Tiền xe được chia qua bill tiệc{" "}
-                <a href={`/party-bills/${linkedBill.id}`} className="font-medium underline">
-                  {linkedBill.name || `Bill #${linkedBill.id}`}
-                </a>
+                <Link to={`/party-bills/${trip.party_bill_id}`} className="font-medium underline">
+                  {linkedBill
+                    ? linkedBill.name || `Bill #${linkedBill.id}`
+                    : "Bill tiệc đã gắn (chưa tải được tên)"}
+                </Link>
                 {result.total_shared_cost > 0 && (
                   <div className="text-blue-600 mt-1">
                     Số đẩy sang đã gồm chi phí chung ({formatCurrency(result.total_shared_cost)}) —
