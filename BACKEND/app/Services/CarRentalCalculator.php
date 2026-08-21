@@ -15,9 +15,19 @@ class CarRentalCalculator
         $distanceKm = (int) ($input['distance_km'] ?? 0);
         $peopleCount = (int) ($input['people_count'] ?? 0);
 
+        $sharedCosts = $this->normalizeSharedCosts($input['shared_costs'] ?? []);
+        $totalSharedCost = array_sum(array_column($sharedCosts, 'amount'));
+
         $options = [];
         foreach (array_values($input['options'] ?? []) as $index => $raw) {
-            $options[] = $this->calculateOption($raw, $index, $days, $distanceKm, $peopleCount);
+            $options[] = $this->calculateOption(
+                $raw,
+                $index,
+                $days,
+                $distanceKm,
+                $peopleCount,
+                $totalSharedCost
+            );
         }
 
         $options = $this->markCheapest($options);
@@ -25,6 +35,8 @@ class CarRentalCalculator
         return [
             'break_even_km' => $this->breakEvenKm($options, $days),
             'saving_amount' => $this->savingAmount($options),
+            'total_shared_cost' => $totalSharedCost,
+            'shared_costs' => $sharedCosts,
             'options' => $options,
         ];
     }
@@ -34,7 +46,8 @@ class CarRentalCalculator
         int $index,
         int $days,
         int $distanceKm,
-        int $peopleCount
+        int $peopleCount,
+        int $totalSharedCost
     ): array {
         $fuelType = $raw['fuel_type'] ?? 'none';
         $rentalPerDay = (int) ($raw['rental_per_day'] ?? 0);
@@ -57,6 +70,11 @@ class CarRentalCalculator
 
         $totalCost = $rentalCost + $fuelCost + $overKmCost + $extraFixedCost;
 
+        // Chi phí chung giống hệt nhau ở mọi phương án nên CỐ Ý không nằm trong
+        // $totalCost: giữ nguyên nghĩa "chi phí của riêng chiếc xe" cho phần so
+        // sánh (đ/km, % tiết kiệm, is_cheapest, break_even_km).
+        $tripTotalCost = $totalCost + $totalSharedCost;
+
         return [
             'name' => (string) ($raw['name'] ?? ''),
             'sort_order' => (int) ($raw['sort_order'] ?? $index),
@@ -72,9 +90,36 @@ class CarRentalCalculator
             'over_km_cost' => $overKmCost,
             'total_cost' => $totalCost,
             'cost_per_km' => $distanceKm > 0 ? (int) round($totalCost / $distanceKm) : 0,
-            'per_person_cost' => $peopleCount > 0 ? (int) round($totalCost / $peopleCount) : 0,
+            'trip_total_cost' => $tripTotalCost,
+            'per_person_cost' => $peopleCount > 0 ? (int) round($tripTotalCost / $peopleCount) : 0,
             'is_cheapest' => false,
         ];
+    }
+
+    /**
+     * Chuẩn hóa danh sách chi phí chung: bỏ dòng không có tên, đánh lại
+     * sort_order theo thứ tự còn lại.
+     *
+     * @return array<int, array{name: string, amount: int, sort_order: int}>
+     */
+    private function normalizeSharedCosts(array $rows): array
+    {
+        $result = [];
+
+        foreach (array_values($rows) as $raw) {
+            $name = trim((string) ($raw['name'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $result[] = [
+                'name' => $name,
+                'amount' => (int) ($raw['amount'] ?? 0),
+                'sort_order' => count($result),
+            ];
+        }
+
+        return $result;
     }
 
     /**

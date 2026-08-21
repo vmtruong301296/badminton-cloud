@@ -211,4 +211,83 @@ class CarRentalCalculatorTest extends TestCase
         $this->assertFalse($result['options'][1]['is_cheapest']);
         $this->assertSame(0, $result['saving_amount']);
     }
+
+    // ----- Chi phí chung cả chuyến -----
+
+    public function test_khong_co_chi_phi_chung_thi_trip_total_bang_total(): void
+    {
+        $result = $this->calculator->calculate($this->trip([$this->petrol(), $this->electric()]));
+
+        $this->assertSame(0, $result['total_shared_cost']);
+        $this->assertSame([], $result['shared_costs']);
+        $this->assertSame(2680000, $result['options'][0]['trip_total_cost']);
+        $this->assertSame(1380000, $result['options'][1]['trip_total_cost']);
+    }
+
+    public function test_chi_phi_chung_cong_vao_ca_hai_phuong_an(): void
+    {
+        $result = $this->calculator->calculate($this->trip(
+            [$this->petrol(), $this->electric()],
+            ['shared_costs' => [
+                ['name' => 'Gửi xe', 'amount' => 200000],
+                ['name' => 'Trạm thu phí', 'amount' => 300000],
+            ]]
+        ));
+
+        $this->assertSame(500000, $result['total_shared_cost']);
+        $this->assertCount(2, $result['shared_costs']);
+        $this->assertSame('Gửi xe', $result['shared_costs'][0]['name']);
+        $this->assertSame(0, $result['shared_costs'][0]['sort_order']);
+        $this->assertSame(1, $result['shared_costs'][1]['sort_order']);
+
+        // Chi phí xe giữ nguyên, chỉ tổng chuyến mới cộng thêm.
+        $this->assertSame(2680000, $result['options'][0]['total_cost']);
+        $this->assertSame(1380000, $result['options'][1]['total_cost']);
+        $this->assertSame(3180000, $result['options'][0]['trip_total_cost']);
+        $this->assertSame(1880000, $result['options'][1]['trip_total_cost']);
+    }
+
+    public function test_chi_phi_chung_khong_doi_phuong_an_re_nhat_va_diem_hoa_von(): void
+    {
+        $result = $this->calculator->calculate($this->trip(
+            [$this->petrol(), $this->electric()],
+            ['shared_costs' => [['name' => 'Gửi xe', 'amount' => 5000000]]]
+        ));
+
+        // Dù chi phí chung lớn hơn cả tiền xe, nó giống nhau cả hai bên nên
+        // không được phép đổi người thắng, mức tiết kiệm, hay điểm hòa vốn.
+        $this->assertTrue($result['options'][1]['is_cheapest']);
+        $this->assertSame(1300000, $result['saving_amount']);
+        $this->assertSame(181, $result['break_even_km']);
+    }
+
+    public function test_chia_dau_nguoi_tinh_tren_tong_chuyen(): void
+    {
+        $result = $this->calculator->calculate($this->trip(
+            [$this->petrol(), $this->electric()],
+            [
+                'people_count' => 8,
+                'shared_costs' => [['name' => 'Trạm thu phí', 'amount' => 400000]],
+            ]
+        ));
+
+        // (2.680.000 + 400.000) / 8 = 385.000 ; (1.380.000 + 400.000) / 8 = 222.500
+        $this->assertSame(385000, $result['options'][0]['per_person_cost']);
+        $this->assertSame(222500, $result['options'][1]['per_person_cost']);
+    }
+
+    public function test_bo_qua_dong_chi_phi_chung_khong_co_ten(): void
+    {
+        $result = $this->calculator->calculate($this->trip(
+            [$this->petrol(), $this->electric()],
+            ['shared_costs' => [
+                ['name' => 'Gửi xe', 'amount' => 200000],
+                ['name' => '', 'amount' => 999000],
+                ['name' => '   ', 'amount' => 111000],
+            ]]
+        ));
+
+        $this->assertCount(1, $result['shared_costs']);
+        $this->assertSame(200000, $result['total_shared_cost']);
+    }
 }

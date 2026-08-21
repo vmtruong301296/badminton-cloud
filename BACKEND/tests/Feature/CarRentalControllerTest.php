@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\CarRentalComparison;
 use App\Models\CarRentalOption;
+use App\Models\CarRentalSharedCost;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -208,5 +209,94 @@ class CarRentalControllerTest extends TestCase
             ->postJson('/api/car-rentals', $this->payload(['days' => 0]))
             ->assertStatus(422)
             ->assertJsonValidationErrors('days');
+    }
+
+    // ----- Chi phí chung cả chuyến -----
+
+    public function test_luu_chi_phi_chung_va_tinh_tong_chuyen(): void
+    {
+        $payload = $this->payload([
+            'people_count' => 8,
+            'shared_costs' => [
+                ['name' => 'Gửi xe', 'amount' => 200000],
+                ['name' => 'Trạm thu phí', 'amount' => 300000],
+            ],
+        ]);
+
+        $this->actingAs($this->user())
+            ->postJson('/api/car-rentals', $payload)
+            ->assertStatus(201)
+            ->assertJsonPath('total_shared_cost', 500000)
+            ->assertJsonCount(2, 'shared_costs')
+            ->assertJsonPath('shared_costs.0.name', 'Gửi xe')
+            ->assertJsonPath('options.0.total_cost', 2680000)
+            ->assertJsonPath('options.0.trip_total_cost', 3180000)
+            ->assertJsonPath('options.0.per_person_cost', 397500)
+            ->assertJsonPath('options.1.trip_total_cost', 1880000)
+            ->assertJsonPath('options.1.per_person_cost', 235000)
+            // Chi phí chung không được đổi kết quả so sánh xe.
+            ->assertJsonPath('saving_amount', 1300000)
+            ->assertJsonPath('break_even_km', 181)
+            ->assertJsonPath('options.1.is_cheapest', true);
+
+        $this->assertSame(2, CarRentalSharedCost::count());
+    }
+
+    public function test_cap_nhat_thay_the_toan_bo_chi_phi_chung(): void
+    {
+        $user = $this->user();
+        $id = $this->actingAs($user)
+            ->postJson('/api/car-rentals', $this->payload([
+                'shared_costs' => [
+                    ['name' => 'Gửi xe', 'amount' => 200000],
+                    ['name' => 'Trạm thu phí', 'amount' => 300000],
+                ],
+            ]))
+            ->json('id');
+
+        $this->actingAs($user)
+            ->putJson("/api/car-rentals/{$id}", $this->payload([
+                'shared_costs' => [['name' => 'Ăn uống', 'amount' => 1000000]],
+            ]))
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'shared_costs')
+            ->assertJsonPath('shared_costs.0.name', 'Ăn uống')
+            ->assertJsonPath('total_shared_cost', 1000000);
+
+        $this->assertSame(1, CarRentalSharedCost::count(), 'chi phí chung cũ phải bị xóa, không cộng dồn');
+    }
+
+    public function test_xoa_comparison_thi_xoa_luon_chi_phi_chung(): void
+    {
+        $user = $this->user();
+        $id = $this->actingAs($user)
+            ->postJson('/api/car-rentals', $this->payload([
+                'shared_costs' => [['name' => 'Gửi xe', 'amount' => 200000]],
+            ]))
+            ->json('id');
+
+        $this->actingAs($user)->deleteJson("/api/car-rentals/{$id}")->assertStatus(200);
+
+        $this->assertSame(0, CarRentalSharedCost::count());
+    }
+
+    public function test_khong_gui_chi_phi_chung_van_hop_le(): void
+    {
+        $this->actingAs($this->user())
+            ->postJson('/api/car-rentals', $this->payload())
+            ->assertStatus(201)
+            ->assertJsonPath('total_shared_cost', 0)
+            ->assertJsonCount(0, 'shared_costs')
+            ->assertJsonPath('options.0.trip_total_cost', 2680000);
+    }
+
+    public function test_chi_phi_chung_am_bi_422(): void
+    {
+        $this->actingAs($this->user())
+            ->postJson('/api/car-rentals', $this->payload([
+                'shared_costs' => [['name' => 'Gửi xe', 'amount' => -1]],
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('shared_costs.0.amount');
     }
 }

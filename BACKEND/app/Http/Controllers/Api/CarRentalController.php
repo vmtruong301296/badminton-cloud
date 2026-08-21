@@ -19,7 +19,7 @@ class CarRentalController extends Controller
 
     public function index(): JsonResponse
     {
-        $comparisons = CarRentalComparison::with(['creator', 'options'])
+        $comparisons = CarRentalComparison::with(['creator', 'options', 'sharedCosts'])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -29,7 +29,7 @@ class CarRentalController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $comparison = CarRentalComparison::with(['creator', 'options'])->findOrFail($id);
+        $comparison = CarRentalComparison::with(['creator', 'options', 'sharedCosts'])->findOrFail($id);
 
         return response()->json($comparison);
     }
@@ -40,7 +40,7 @@ class CarRentalController extends Controller
             fn () => $this->persist(new CarRentalComparison(), $request)
         );
 
-        return response()->json($comparison->load(['creator', 'options']), 201);
+        return response()->json($comparison->load(['creator', 'options', 'sharedCosts']), 201);
     }
 
     public function update(UpdateCarRentalComparisonRequest $request, string $id): JsonResponse
@@ -51,7 +51,7 @@ class CarRentalController extends Controller
             fn () => $this->persist($comparison, $request)
         );
 
-        return response()->json($comparison->load(['creator', 'options']));
+        return response()->json($comparison->load(['creator', 'options', 'sharedCosts']));
     }
 
     public function destroy(string $id): JsonResponse
@@ -78,6 +78,7 @@ class CarRentalController extends Controller
             'distance_km' => $distanceKm,
             'people_count' => $peopleCount,
             'options' => $request->input('options', []),
+            'shared_costs' => $request->input('shared_costs', []),
         ]);
 
         $comparison->fill([
@@ -89,6 +90,7 @@ class CarRentalController extends Controller
             'note' => $request->input('note') ?: null,
             'break_even_km' => $result['break_even_km'],
             'saving_amount' => $result['saving_amount'],
+            'total_shared_cost' => $result['total_shared_cost'],
         ]);
 
         if (! $comparison->exists) {
@@ -96,10 +98,15 @@ class CarRentalController extends Controller
         }
 
         $comparison->save();
-        $comparison->options()->delete();
 
+        $comparison->options()->delete();
         foreach ($result['options'] as $option) {
             $comparison->options()->create($option);
+        }
+
+        $comparison->sharedCosts()->delete();
+        foreach ($result['shared_costs'] as $sharedCost) {
+            $comparison->sharedCosts()->create($sharedCost);
         }
 
         return $comparison;

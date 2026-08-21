@@ -22,6 +22,7 @@ class CarRentalOption extends Model
         'fuel_cost',
         'over_km_cost',
         'total_cost',
+        'trip_total_cost',
         'cost_per_km',
         'per_person_cost',
         'is_cheapest',

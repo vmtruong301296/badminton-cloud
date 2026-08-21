@@ -17,6 +17,7 @@ class CarRentalComparison extends Model
         'note',
         'break_even_km',
         'saving_amount',
+        'total_shared_cost',
         'created_by',
     ];
 
@@ -35,5 +36,10 @@ class CarRentalComparison extends Model
     public function options(): HasMany
     {
         return $this->hasMany(CarRentalOption::class)->orderBy('sort_order');
+    }
+
+    public function sharedCosts(): HasMany
+    {
+        return $this->hasMany(CarRentalSharedCost::class)->orderBy('sort_order');
     }
 }
