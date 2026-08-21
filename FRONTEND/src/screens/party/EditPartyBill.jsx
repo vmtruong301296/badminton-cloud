@@ -459,7 +459,7 @@ export default function EditPartyBill() {
                 </button>
               </div>
               <div className="space-y-2.5 p-4 sm:p-5">
-                {form.extras.length === 0 && (
+                {form.extras.length === 0 && lockedExtras.length === 0 && (
                   <p className="text-xs text-slate-500">
                     Chưa có chi phí phụ. Bấm "Thêm" để thêm.
                   </p>
