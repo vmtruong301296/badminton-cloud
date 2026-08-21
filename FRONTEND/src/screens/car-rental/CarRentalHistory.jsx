@@ -194,6 +194,14 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                   {item.people_count > 0 && <div>Chia {item.people_count} người</div>}
                   {item.note && <div>Ghi chú: {item.note}</div>}
                   {item.creator && <div>Người tạo: {item.creator.name}</div>}
+                  {item.party_bill && (
+                    <div>
+                      Gắn với bill tiệc:{" "}
+                      <a href={`/party-bills/${item.party_bill.id}`} className="text-blue-600 underline">
+                        {item.party_bill.name || `Bill #${item.party_bill.id}`}
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">

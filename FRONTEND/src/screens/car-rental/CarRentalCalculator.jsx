@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { calculateCarRental } from "../../utils/carRentalCost";
-import { carRentalsApi, fuelPricesApi } from "../../services/api";
+import { carRentalsApi, fuelPricesApi, partyBillsApi } from "../../services/api";
 import { formatCurrency, formatNumber } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -45,6 +45,8 @@ const DEFAULT_TRIP = {
   distance_km: 0,
   people_count: 0,
   note: "",
+  party_bill_id: "",
+  selected_sort_order: "",
 };
 
 const DEFAULT_OPTIONS = [
@@ -206,6 +208,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [marketPrice, setMarketPrice] = useState(null);
+  const [partyBills, setPartyBills] = useState([]);
 
   // Lấy giá xăng thị trường: chạy nền, KHÔNG chặn form. Lỗi thì im lặng bỏ
   // qua và giữ nguyên giá mặc định cứng.
@@ -221,6 +224,25 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       })
       .catch(() => {
         /* không có giá thị trường thì dùng mặc định cứng */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Nạp danh sách bill tiệc để gắn chuyến đi vào: chạy nền, lỗi thì bỏ qua,
+  // không chặn form.
+  useEffect(() => {
+    let cancelled = false;
+
+    partyBillsApi
+      .getAll()
+      .then((response) => {
+        if (!cancelled) setPartyBills(response.data ?? []);
+      })
+      .catch(() => {
+        /* không nạp được thì ẩn ô chọn, không chặn form */
       });
 
     return () => {
@@ -253,6 +275,11 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       distance_km: editing.distance_km ?? 0,
       people_count: editing.people_count ?? 0,
       note: editing.note ?? "",
+      party_bill_id: editing.party_bill_id ?? "",
+      selected_sort_order:
+        editing.selected_sort_order === null || editing.selected_sort_order === undefined
+          ? ""
+          : editing.selected_sort_order,
     });
 
     setOptions(
@@ -296,6 +323,10 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   );
 
   const hasKmLimit = options.some((option) => option.km_limit_per_day !== null);
+
+  const linkedBill = partyBills.find(
+    (bill) => String(bill.id) === String(trip.party_bill_id)
+  );
 
   const setTripField = (field) => (event) => {
     const raw = event.target.value;
@@ -354,6 +385,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       distance_km: trip.distance_km,
       people_count: trip.people_count,
       note: trip.note || null,
+      party_bill_id: trip.party_bill_id === "" ? null : Number(trip.party_bill_id),
+      selected_sort_order:
+        trip.selected_sort_order === "" ? null : Number(trip.selected_sort_order),
       options: options.map((option, index) => ({
         name: option.name || `Phương án ${index + 1}`,
         sort_order: index,
@@ -379,7 +413,11 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       resetForm();
       onSaved?.();
     } catch (error) {
-      const detail = error?.response?.data?.message || "Không lưu được. Thử lại giúp mình.";
+      const data = error?.response?.data;
+      const detail =
+        data?.errors?.party_bill_id?.[0] ||
+        data?.message ||
+        "Không lưu được. Thử lại giúp mình.";
       setMessage({ type: "error", text: detail });
     } finally {
       setSaving(false);
@@ -463,6 +501,50 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
             <label className={labelClass}>Ghi chú</label>
             <input type="text" className={inputClass} value={trip.note} onChange={setTripField("note")} />
           </div>
+
+          <div>
+            <label className={labelClass}>Gắn vào bill tiệc</label>
+            <select
+              className={inputClass}
+              value={trip.party_bill_id}
+              onChange={(event) =>
+                setTrip((prev) => ({ ...prev, party_bill_id: event.target.value }))
+              }
+            >
+              <option value="">— Không gắn —</option>
+              {partyBills.map((bill) => (
+                <option key={bill.id} value={bill.id}>
+                  {bill.name || `Bill #${bill.id}`}
+                  {bill.date ? ` · ${new Date(bill.date).toLocaleDateString("vi-VN")}` : ""}
+                </option>
+              ))}
+            </select>
+            {partyBills.length === 0 && (
+              <p className="mt-1 text-xs text-gray-500">
+                Chưa có bill tiệc nào để gắn vào.
+              </p>
+            )}
+          </div>
+
+          {trip.party_bill_id !== "" && (
+            <div>
+              <label className={labelClass}>Xe thực tế thuê</label>
+              <select
+                className={inputClass}
+                value={trip.selected_sort_order}
+                onChange={(event) =>
+                  setTrip((prev) => ({ ...prev, selected_sort_order: event.target.value }))
+                }
+              >
+                <option value="">Phương án rẻ nhất</option>
+                {options.map((option, index) => (
+                  <option key={index} value={index}>
+                    {option.name || `Phương án ${index + 1}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </section>
 
@@ -748,7 +830,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           </div>
         </div>
 
-        {(result.total_shared_cost > 0 || trip.people_count > 0) && (
+        {(result.total_shared_cost > 0 || trip.people_count > 0 || linkedBill) && (
           <div className="mt-5 pt-4 border-t border-slate-200">
             <h3 className="font-semibold text-gray-900 mb-2">Tổng chi phí chuyến đi</h3>
 
@@ -783,7 +865,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                     <span className="font-semibold">
                       {formatCurrency(option.trip_total_cost)}
                     </span>
-                    {trip.people_count > 0 && (
+                    {trip.people_count > 0 && !linkedBill && (
                       <span className="text-gray-600">
                         {" · "}
                         {formatCurrency(option.per_person_cost)}/người
@@ -793,6 +875,21 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                 </div>
               ))}
             </div>
+
+            {linkedBill ? (
+              <div className="mt-3 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
+                Tiền xe được chia qua bill tiệc{" "}
+                <a href={`/party-bills/${linkedBill.id}`} className="font-medium underline">
+                  {linkedBill.name || `Bill #${linkedBill.id}`}
+                </a>
+                {result.total_shared_cost > 0 && (
+                  <div className="text-blue-600 mt-1">
+                    Số đẩy sang đã gồm chi phí chung ({formatCurrency(result.total_shared_cost)}) —
+                    đừng gõ lại gửi xe / trạm thu phí thành dòng riêng bên bill tiệc.
+                  </div>
+                )}
+              </div>
+            ) : null}
           </div>
         )}
 
