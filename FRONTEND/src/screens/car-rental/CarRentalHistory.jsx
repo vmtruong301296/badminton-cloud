@@ -1,8 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { carRentalsApi } from "../../services/api";
-import { formatCurrency, formatDateDisplay, formatNumber } from "../../utils/formatters";
+import {
+  formatCurrency,
+  formatDateDisplay,
+  formatNumber,
+} from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
+import OptionBreakdown from "../../components/car-rental/OptionBreakdown";
 
 export default function CarRentalHistory({ reloadKey, onEdit }) {
   const { hasPermission } = useAuth();
@@ -74,11 +79,16 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
   return (
     <div className="space-y-3">
       {items.map((item) => {
-        const cheapest = (item.options ?? []).find((option) => option.is_cheapest);
+        const cheapest = (item.options ?? []).find(
+          (option) => option.is_cheapest,
+        );
         const expanded = expandedId === item.id;
 
         return (
-          <div key={item.id} className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div
+            key={item.id}
+            className="bg-white rounded-xl border border-slate-200 overflow-hidden"
+          >
             <button
               type="button"
               onClick={() => setExpandedId(expanded ? null : item.id)}
@@ -102,7 +112,8 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                     </span>
                   </>
                 )}
-                {item.saving_amount > 0 && ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
+                {item.saving_amount > 0 &&
+                  ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
                 {item.total_shared_cost > 0 &&
                   ` · Chi phí chung ${formatCurrency(item.total_shared_cost)}`}
               </div>
@@ -110,46 +121,21 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
 
             {expanded && (
               <div className="px-4 pb-4 border-t border-slate-100">
-                <div className="overflow-x-auto mt-3">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-gray-500 border-b border-slate-200">
-                        <th className="py-2 pr-3">Phương án</th>
-                        <th className="py-2 px-3 text-right">Thuê</th>
-                        <th className="py-2 px-3 text-right">Nhiên liệu</th>
-                        <th className="py-2 px-3 text-right">Vượt km</th>
-                        <th className="py-2 px-3 text-right">Khác</th>
-                        <th className="py-2 px-3 text-right">Tổng</th>
-                        <th className="py-2 pl-3 text-right">đ/km</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(item.options ?? []).map((option) => (
-                        <tr
-                          key={option.id}
-                          className={`border-b border-slate-100 ${option.is_cheapest ? "bg-green-50" : ""}`}
-                        >
-                          <td className="py-2 pr-3 font-medium text-gray-900">{option.name}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(option.rental_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(option.fuel_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(option.over_km_cost)}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(option.extra_fixed_cost)}</td>
-                          <td className="py-2 px-3 text-right font-semibold">
-                            {formatCurrency(option.total_cost)}
-                          </td>
-                          <td className="py-2 pl-3 text-right">{formatCurrency(option.cost_per_km)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="mt-3">
+                  <OptionBreakdown options={item.options ?? []} />
                 </div>
 
                 {item.total_shared_cost > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-medium text-gray-900 mb-2">Tổng chi phí chuyến đi</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      Tổng chi phí chuyến đi
+                    </h4>
                     <div className="text-sm text-gray-600 mb-2 space-y-0.5">
                       {(item.shared_costs ?? []).map((row) => (
-                        <div key={row.id} className="flex justify-between max-w-xs">
+                        <div
+                          key={row.id}
+                          className="flex justify-between max-w-xs"
+                        >
                           <span>{row.name}</span>
                           <span>{formatCurrency(row.amount)}</span>
                         </div>
@@ -190,15 +176,22 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
 
                 <div className="mt-3 text-sm text-gray-600 space-y-1">
                   {item.break_even_km !== null && (
-                    <div>Điểm hòa vốn: {formatNumber(item.break_even_km)} km</div>
+                    <div>
+                      Điểm hòa vốn: {formatNumber(item.break_even_km)} km
+                    </div>
                   )}
-                  {item.people_count > 0 && <div>Chia {item.people_count} người</div>}
+                  {item.people_count > 0 && (
+                    <div>Chia {item.people_count} người</div>
+                  )}
                   {item.note && <div>Ghi chú: {item.note}</div>}
                   {item.creator && <div>Người tạo: {item.creator.name}</div>}
                   {item.party_bill && (
                     <div>
                       Gắn với bill tiệc:{" "}
-                      <Link to={`/party-bills/${item.party_bill.id}`} className="text-blue-600 underline">
+                      <Link
+                        to={`/party-bills/${item.party_bill.id}`}
+                        className="text-blue-600 underline"
+                      >
                         {item.party_bill.name || `Bill #${item.party_bill.id}`}
                       </Link>
                     </div>

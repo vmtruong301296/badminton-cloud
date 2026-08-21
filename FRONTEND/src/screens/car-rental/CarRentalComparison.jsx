@@ -24,7 +24,7 @@ export default function CarRentalComparison() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6">
+    <div className="max-w-5xl mx-auto p-3 sm:p-6">
       <div className="mb-4">
         <h1 className="text-2xl font-semibold text-gray-900">
           🚗 So sánh chi phí thuê xe

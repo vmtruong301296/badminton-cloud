@@ -10,6 +10,7 @@ import { formatCurrency, formatNumber } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import ThousandHint from "../../components/common/ThousandHint";
+import OptionBreakdown from "../../components/car-rental/OptionBreakdown";
 
 /** Loại xăng mà giá thị trường lấy được áp cho. */
 const PETROL_FUEL_KEY = "e10_ron95_iii";
@@ -505,7 +506,9 @@ export default function CarRentalCalculator({
   const labelClass = "block text-sm font-medium text-gray-700 mb-1";
 
   return (
-    <div className="space-y-6">
+    // pb-24 chừa chỗ cho thanh hành động dính đáy, không thì nó che mất phần
+    // cuối của khối Kết quả.
+    <div className="space-y-6 pb-24 sm:pb-0">
       {message && (
         <div
           className={`px-4 py-3 rounded-lg ${
@@ -532,10 +535,12 @@ export default function CarRentalCalculator({
       )}
 
       {/* Thông tin chuyến đi */}
-      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+      <section className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Chuyến đi</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div>
+        {/* Mobile 2 cột: ba ô số ngắn (số ngày, km, số người) xếp đôi cho đỡ
+            cuộn; ô nào nhãn dài hoặc nội dung dài thì col-span-2 chiếm cả hàng. */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+          <div className="col-span-2 sm:col-span-1">
             <label className={labelClass}>Tên chuyến</label>
             <input
               type="text"
@@ -584,7 +589,7 @@ export default function CarRentalCalculator({
               onChange={setTripField("people_count")}
             />
           </div>
-          <div className="sm:col-span-2 lg:col-span-1">
+          <div className="col-span-2 lg:col-span-1">
             <label className={labelClass}>Ghi chú</label>
             <input
               type="text"
@@ -594,7 +599,7 @@ export default function CarRentalCalculator({
             />
           </div>
 
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <label className={labelClass}>Gắn vào bill tiệc</label>
             <select
               className={inputClass}
@@ -629,7 +634,7 @@ export default function CarRentalCalculator({
           </div>
 
           {isAttached && (
-            <div>
+            <div className="col-span-2 sm:col-span-1">
               <label className={labelClass}>Xe thực tế thuê</label>
               <select
                 className={inputClass}
@@ -654,7 +659,7 @@ export default function CarRentalCalculator({
       </section>
 
       {/* Các phương án */}
-      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+      <section className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-gray-900">Phương án thuê xe</h2>
           <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
@@ -674,7 +679,7 @@ export default function CarRentalCalculator({
             return (
               <div
                 key={index}
-                className="border border-slate-200 rounded-lg p-4"
+                className="border border-slate-200 rounded-lg p-3 sm:p-4"
               >
                 <div className="flex items-center justify-between mb-3">
                   <input
@@ -697,7 +702,7 @@ export default function CarRentalCalculator({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className={labelClass}>Giá thuê / ngày (đ)</label>
                     <CurrencyInput
@@ -752,7 +757,9 @@ export default function CarRentalCalculator({
                           }
                         />
                       </div>
-                      <div>
+                      {/* Nhãn dài, lại có thêm gợi ý giá thị trường bên dưới,
+                          nên trên mobile để chiếm cả hàng cho dễ đọc. */}
+                      <div className="col-span-2 sm:col-span-1">
                         <label className={labelClass}>
                           Đơn giá ({meta.priceUnit}) — 0 là miễn phí
                         </label>
@@ -862,7 +869,7 @@ export default function CarRentalCalculator({
       </section>
 
       {/* Chi phí chung cả chuyến */}
-      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+      <section className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
         <div className="mb-1 flex items-baseline justify-between gap-3">
           <h2 className="font-semibold text-gray-900">
             Chi phí chung cả chuyến
@@ -933,59 +940,10 @@ export default function CarRentalCalculator({
       </section>
 
       {/* Kết quả */}
-      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+      <section className="bg-white rounded-xl border border-slate-200 p-3 sm:p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Kết quả</h2>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-gray-500 border-b border-slate-200">
-                <th className="py-2 pr-3">Phương án</th>
-                <th className="py-2 px-3 text-right">Thuê</th>
-                <th className="py-2 px-3 text-right">Nhiên liệu</th>
-                <th className="py-2 px-3 text-right">Vượt km</th>
-                <th className="py-2 px-3 text-right">Khác</th>
-                <th className="py-2 px-3 text-right">Tổng</th>
-                <th className="py-2 pl-3 text-right">đ/km</th>
-              </tr>
-            </thead>
-            <tbody>
-              {result.options.map((option, index) => (
-                <tr
-                  key={index}
-                  className={`border-b border-slate-100 ${option.is_cheapest ? "bg-green-50" : ""}`}
-                >
-                  <td className="py-2 pr-3 font-medium text-gray-900">
-                    {option.name || `Phương án ${index + 1}`}
-                    {option.is_cheapest && (
-                      <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-600 text-white">
-                        Rẻ nhất
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-2 px-3 text-right">
-                    {formatCurrency(option.rental_cost)}
-                  </td>
-                  <td className="py-2 px-3 text-right">
-                    {formatCurrency(option.fuel_cost)}
-                  </td>
-                  <td className="py-2 px-3 text-right">
-                    {formatCurrency(option.over_km_cost)}
-                  </td>
-                  <td className="py-2 px-3 text-right">
-                    {formatCurrency(option.extra_fixed_cost)}
-                  </td>
-                  <td className="py-2 px-3 text-right font-semibold text-gray-900">
-                    {formatCurrency(option.total_cost)}
-                  </td>
-                  <td className="py-2 pl-3 text-right">
-                    {formatCurrency(option.cost_per_km)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <OptionBreakdown options={result.options} />
 
         <div className="mt-4 space-y-2">
           {result.saving_amount > 0 && (
@@ -1083,7 +1041,8 @@ export default function CarRentalCalculator({
           </div>
         )}
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        {/* sm trở lên: giữ nguyên hàng nút cũ */}
+        <div className="mt-5 hidden flex-wrap gap-3 sm:flex">
           <button
             type="button"
             onClick={handleCopy}
@@ -1109,7 +1068,44 @@ export default function CarRentalCalculator({
             Nhập lại
           </button>
         </div>
+
+        {/* Mobile: "Nhập lại" ở lại trong luồng — nó xóa trắng form, không nên
+            nằm sát mép dưới nơi ngón cái hay quệt trúng. */}
+        <div className="mt-5 sm:hidden">
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-4 py-2 text-gray-600 hover:text-gray-900"
+          >
+            Nhập lại
+          </button>
+        </div>
       </section>
+
+      {/* Mobile: hai hành động chính dính đáy màn hình. Trang này dài (chuyến
+          đi + từng phương án + chi phí chung + kết quả) nên không phải cuộn
+          xuống tận cùng mới bấm được. */}
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleCopy}
+            className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-gray-700"
+          >
+            Copy kết quả
+          </button>
+          {canSave && (
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white disabled:opacity-50"
+            >
+              {saving ? "Đang lưu..." : editing ? "Cập nhật" : "Lưu lại"}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
