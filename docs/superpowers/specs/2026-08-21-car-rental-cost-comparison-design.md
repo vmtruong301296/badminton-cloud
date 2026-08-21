@@ -191,13 +191,18 @@ trên bảng comparison, để tránh khóa ngoại vòng tròn giữa hai bản
 
 Đặt trong nhóm `Route::middleware('auth')` sẵn có tại `BACKEND/routes/api.php`.
 
-| Method | Đường dẫn | Action | Quyền |
-|---|---|---|---|
-| GET | `/api/car-rentals` | index | `car_rentals.view` |
-| POST | `/api/car-rentals` | store | `car_rentals.create` |
-| GET | `/api/car-rentals/{id}` | show | `car_rentals.view` |
-| PUT | `/api/car-rentals/{id}` | update | `car_rentals.update` |
-| DELETE | `/api/car-rentals/{id}` | destroy | `car_rentals.delete` |
+| Method | Đường dẫn | Action |
+|---|---|---|
+| GET | `/api/car-rentals` | index |
+| POST | `/api/car-rentals` | store |
+| GET | `/api/car-rentals/{id}` | show |
+| PUT | `/api/car-rentals/{id}` | update |
+| DELETE | `/api/car-rentals/{id}` | destroy |
+
+Backend chỉ chặn `auth`, **không kiểm tra quyền ở tầng server**, đúng theo
+cách cả 14 controller hiện có trong repo đang làm. Quyền được gác ở frontend
+(`ProtectedRoute` và lọc menu trong `Layout.jsx`). Xem mục 10 về giới hạn đã
+biết của cách làm này.
 
 `index` trả về kèm `options` và `creator`, sắp xếp `date desc, created_at desc`
 giống `PartyBillController::index`.
@@ -240,6 +245,9 @@ Thêm nhóm `car_rentals` vào `BACKEND/database/seeders/RolePermissionSeeder.ph
 
 Gán sẵn cả 4 quyền cho role `admin`. Các role khác để người dùng tự gán qua
 màn hình Quyền.
+
+Bốn quyền này được frontend dùng để ẩn/hiện menu và chặn route. Backend
+không đọc chúng — xem mục 6 và mục 10.
 
 Lịch sử **dùng chung cả CLB**: `index` không lọc theo `created_by`, đúng như
 `party_bills` đang làm.
@@ -302,7 +310,7 @@ Khu vực kết quả hiển thị theo thứ tự:
 - CRUD đầy đủ qua HTTP.
 - Backend tính lại và bỏ qua số client gửi lên: gửi kèm `total_cost` sai,
   bản ghi lưu vẫn ra con số đúng.
-- Chặn 403 khi thiếu quyền tương ứng cho từng route.
+- Chưa đăng nhập gọi API bị 401.
 - `options` ít hơn 2 phần tử bị 422.
 
 ### Frontend
@@ -322,3 +330,16 @@ Vitest chỉ là devDependency, không ảnh hưởng bundle production.
 | Công thức tồn tại ở 2 ngôn ngữ, dễ lệch | Test hai phía dùng chung bộ số kỳ vọng ở mục 9 |
 | Điểm hòa vốn không tính phí vượt km | Ghi chú bắt buộc trên UI khi có bật giới hạn km |
 | Người dùng nhầm quãng đường 1 chiều với 2 chiều | Nhãn ô nhập ghi rõ "tổng km cả đi lẫn về" |
+| Backend không kiểm tra quyền, ai đăng nhập cũng gọi được API | Đã biết và chấp nhận để nhất quán với 14 controller hiện có. Đây là lỗ hổng sẵn có của toàn app, không riêng chức năng này — cần một việc riêng để vá đồng loạt, xem mục 11 |
+
+## 11. Việc tồn đọng ngoài phạm vi
+
+**Backend không có bất kỳ lớp kiểm tra quyền nào.** `User::hasPermission()`
+tồn tại nhưng không controller hay middleware nào gọi tới. Cả 5 route mới lẫn
+toàn bộ route cũ (`bills`, `party-bills`, `players`, `roles`, ...) chỉ chặn
+`auth`. Bất kỳ tài khoản đã đăng nhập nào cũng có thể gọi thẳng mọi API bằng
+`curl`, kể cả xóa bill hay sửa phân quyền, dù giao diện đã ẩn nút.
+
+Vá triệt để cần một middleware `CheckPermission` áp đồng loạt cho mọi route,
+kèm rà soát dữ liệu quyền trên production để không khóa nhầm người đang dùng.
+Việc này cố ý để ngoài phạm vi chức năng so sánh thuê xe.
