@@ -9,6 +9,7 @@ use App\Models\PartyBill;
 use App\Models\PartyBillExtra;
 use App\Models\PartyBillParticipant;
 use App\Models\User;
+use App\Services\PartyBillRecalculator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,10 @@ use Carbon\Carbon;
 
 class PartyBillController extends Controller
 {
+    public function __construct(private PartyBillRecalculator $recalculator)
+    {
+    }
+
     public function index(): JsonResponse
     {
         $partyBills = PartyBill::with(['creator', 'extras', 'participants.user'])
@@ -45,30 +50,17 @@ class PartyBillController extends Controller
             $baseAmount = (int) $request->base_amount;
 
             $extrasData = $request->extras ?? [];
-            $totalExtra = 0;
-            foreach ($extrasData as $extra) {
-                $totalExtra += (int) ($extra['amount'] ?? 0);
-            }
-
-            $totalAmount = $baseAmount + $totalExtra;
 
             $participantsData = $request->participants;
-            $sumRatios = 0;
-            foreach ($participantsData as $p) {
-                $ratio = isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1;
-                $sumRatios += $ratio;
-            }
-
-            $unitPrice = $sumRatios > 0 ? (int) round($totalAmount / $sumRatios) : 0;
 
             $partyBill = PartyBill::create([
                 'date' => $request->date,
                 'name' => $request->name ?: null,
                 'note' => $request->note ?: null,
                 'base_amount' => $baseAmount,
-                'total_extra' => $totalExtra,
-                'total_amount' => $totalAmount,
-                'unit_price' => $unitPrice,
+                'total_extra' => 0,
+                'total_amount' => 0,
+                'unit_price' => 0,
                 'created_by' => $createdBy,
             ]);
 
@@ -81,27 +73,23 @@ class PartyBillController extends Controller
             }
 
             foreach ($participantsData as $p) {
-                $ratioValue = isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1;
-                $shareAmount = (int) round($ratioValue * $unitPrice);
-                $paidAmount = isset($p['paid_amount']) ? (int) $p['paid_amount'] : 0;
-                $foodAmount = isset($p['food_amount']) ? (int) $p['food_amount'] : 0;
-                $totalAmount = $shareAmount + $foodAmount - $paidAmount; // Thành tiền = share + số tiền món ăn - số tiền đã chi
-                $isPaid = $p['is_paid'] ?? false;
-
                 PartyBillParticipant::create([
                     'party_bill_id' => $partyBill->id,
                     'user_id' => $p['user_id'] ?? null,
                     'name' => $p['name'],
-                    'ratio_value' => $ratioValue,
-                    'share_amount' => $shareAmount,
-                    'total_amount' => $totalAmount,
-                    'paid_amount' => $paidAmount,
-                    'food_amount' => $foodAmount,
+                    'ratio_value' => isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1,
+                    'share_amount' => 0,
+                    'total_amount' => 0,
+                    'paid_amount' => isset($p['paid_amount']) ? (int) $p['paid_amount'] : 0,
+                    'food_amount' => isset($p['food_amount']) ? (int) $p['food_amount'] : 0,
                     'note' => $p['note'] ?? null,
-                    'is_paid' => $isPaid,
-                    'paid_at' => $isPaid ? now() : null,
+                    'is_paid' => $p['is_paid'] ?? false,
+                    'paid_at' => ($p['is_paid'] ?? false) ? now() : null,
                 ]);
             }
+
+            // Mọi con số tiền do đây tính, đọc từ DB.
+            $this->recalculator->recalculate($partyBill);
 
             DB::commit();
 
@@ -137,11 +125,7 @@ class PartyBillController extends Controller
 
             // Kiểm tra xem bill đã được thanh toán chưa
             // Bill được coi là đã thanh toán nếu TẤT CẢ participants đều đã thanh toán
-            $allParticipantsPaid = $partyBill->participants->every(function ($participant) {
-                return $participant->is_paid === true;
-            });
-
-            if ($allParticipantsPaid) {
+            if ($this->recalculator->isFullyPaid($partyBill)) {
                 // Nhánh này thoát sớm giữa transaction: phải rollback, không thì
                 // connection bị bỏ lại với transaction đang mở.
                 DB::rollBack();
@@ -155,21 +139,8 @@ class PartyBillController extends Controller
             $baseAmount = (int) $request->base_amount;
 
             $extrasData = $request->extras ?? [];
-            $totalExtra = 0;
-            foreach ($extrasData as $extra) {
-                $totalExtra += (int) ($extra['amount'] ?? 0);
-            }
-
-            $totalAmount = $baseAmount + $totalExtra;
 
             $participantsData = $request->participants;
-            $sumRatios = 0;
-            foreach ($participantsData as $p) {
-                $ratio = isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1;
-                $sumRatios += $ratio;
-            }
-
-            $unitPrice = $sumRatios > 0 ? (int) round($totalAmount / $sumRatios) : 0;
 
             // Update bill (giữ nguyên created_by)
             $partyBill->update([
@@ -177,9 +148,6 @@ class PartyBillController extends Controller
                 'name' => $request->name ?: null,
                 'note' => $request->note ?: null,
                 'base_amount' => $baseAmount,
-                'total_extra' => $totalExtra,
-                'total_amount' => $totalAmount,
-                'unit_price' => $unitPrice,
             ]);
 
             // Xóa các extras và participants cũ
@@ -197,27 +165,22 @@ class PartyBillController extends Controller
 
             // Tạo lại participants
             foreach ($participantsData as $p) {
-                $ratioValue = isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1;
-                $shareAmount = (int) round($ratioValue * $unitPrice);
-                $paidAmount = isset($p['paid_amount']) ? (int) $p['paid_amount'] : 0;
-                $foodAmount = isset($p['food_amount']) ? (int) $p['food_amount'] : 0;
-                $totalAmount = $shareAmount + $foodAmount - $paidAmount; // Thành tiền = share + số tiền món ăn - số tiền đã chi
-                $isPaid = $p['is_paid'] ?? false;
-
                 PartyBillParticipant::create([
                     'party_bill_id' => $partyBill->id,
                     'user_id' => $p['user_id'] ?? null,
                     'name' => $p['name'],
-                    'ratio_value' => $ratioValue,
-                    'share_amount' => $shareAmount,
-                    'total_amount' => $totalAmount,
-                    'paid_amount' => $paidAmount,
-                    'food_amount' => $foodAmount,
+                    'ratio_value' => isset($p['ratio_value']) ? (float) $p['ratio_value'] : 1,
+                    'share_amount' => 0,
+                    'total_amount' => 0,
+                    'paid_amount' => isset($p['paid_amount']) ? (int) $p['paid_amount'] : 0,
+                    'food_amount' => isset($p['food_amount']) ? (int) $p['food_amount'] : 0,
                     'note' => $p['note'] ?? null,
-                    'is_paid' => $isPaid,
-                    'paid_at' => $isPaid ? now() : null,
+                    'is_paid' => $p['is_paid'] ?? false,
+                    'paid_at' => ($p['is_paid'] ?? false) ? now() : null,
                 ]);
             }
+
+            $this->recalculator->recalculate($partyBill);
 
             DB::commit();
 
