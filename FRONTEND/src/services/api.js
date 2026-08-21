@@ -186,4 +186,11 @@ export const carRentalsApi = {
   delete: (id) => api.delete(`/car-rentals/${id}`),
 };
 
+// Fuel Prices (Giá xăng thị trường)
+export const fuelPricesApi = {
+  getAll: () => api.get("/fuel-prices"),
+  refresh: (fuelKey) => api.post(`/fuel-prices/${fuelKey}/refresh`),
+  setPrice: (fuelKey, price) => api.put(`/fuel-prices/${fuelKey}`, { price }),
+};
+
 export default api;

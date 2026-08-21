@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { calculateCarRental } from "../../utils/carRentalCost";
-import { carRentalsApi } from "../../services/api";
+import { carRentalsApi, fuelPricesApi } from "../../services/api";
 import { formatCurrency, formatNumber } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
+
+/** Loại xăng mà giá thị trường lấy được áp cho. */
+const PETROL_FUEL_KEY = "e10_ron95_iii";
+
+/** Dùng khi API giá xăng lỗi. Khớp fallback_price trong config/fuel_prices.php. */
+const FALLBACK_PETROL_PRICE = 22660;
 
 const FUEL_TYPES = [
   { value: "petrol", label: "Xăng", unit: "L/100km", priceUnit: "đ/lít" },
@@ -47,7 +53,7 @@ const DEFAULT_OPTIONS = [
     rental_per_day: 500000,
     fuel_type: "petrol",
     consumption_per_100: 7,
-    fuel_unit_price: 30000,
+    fuel_unit_price: FALLBACK_PETROL_PRICE,
   }),
   makeOption({
     name: "Xe điện",
@@ -133,6 +139,64 @@ function buildCopyText(trip, result, hasKmLimit) {
   return lines.join("\n");
 }
 
+/** Số ngày kể từ một mốc ISO, làm tròn xuống. */
+function daysSince(iso) {
+  if (!iso) return null;
+  const ms = Date.now() - new Date(iso).getTime();
+  return Math.floor(ms / 86400000);
+}
+
+/**
+ * Dòng xuất xứ giá xăng dưới ô đơn giá.
+ *
+ * Luôn nói rõ giá ở đâu ra và cũ bao lâu. Giá cào được CHỈ là gợi ý: người
+ * dùng bấm "Dùng giá này" mới áp, và gõ đè bất cứ lúc nào.
+ */
+function MarketPriceHint({ marketPrice, applied, onApply }) {
+  const { price, sources, source_date, fetched_at, last_error, is_manual, is_stale } = marketPrice;
+
+  const origin = is_manual
+    ? "quản trị viên nhập tay"
+    : Object.keys(sources ?? {}).join(" + ") || "không rõ nguồn";
+
+  const when = source_date
+    ? new Date(source_date).toLocaleDateString("vi-VN")
+    : fetched_at
+      ? new Date(fetched_at).toLocaleDateString("vi-VN")
+      : null;
+
+  const age = daysSince(fetched_at);
+
+  return (
+    <div className={`mt-1 text-xs ${is_stale ? "text-amber-700" : "text-gray-500"}`}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span>
+          Giá thị trường {formatNumber(price)} đ/lít · {origin}
+          {when && ` · ${when}`}
+        </span>
+        {!applied && (
+          <button
+            type="button"
+            onClick={onApply}
+            className="text-blue-600 hover:underline font-medium"
+          >
+            Dùng giá này
+          </button>
+        )}
+        {applied && <span className="text-green-700">đang dùng</span>}
+      </div>
+
+      {is_stale && (
+        <div>
+          Giá đã cũ{age !== null ? ` ${age} ngày` : ""}, nên kiểm tra lại (giá điều chỉnh mỗi thứ Năm).
+        </div>
+      )}
+
+      {last_error && <div>Lần cập nhật gần nhất thất bại: {last_error}</div>}
+    </div>
+  );
+}
+
 export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) {
   const { hasPermission } = useAuth();
   const [trip, setTrip] = useState(DEFAULT_TRIP);
@@ -141,6 +205,42 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
+  const [marketPrice, setMarketPrice] = useState(null);
+
+  // Lấy giá xăng thị trường: chạy nền, KHÔNG chặn form. Lỗi thì im lặng bỏ
+  // qua và giữ nguyên giá mặc định cứng.
+  useEffect(() => {
+    let cancelled = false;
+
+    fuelPricesApi
+      .getAll()
+      .then((response) => {
+        if (cancelled) return;
+        const found = (response.data ?? []).find((row) => row.fuel_key === PETROL_FUEL_KEY);
+        if (found) setMarketPrice(found);
+      })
+      .catch(() => {
+        /* không có giá thị trường thì dùng mặc định cứng */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Điền sẵn giá thị trường cho form MỚI. Không đụng vào form đang sửa bản
+  // ghi cũ, và không ghi đè giá người dùng đã tự gõ.
+  useEffect(() => {
+    if (!marketPrice || editing) return;
+
+    setOptions((prev) =>
+      prev.map((option) =>
+        option.fuel_type === "petrol" && option.fuel_unit_price === FALLBACK_PETROL_PRICE
+          ? { ...option, fuel_unit_price: marketPrice.price }
+          : option
+      )
+    );
+  }, [marketPrice, editing]);
 
   // Nạp lại một bản ghi cũ từ tab Lịch sử vào form.
   useEffect(() => {
@@ -459,6 +559,15 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                             setOptionField(index, "fuel_unit_price", Number(event.target.value) || 0)
                           }
                         />
+                        {option.fuel_type === "petrol" && marketPrice && (
+                          <MarketPriceHint
+                            marketPrice={marketPrice}
+                            applied={option.fuel_unit_price === marketPrice.price}
+                            onApply={() =>
+                              setOptionField(index, "fuel_unit_price", marketPrice.price)
+                            }
+                          />
+                        )}
                       </div>
                     </>
                   )}
