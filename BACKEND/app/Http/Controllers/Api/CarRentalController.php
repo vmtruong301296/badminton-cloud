@@ -129,7 +129,11 @@ class CarRentalController extends Controller
             'break_even_km' => $result['break_even_km'],
             'saving_amount' => $result['saving_amount'],
             'total_shared_cost' => $result['total_shared_cost'],
-            'party_bill_id' => $request->input('party_bill_id') ?: null,
+            // Ép kiểu int TRƯỚC khi rơi về null: CarRentalPartyBillLink::sync()
+            // so sánh strict (!==) giá trị này với $previousBillId (int|null)
+            // lấy từ DB — một chuỗi "5" lọt qua sẽ bị hiểu nhầm là "đổi sang
+            // bill khác" dù cùng một bill, gây xóa/tạo lại dòng extra thừa.
+            'party_bill_id' => (int) $request->input('party_bill_id') ?: null,
             'selected_sort_order' => $request->input('selected_sort_order'),
         ]);
 
