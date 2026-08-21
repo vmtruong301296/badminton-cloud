@@ -102,6 +102,8 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                   </>
                 )}
                 {item.saving_amount > 0 && ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
+                {item.total_shared_cost > 0 &&
+                  ` · Chi phí chung ${formatCurrency(item.total_shared_cost)}`}
               </div>
             </button>
 
@@ -140,6 +142,50 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                     </tbody>
                   </table>
                 </div>
+
+                {item.total_shared_cost > 0 && (
+                  <div className="mt-4">
+                    <h4 className="font-medium text-gray-900 mb-2">Tổng chi phí chuyến đi</h4>
+                    <div className="text-sm text-gray-600 mb-2 space-y-0.5">
+                      {(item.shared_costs ?? []).map((row) => (
+                        <div key={row.id} className="flex justify-between max-w-xs">
+                          <span>{row.name}</span>
+                          <span>{formatCurrency(row.amount)}</span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between max-w-xs font-medium text-gray-900 pt-1 border-t border-slate-200">
+                        <span>Chi phí chung</span>
+                        <span>{formatCurrency(item.total_shared_cost)}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {(item.options ?? []).map((option) => (
+                        <div
+                          key={option.id}
+                          className={`flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 rounded-lg ${
+                            option.is_cheapest ? "bg-green-50" : ""
+                          }`}
+                        >
+                          <span className="font-medium text-gray-900">
+                            {option.name}
+                            {option.is_cheapest && " 🏆"}
+                          </span>
+                          <span className="text-gray-900">
+                            <span className="font-semibold">
+                              {formatCurrency(option.trip_total_cost)}
+                            </span>
+                            {item.people_count > 0 && (
+                              <span className="text-gray-600">
+                                {" · "}
+                                {formatCurrency(option.per_person_cost)}/người
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-3 text-sm text-gray-600 space-y-1">
                   {item.break_even_km !== null && (

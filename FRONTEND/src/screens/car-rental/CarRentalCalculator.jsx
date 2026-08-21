@@ -25,6 +25,13 @@ const makeOption = (overrides = {}) => ({
   ...overrides,
 });
 
+const makeSharedCost = (overrides = {}) => ({ name: "", amount: 0, ...overrides });
+
+const DEFAULT_SHARED_COSTS = [
+  makeSharedCost({ name: "Gửi xe" }),
+  makeSharedCost({ name: "Trạm thu phí" }),
+];
+
 const DEFAULT_TRIP = {
   name: "",
   date: "",
@@ -106,6 +113,23 @@ function buildCopyText(trip, result, hasKmLimit) {
   }
   lines.push(breakEvenText(result, trip.distance_km, hasKmLimit));
 
+  if (result.total_shared_cost > 0) {
+    lines.push("");
+    lines.push(`Chi phí chung: ${formatCurrency(result.total_shared_cost)}`);
+    result.shared_costs.forEach((row) => {
+      lines.push(`   ${row.name}: ${formatCurrency(row.amount)}`);
+    });
+    lines.push("");
+    lines.push("TỔNG CHI PHÍ CHUYẾN ĐI");
+    result.options.forEach((option) => {
+      const perPerson =
+        trip.people_count > 0 ? ` · ${formatCurrency(option.per_person_cost)}/người` : "";
+      lines.push(
+        `${option.is_cheapest ? "✅" : "▫️"} ${option.name}: ${formatCurrency(option.trip_total_cost)}${perPerson}`
+      );
+    });
+  }
+
   return lines.join("\n");
 }
 
@@ -113,6 +137,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   const { hasPermission } = useAuth();
   const [trip, setTrip] = useState(DEFAULT_TRIP);
   const [options, setOptions] = useState(DEFAULT_OPTIONS);
+  const [sharedCosts, setSharedCosts] = useState(DEFAULT_SHARED_COSTS);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
@@ -145,6 +170,12 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       )
     );
 
+    setSharedCosts(
+      (editing.shared_costs ?? []).map((row) =>
+        makeSharedCost({ name: row.name, amount: row.amount })
+      )
+    );
+
     setShowAdvanced(
       (editing.options ?? []).some(
         (option) => option.km_limit_per_day !== null || option.extra_fixed_cost > 0
@@ -159,8 +190,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
         distance_km: trip.distance_km,
         people_count: trip.people_count,
         options: options.map((option, index) => ({ ...option, sort_order: index })),
+        shared_costs: sharedCosts,
       }),
-    [trip, options]
+    [trip, options, sharedCosts]
   );
 
   const hasKmLimit = options.some((option) => option.km_limit_per_day !== null);
@@ -183,9 +215,21 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   const removeOption = (index) =>
     setOptions((prev) => (prev.length <= 2 ? prev : prev.filter((_, i) => i !== index)));
 
+  const setSharedCostField = (index, field, value) => {
+    setSharedCosts((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+    );
+  };
+
+  const addSharedCost = () => setSharedCosts((prev) => [...prev, makeSharedCost()]);
+
+  const removeSharedCost = (index) =>
+    setSharedCosts((prev) => prev.filter((_, i) => i !== index));
+
   const resetForm = () => {
     setTrip(DEFAULT_TRIP);
     setOptions(DEFAULT_OPTIONS);
+    setSharedCosts(DEFAULT_SHARED_COSTS);
     setShowAdvanced(false);
     onCancelEdit?.();
   };
@@ -221,6 +265,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
         km_limit_per_day: option.km_limit_per_day,
         over_km_fee: option.over_km_fee,
       })),
+      shared_costs: sharedCosts
+        .filter((row) => row.name.trim() !== "")
+        .map((row) => ({ name: row.name.trim(), amount: row.amount })),
     };
 
     try {
@@ -475,6 +522,58 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
         </button>
       </section>
 
+      {/* Chi phí chung cả chuyến */}
+      <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
+        <div className="mb-1 flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold text-gray-900">Chi phí chung cả chuyến</h2>
+          <span className="text-sm text-gray-500">
+            Tổng {formatCurrency(result.total_shared_cost)}
+          </span>
+        </div>
+        <p className="text-sm text-gray-500 mb-3">
+          Các khoản áp như nhau cho mọi phương án, không ảnh hưởng việc so sánh xe.
+        </p>
+
+        <div className="space-y-2">
+          {sharedCosts.map((row, index) => (
+            <div key={index} className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                className={`${inputClass} flex-1 min-w-[140px]`}
+                placeholder="Tên khoản chi"
+                value={row.name}
+                onChange={(event) => setSharedCostField(index, "name", event.target.value)}
+              />
+              <input
+                type="number"
+                min="0"
+                className={`${inputClass} w-40`}
+                placeholder="0"
+                value={row.amount}
+                onChange={(event) =>
+                  setSharedCostField(index, "amount", Number(event.target.value) || 0)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => removeSharedCost(index)}
+                className="px-3 py-2 text-red-600 text-sm hover:underline"
+              >
+                Xóa
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={addSharedCost}
+          className="mt-3 px-4 py-2 border border-dashed border-slate-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600"
+        >
+          + Thêm khoản chi
+        </button>
+      </section>
+
       {/* Kết quả */}
       <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
         <h2 className="font-semibold text-gray-900 mb-3">Kết quả</h2>
@@ -538,18 +637,55 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           <div className="text-gray-700">
             {breakEvenText(result, trip.distance_km, hasKmLimit)}
           </div>
-          {trip.people_count > 0 && (
-            <div className="text-gray-700">
-              Chia {trip.people_count} người:{" "}
-              {result.options
-                .map(
-                  (option, index) =>
-                    `${option.name || `Phương án ${index + 1}`} ${formatCurrency(option.per_person_cost)}/người`
-                )
-                .join(" · ")}
-            </div>
-          )}
         </div>
+
+        {(result.total_shared_cost > 0 || trip.people_count > 0) && (
+          <div className="mt-5 pt-4 border-t border-slate-200">
+            <h3 className="font-semibold text-gray-900 mb-2">Tổng chi phí chuyến đi</h3>
+
+            {result.total_shared_cost > 0 && (
+              <div className="text-sm text-gray-600 mb-3 space-y-0.5">
+                {result.shared_costs.map((row) => (
+                  <div key={row.sort_order} className="flex justify-between max-w-xs">
+                    <span>{row.name}</span>
+                    <span>{formatCurrency(row.amount)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between max-w-xs font-medium text-gray-900 pt-1 border-t border-slate-200">
+                  <span>Chi phí chung</span>
+                  <span>{formatCurrency(result.total_shared_cost)}</span>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {result.options.map((option, index) => (
+                <div
+                  key={index}
+                  className={`flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 rounded-lg ${
+                    option.is_cheapest ? "bg-green-50" : ""
+                  }`}
+                >
+                  <span className="font-medium text-gray-900">
+                    {option.name || `Phương án ${index + 1}`}
+                    {option.is_cheapest && " 🏆"}
+                  </span>
+                  <span className="text-gray-900">
+                    <span className="font-semibold">
+                      {formatCurrency(option.trip_total_cost)}
+                    </span>
+                    {trip.people_count > 0 && (
+                      <span className="text-gray-600">
+                        {" · "}
+                        {formatCurrency(option.per_person_cost)}/người
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-5 flex flex-wrap gap-3">
           <button

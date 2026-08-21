@@ -21,7 +21,7 @@ const toFloat = (value) => {
   return Number.isFinite(num) ? num : 0;
 };
 
-function calculateOption(raw, index, days, distanceKm, peopleCount) {
+function calculateOption(raw, index, days, distanceKm, peopleCount, totalSharedCost) {
   const fuelType = raw.fuel_type ?? "none";
   const rentalPerDay = toInt(raw.rental_per_day);
   const consumption = fuelType === "none" ? 0 : toFloat(raw.consumption_per_100);
@@ -45,6 +45,11 @@ function calculateOption(raw, index, days, distanceKm, peopleCount) {
 
   const totalCost = rentalCost + fuelCost + overKmCost + extraFixedCost;
 
+  // Chi phí chung giống hệt nhau ở mọi phương án nên CỐ Ý không nằm trong
+  // totalCost: giữ nguyên nghĩa "chi phí của riêng chiếc xe" cho phần so sánh
+  // (đ/km, % tiết kiệm, is_cheapest, break_even_km).
+  const tripTotalCost = totalCost + totalSharedCost;
+
   return {
     name: raw.name ?? "",
     sort_order:
@@ -63,9 +68,31 @@ function calculateOption(raw, index, days, distanceKm, peopleCount) {
     over_km_cost: overKmCost,
     total_cost: totalCost,
     cost_per_km: distanceKm > 0 ? Math.round(totalCost / distanceKm) : 0,
-    per_person_cost: peopleCount > 0 ? Math.round(totalCost / peopleCount) : 0,
+    trip_total_cost: tripTotalCost,
+    per_person_cost: peopleCount > 0 ? Math.round(tripTotalCost / peopleCount) : 0,
     is_cheapest: false,
   };
+}
+
+/**
+ * Chuẩn hóa danh sách chi phí chung: bỏ dòng không có tên, đánh lại sort_order
+ * theo thứ tự còn lại.
+ */
+function normalizeSharedCosts(rows) {
+  const result = [];
+
+  (rows ?? []).forEach((raw) => {
+    const name = String(raw.name ?? "").trim();
+    if (name === "") return;
+
+    result.push({
+      name,
+      amount: toInt(raw.amount),
+      sort_order: result.length,
+    });
+  });
+
+  return result;
 }
 
 /** Đánh dấu phương án tổng tiền nhỏ nhất. Hòa thì sort_order nhỏ hơn thắng. */
@@ -124,15 +151,20 @@ export function calculateCarRental(input) {
   const distanceKm = toInt(input.distance_km);
   const peopleCount = toInt(input.people_count);
 
+  const sharedCosts = normalizeSharedCosts(input.shared_costs);
+  const totalSharedCost = sharedCosts.reduce((sum, row) => sum + row.amount, 0);
+
   const options = markCheapest(
     (input.options ?? []).map((raw, index) =>
-      calculateOption(raw, index, days, distanceKm, peopleCount)
+      calculateOption(raw, index, days, distanceKm, peopleCount, totalSharedCost)
     )
   );
 
   return {
     break_even_km: breakEvenKm(options, days),
     saving_amount: savingAmount(options),
+    total_shared_cost: totalSharedCost,
+    shared_costs: sharedCosts,
     options,
   };
 }

@@ -164,4 +164,74 @@ describe("calculateCarRental", () => {
     expect(result.options[1].is_cheapest).toBe(false);
     expect(result.saving_amount).toBe(0);
   });
+
+  // ----- Chi phí chung cả chuyến -----
+
+  it("không có chi phí chung thì trip_total bằng total", () => {
+    const result = calculateCarRental(trip([petrol(), electric()]));
+
+    expect(result.total_shared_cost).toBe(0);
+    expect(result.shared_costs).toEqual([]);
+    expect(result.options[0].trip_total_cost).toBe(2680000);
+    expect(result.options[1].trip_total_cost).toBe(1380000);
+  });
+
+  it("chi phí chung cộng vào cả hai phương án", () => {
+    const result = calculateCarRental(
+      trip([petrol(), electric()], {
+        shared_costs: [
+          { name: "Gửi xe", amount: 200000 },
+          { name: "Trạm thu phí", amount: 300000 },
+        ],
+      })
+    );
+
+    expect(result.total_shared_cost).toBe(500000);
+    expect(result.shared_costs).toHaveLength(2);
+    expect(result.shared_costs[0].sort_order).toBe(0);
+    expect(result.shared_costs[1].sort_order).toBe(1);
+
+    expect(result.options[0].total_cost).toBe(2680000);
+    expect(result.options[0].trip_total_cost).toBe(3180000);
+    expect(result.options[1].trip_total_cost).toBe(1880000);
+  });
+
+  it("chi phí chung không đổi phương án rẻ nhất và điểm hòa vốn", () => {
+    const result = calculateCarRental(
+      trip([petrol(), electric()], {
+        shared_costs: [{ name: "Gửi xe", amount: 5000000 }],
+      })
+    );
+
+    expect(result.options[1].is_cheapest).toBe(true);
+    expect(result.saving_amount).toBe(1300000);
+    expect(result.break_even_km).toBe(181);
+  });
+
+  it("chia đầu người tính trên tổng chuyến", () => {
+    const result = calculateCarRental(
+      trip([petrol(), electric()], {
+        people_count: 8,
+        shared_costs: [{ name: "Trạm thu phí", amount: 400000 }],
+      })
+    );
+
+    expect(result.options[0].per_person_cost).toBe(385000);
+    expect(result.options[1].per_person_cost).toBe(222500);
+  });
+
+  it("bỏ qua dòng chi phí chung không có tên", () => {
+    const result = calculateCarRental(
+      trip([petrol(), electric()], {
+        shared_costs: [
+          { name: "Gửi xe", amount: 200000 },
+          { name: "", amount: 999000 },
+          { name: "   ", amount: 111000 },
+        ],
+      })
+    );
+
+    expect(result.shared_costs).toHaveLength(1);
+    expect(result.total_shared_cost).toBe(200000);
+  });
 });
