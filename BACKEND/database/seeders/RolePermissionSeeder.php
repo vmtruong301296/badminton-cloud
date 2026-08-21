@@ -70,6 +70,12 @@ class RolePermissionSeeder extends Seeder
             ['name' => 'tournament_brackets.create_list', 'display_name' => 'Tạo danh sách VĐV (xếp bảng)', 'group' => 'tournament_brackets'],
             ['name' => 'tournament_brackets.organize', 'display_name' => 'Xếp bảng thi đấu', 'group' => 'tournament_brackets'],
             ['name' => 'tournament_brackets.delete', 'display_name' => 'Xóa bảng thi đấu', 'group' => 'tournament_brackets'],
+
+            // Car Rentals (So sánh chi phí thuê xe)
+            ['name' => 'car_rentals.view', 'display_name' => 'Xem so sánh thuê xe', 'group' => 'car_rentals'],
+            ['name' => 'car_rentals.create', 'display_name' => 'Tạo so sánh thuê xe', 'group' => 'car_rentals'],
+            ['name' => 'car_rentals.update', 'display_name' => 'Sửa so sánh thuê xe', 'group' => 'car_rentals'],
+            ['name' => 'car_rentals.delete', 'display_name' => 'Xóa so sánh thuê xe', 'group' => 'car_rentals'],
         ];
 
         foreach ($permissions as $permission) {
