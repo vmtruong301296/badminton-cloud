@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import NavDropdown from "./NavDropdown";
 
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [openGroups, setOpenGroups] = useState({});
 
   const isActive = (path) => {
     if (path === "/master") {
@@ -32,24 +34,43 @@ export default function Layout({ children }) {
   };
 
   const allNavItems = [
-    { path: "/", label: "Bill cầu", icon: "📊", permission: "bills.view" },
     {
-      path: "/bills/create",
-      label: "Tạo Bill cầu",
-      icon: "➕",
-      permission: "bills.create",
+      key: "bills",
+      label: "Bill cầu",
+      icon: "📊",
+      children: [
+        {
+          path: "/",
+          label: "Danh sách bill cầu",
+          icon: "📊",
+          permission: "bills.view",
+        },
+        {
+          path: "/bills/create",
+          label: "Tạo bill cầu mới",
+          icon: "➕",
+          permission: "bills.create",
+        },
+      ],
     },
     {
-      path: "/party-bills",
+      key: "party-bills",
       label: "Bill tiệc",
       icon: "🍽️",
-      permission: "party_bills.view",
-    },
-    {
-      path: "/party-bills/create",
-      label: "Tạo Bill tiệc",
-      icon: "🎉",
-      permission: "party_bills.create",
+      children: [
+        {
+          path: "/party-bills",
+          label: "Danh sách bill tiệc",
+          icon: "🍽️",
+          permission: "party_bills.view",
+        },
+        {
+          path: "/party-bills/create",
+          label: "Tạo bill tiệc mới",
+          icon: "🎉",
+          permission: "party_bills.create",
+        },
+      ],
     },
     {
       path: "/players",
@@ -84,14 +105,38 @@ export default function Layout({ children }) {
     { path: "/roles", label: "Quyền", icon: "🔐", permission: "roles.view" },
   ];
 
-  // Filter nav items based on permissions
-  const navItems = allNavItems.filter((item) => {
+  const canSee = (item) => {
     if (item.hasAnyPermission) {
       // Show if user has any of the required permissions
       return item.hasAnyPermission.some((perm) => hasPermission(perm));
     }
     return !item.permission || hasPermission(item.permission);
+  };
+
+  // Lọc theo quyền. Với nhóm thì lọc từng mục con trước: không con nào được
+  // phép thì bỏ cả nhóm, còn đúng 1 con thì hạ cấp thành link đơn vì dropdown
+  // chỉ có một lựa chọn chỉ tổ thêm một cú bấm.
+  const navItems = allNavItems.flatMap((item) => {
+    if (!item.children) {
+      return canSee(item) ? [item] : [];
+    }
+
+    const children = item.children.filter(canSee);
+
+    if (children.length === 0) return [];
+    if (children.length === 1) return [children[0]];
+
+    return [{ ...item, children }];
   });
+
+  const isGroupActive = (group) =>
+    group.children.some((child) => isActive(child.path));
+
+  // Chưa bấm lần nào thì nhóm đang active mở sẵn.
+  const isGroupOpen = (group) => openGroups[group.key] ?? isGroupActive(group);
+
+  const toggleGroup = (group) =>
+    setOpenGroups((prev) => ({ ...prev, [group.key]: !isGroupOpen(group) }));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -120,20 +165,29 @@ export default function Layout({ children }) {
               </button>
               {/* Desktop Navigation */}
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                      isActive(item.path)
-                        ? "border-blue-500 text-gray-900"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                  >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.label}
-                  </Link>
-                ))}
+                {navItems.map((item) =>
+                  item.children ? (
+                    <NavDropdown
+                      key={item.key}
+                      group={item}
+                      isActive={isGroupActive(item)}
+                      isItemActive={isActive}
+                    />
+                  ) : (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                        isActive(item.path)
+                          ? "border-blue-500 text-gray-900"
+                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                      }`}
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  )
+                )}
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -195,21 +249,77 @@ export default function Layout({ children }) {
               {/* Drawer Content */}
               <div className="flex-1 overflow-y-auto">
                 <nav className="p-4 space-y-1">
-                  {navItems.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={handleNavClick}
-                      className={`flex items-center px-4 py-3 rounded-md text-base font-medium transition-colors ${
-                        isActive(item.path)
-                          ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      <span className="mr-3 text-xl">{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  ))}
+                  {navItems.map((item) =>
+                    item.children ? (
+                      <div key={item.key}>
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(item)}
+                          aria-expanded={isGroupOpen(item)}
+                          className={`w-full flex items-center justify-between px-4 py-3 rounded-md text-base font-medium transition-colors ${
+                            isGroupActive(item)
+                              ? "bg-blue-50 text-blue-700"
+                              : "text-gray-700 hover:bg-gray-100"
+                          }`}
+                        >
+                          <span className="flex items-center">
+                            <span className="mr-3 text-xl">{item.icon}</span>
+                            {item.label}
+                          </span>
+                          <svg
+                            className={`h-4 w-4 transition-transform ${
+                              isGroupOpen(item) ? "rotate-180" : ""
+                            }`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+
+                        {isGroupOpen(item) && (
+                          <div className="mt-1 ml-5 pl-2 space-y-1 border-l-2 border-slate-200">
+                            {item.children.map((child) => (
+                              <Link
+                                key={child.path}
+                                to={child.path}
+                                onClick={handleNavClick}
+                                className={`flex items-center px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                  isActive(child.path)
+                                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
+                                    : "text-gray-700 hover:bg-gray-100"
+                                }`}
+                              >
+                                <span className="mr-3 text-lg">{child.icon}</span>
+                                {child.label}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={handleNavClick}
+                        className={`flex items-center px-4 py-3 rounded-md text-base font-medium transition-colors ${
+                          isActive(item.path)
+                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
+                            : "text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        <span className="mr-3 text-xl">{item.icon}</span>
+                        {item.label}
+                      </Link>
+                    )
+                  )}
                 </nav>
               </div>
               {/* Drawer Footer */}
