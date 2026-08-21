@@ -142,6 +142,10 @@ class PartyBillController extends Controller
             });
 
             if ($allParticipantsPaid) {
+                // Nhánh này thoát sớm giữa transaction: phải rollback, không thì
+                // connection bị bỏ lại với transaction đang mở.
+                DB::rollBack();
+
                 return response()->json([
                     'error' => 'Không thể sửa bill tiệc đã thanh toán',
                     'message' => 'Chỉ có thể sửa bill tiệc khi còn ít nhất một người chưa thanh toán.',
