@@ -151,7 +151,9 @@ class PartyBillController extends Controller
             ]);
 
             // Xóa các extras và participants cũ
-            $partyBill->extras()->delete();
+            // CHỈ xóa dòng người dùng tự nhập. Dòng do thuê xe sở hữu thuộc
+            // quyền của màn Thuê xe, payload ở đây không hề biết đến nó.
+            $partyBill->extras()->whereNull('car_rental_comparison_id')->delete();
             $partyBill->participants()->delete();
 
             // Tạo lại extras
@@ -160,6 +162,9 @@ class PartyBillController extends Controller
                     'party_bill_id' => $partyBill->id,
                     'name' => $extra['name'],
                     'amount' => (int) $extra['amount'],
+                    // Cố ý KHÔNG đọc $extra['car_rental_comparison_id']:
+                    // chỉ CarRentalPartyBillLink được tạo dòng sở hữu.
+                    'car_rental_comparison_id' => null,
                 ]);
             }
 

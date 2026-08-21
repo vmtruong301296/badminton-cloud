@@ -2,24 +2,29 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exceptions\PartyBillLockedException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCarRentalComparisonRequest;
 use App\Http\Requests\UpdateCarRentalComparisonRequest;
 use App\Models\CarRentalComparison;
 use App\Services\CarRentalCalculator;
+use App\Services\CarRentalPartyBillLink;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class CarRentalController extends Controller
 {
-    public function __construct(private CarRentalCalculator $calculator)
-    {
+    public function __construct(
+        private CarRentalCalculator $calculator,
+        private CarRentalPartyBillLink $link,
+    ) {
     }
 
     public function index(): JsonResponse
     {
-        $comparisons = CarRentalComparison::with(['creator', 'options', 'sharedCosts'])
+        $comparisons = CarRentalComparison::with(['creator', 'options', 'sharedCosts', 'partyBill'])
             ->orderBy('date', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -29,36 +34,69 @@ class CarRentalController extends Controller
 
     public function show(string $id): JsonResponse
     {
-        $comparison = CarRentalComparison::with(['creator', 'options', 'sharedCosts'])->findOrFail($id);
+        $comparison = CarRentalComparison::with(['creator', 'options', 'sharedCosts', 'partyBill'])->findOrFail($id);
 
         return response()->json($comparison);
     }
 
     public function store(StoreCarRentalComparisonRequest $request): JsonResponse
     {
-        $comparison = DB::transaction(
-            fn () => $this->persist(new CarRentalComparison(), $request)
-        );
+        $comparison = $this->persistWithLink(new CarRentalComparison(), $request, null);
 
-        return response()->json($comparison->load(['creator', 'options', 'sharedCosts']), 201);
+        return response()->json($comparison->load(['creator', 'options', 'sharedCosts', 'partyBill']), 201);
     }
 
     public function update(UpdateCarRentalComparisonRequest $request, string $id): JsonResponse
     {
         $comparison = CarRentalComparison::findOrFail($id);
+        $previousBillId = $comparison->party_bill_id;
 
-        $comparison = DB::transaction(
-            fn () => $this->persist($comparison, $request)
-        );
+        $comparison = $this->persistWithLink($comparison, $request, $previousBillId);
 
-        return response()->json($comparison->load(['creator', 'options', 'sharedCosts']));
+        return response()->json($comparison->load(['creator', 'options', 'sharedCosts', 'partyBill']));
     }
 
     public function destroy(string $id): JsonResponse
     {
-        CarRentalComparison::findOrFail($id)->delete();
+        $comparison = CarRentalComparison::with('options')->findOrFail($id);
+
+        try {
+            DB::transaction(function () use ($comparison) {
+                // Gỡ TRƯỚC khi xóa: cascadeOnDelete không kích hoạt việc tính
+                // lại tiền bill tiệc.
+                $this->link->detach($comparison);
+                $comparison->delete();
+            });
+        } catch (PartyBillLockedException $e) {
+            throw ValidationException::withMessages(['party_bill_id' => $e->getMessage()]);
+        }
 
         return response()->json(['message' => 'Đã xóa so sánh thuê xe.']);
+    }
+
+    /**
+     * Lưu lần thuê xe rồi đồng bộ bill tiệc TRONG CÙNG transaction.
+     *
+     * Bill tiệc bị khóa thì rollback sạch: lần thuê xe cũng không được lưu,
+     * để hai bên không bao giờ lệch nhau.
+     */
+    private function persistWithLink(
+        CarRentalComparison $comparison,
+        Request $request,
+        ?int $previousBillId
+    ): CarRentalComparison {
+        try {
+            return DB::transaction(function () use ($comparison, $request, $previousBillId) {
+                $saved = $this->persist($comparison, $request);
+                $this->link->sync($saved, $previousBillId);
+
+                return $saved->fresh();
+            });
+        } catch (PartyBillLockedException $e) {
+            throw ValidationException::withMessages([
+                'party_bill_id' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -91,6 +129,8 @@ class CarRentalController extends Controller
             'break_even_km' => $result['break_even_km'],
             'saving_amount' => $result['saving_amount'],
             'total_shared_cost' => $result['total_shared_cost'],
+            'party_bill_id' => $request->input('party_bill_id') ?: null,
+            'selected_sort_order' => $request->input('selected_sort_order'),
         ]);
 
         if (! $comparison->exists) {
