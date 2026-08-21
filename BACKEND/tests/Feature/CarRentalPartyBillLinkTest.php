@@ -219,4 +219,68 @@ class CarRentalPartyBillLinkTest extends TestCase
 
         $this->assertSame(0, PartyBillExtra::count());
     }
+
+    public function test_chuyen_sang_bill_dang_khoa_thi_bill_cu_khong_bi_dong_vao(): void
+    {
+        $billA = $this->bill('Tiệc A');
+        $billB = $this->bill('Tiệc B');
+        $billB->participants()->update(['is_paid' => true]);
+
+        $comparison = $this->comparison($billA->id);
+        $this->link->sync($comparison, null);
+        $this->assertSame(1880000, $billA->fresh()->total_extra);
+
+        $comparison->update(['party_bill_id' => $billB->id]);
+
+        try {
+            $this->link->sync($comparison->fresh(['options']), $billA->id);
+            $this->fail('phải ném PartyBillLockedException');
+        } catch (PartyBillLockedException $e) {
+            // đúng như mong đợi
+        }
+
+        // Mấu chốt: bill nguồn không được sửa dở dang rồi mới báo lỗi.
+        $this->assertSame(1880000, $billA->fresh()->total_extra, 'bill nguồn phải còn nguyên');
+        $this->assertSame(1, PartyBillExtra::where('party_bill_id', $billA->id)->count());
+        $this->assertSame(0, PartyBillExtra::where('party_bill_id', $billB->id)->count());
+    }
+
+    public function test_chuyen_di_tu_bill_dang_khoa_thi_bill_dich_khong_nhan_gi(): void
+    {
+        $billA = $this->bill('Tiệc A');
+        $billB = $this->bill('Tiệc B');
+
+        $comparison = $this->comparison($billA->id);
+        $this->link->sync($comparison, null);
+        $billA->participants()->update(['is_paid' => true]);
+
+        $comparison->update(['party_bill_id' => $billB->id]);
+
+        try {
+            $this->link->sync($comparison->fresh(['options']), $billA->id);
+            $this->fail('phải ném PartyBillLockedException');
+        } catch (PartyBillLockedException $e) {
+            // đúng như mong đợi
+        }
+
+        $this->assertSame(0, $billB->fresh()->total_extra, 'bill đích không được nhận gì');
+        $this->assertSame(0, PartyBillExtra::where('party_bill_id', $billB->id)->count());
+        $this->assertSame(1, PartyBillExtra::where('party_bill_id', $billA->id)->count());
+    }
+
+    public function test_doi_phuong_an_tren_cung_mot_bill_thi_tien_doi_theo(): void
+    {
+        $bill = $this->bill();
+        $comparison = $this->comparison($bill->id);
+        $this->link->sync($comparison, null);
+        $this->assertSame(1880000, $bill->fresh()->total_extra, 'mặc định lấy phương án rẻ nhất');
+
+        // Đổi sang xe xăng (sort_order 0, trip_total_cost 3.180.000).
+        $comparison->update(['selected_sort_order' => 0]);
+        $this->link->sync($comparison->fresh(['options']), $bill->id);
+
+        $this->assertSame(3180000, $bill->fresh()->total_extra);
+        $this->assertSame(1, PartyBillExtra::count(), 'phải cập nhật dòng cũ, không tạo dòng thứ hai');
+        $this->assertSame('Chuyến Đà Lạt', PartyBillExtra::first()->name);
+    }
 }
