@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { calculateCarRental } from "../../utils/carRentalCost";
-import { carRentalsApi, fuelPricesApi, partyBillsApi } from "../../services/api";
+import {
+  carRentalsApi,
+  fuelPricesApi,
+  partyBillsApi,
+} from "../../services/api";
 import { formatCurrency, formatNumber } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
+import CurrencyInput from "../../components/common/CurrencyInput";
+import ThousandHint from "../../components/common/ThousandHint";
 
 /** Loại xăng mà giá thị trường lấy được áp cho. */
 const PETROL_FUEL_KEY = "e10_ron95_iii";
@@ -32,7 +38,11 @@ const makeOption = (overrides = {}) => ({
   ...overrides,
 });
 
-const makeSharedCost = (overrides = {}) => ({ name: "", amount: 0, ...overrides });
+const makeSharedCost = (overrides = {}) => ({
+  name: "",
+  amount: 0,
+  ...overrides,
+});
 
 const DEFAULT_SHARED_COSTS = [
   makeSharedCost({ name: "Gửi xe" }),
@@ -92,28 +102,30 @@ function buildCopyText(trip, result, hasKmLimit) {
 
   lines.push(`🚗 ${trip.name || "So sánh chi phí thuê xe"}`);
   lines.push(
-    `Chuyến ${trip.days} ngày · ${formatNumber(trip.distance_km)} km (cả đi lẫn về)`
+    `Chuyến ${trip.days} ngày · ${formatNumber(trip.distance_km)} km (cả đi lẫn về)`,
   );
   lines.push("");
 
   result.options.forEach((option) => {
     lines.push(
-      `${option.is_cheapest ? "✅" : "▫️"} ${option.name || "(chưa đặt tên)"}: ${formatCurrency(option.total_cost)}`
+      `${option.is_cheapest ? "✅" : "▫️"} ${option.name || "(chưa đặt tên)"}: ${formatCurrency(option.total_cost)}`,
     );
 
     const parts = [
       `Thuê ${formatCurrency(option.rental_cost)}`,
       `Nhiên liệu ${formatCurrency(option.fuel_cost)}`,
     ];
-    if (option.over_km_cost > 0) parts.push(`Vượt km ${formatCurrency(option.over_km_cost)}`);
-    if (option.extra_fixed_cost > 0) parts.push(`Khác ${formatCurrency(option.extra_fixed_cost)}`);
+    if (option.over_km_cost > 0)
+      parts.push(`Vượt km ${formatCurrency(option.over_km_cost)}`);
+    if (option.extra_fixed_cost > 0)
+      parts.push(`Khác ${formatCurrency(option.extra_fixed_cost)}`);
     lines.push(`   ${parts.join(" · ")}`);
 
     const perKm = `${formatCurrency(option.cost_per_km)}/km`;
     lines.push(
       trip.people_count > 0 && !isAttached
         ? `   ${perKm} · ${formatCurrency(option.per_person_cost)}/người`
-        : `   ${perKm}`
+        : `   ${perKm}`,
     );
   });
 
@@ -142,7 +154,7 @@ function buildCopyText(trip, result, hasKmLimit) {
           ? ` · ${formatCurrency(option.per_person_cost)}/người`
           : "";
       lines.push(
-        `${option.is_cheapest ? "✅" : "▫️"} ${option.name}: ${formatCurrency(option.trip_total_cost)}${perPerson}`
+        `${option.is_cheapest ? "✅" : "▫️"} ${option.name}: ${formatCurrency(option.trip_total_cost)}${perPerson}`,
       );
     });
   }
@@ -164,7 +176,15 @@ function daysSince(iso) {
  * dùng bấm "Dùng giá này" mới áp, và gõ đè bất cứ lúc nào.
  */
 function MarketPriceHint({ marketPrice, applied, onApply }) {
-  const { price, sources, source_date, fetched_at, last_error, is_manual, is_stale } = marketPrice;
+  const {
+    price,
+    sources,
+    source_date,
+    fetched_at,
+    last_error,
+    is_manual,
+    is_stale,
+  } = marketPrice;
 
   const origin = is_manual
     ? "quản trị viên nhập tay"
@@ -179,7 +199,9 @@ function MarketPriceHint({ marketPrice, applied, onApply }) {
   const age = daysSince(fetched_at);
 
   return (
-    <div className={`mt-1 text-xs ${is_stale ? "text-amber-700" : "text-gray-500"}`}>
+    <div
+      className={`mt-1 text-xs ${is_stale ? "text-amber-700" : "text-gray-500"}`}
+    >
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span>
           Giá thị trường {formatNumber(price)} đ/lít · {origin}
@@ -199,7 +221,8 @@ function MarketPriceHint({ marketPrice, applied, onApply }) {
 
       {is_stale && (
         <div>
-          Giá đã cũ{age !== null ? ` ${age} ngày` : ""}, nên kiểm tra lại (giá điều chỉnh mỗi thứ Năm).
+          Giá đã cũ{age !== null ? ` ${age} ngày` : ""}, nên kiểm tra lại (giá
+          điều chỉnh mỗi thứ Năm).
         </div>
       )}
 
@@ -208,7 +231,11 @@ function MarketPriceHint({ marketPrice, applied, onApply }) {
   );
 }
 
-export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) {
+export default function CarRentalCalculator({
+  editing,
+  onSaved,
+  onCancelEdit,
+}) {
   const { hasPermission } = useAuth();
   const [trip, setTrip] = useState(DEFAULT_TRIP);
   const [options, setOptions] = useState(DEFAULT_OPTIONS);
@@ -228,7 +255,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       .getAll()
       .then((response) => {
         if (cancelled) return;
-        const found = (response.data ?? []).find((row) => row.fuel_key === PETROL_FUEL_KEY);
+        const found = (response.data ?? []).find(
+          (row) => row.fuel_key === PETROL_FUEL_KEY,
+        );
         if (found) setMarketPrice(found);
       })
       .catch(() => {
@@ -266,10 +295,11 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
 
     setOptions((prev) =>
       prev.map((option) =>
-        option.fuel_type === "petrol" && option.fuel_unit_price === FALLBACK_PETROL_PRICE
+        option.fuel_type === "petrol" &&
+        option.fuel_unit_price === FALLBACK_PETROL_PRICE
           ? { ...option, fuel_unit_price: marketPrice.price }
-          : option
-      )
+          : option,
+      ),
     );
   }, [marketPrice, editing]);
 
@@ -286,7 +316,8 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       note: editing.note ?? "",
       party_bill_id: editing.party_bill_id ?? "",
       selected_sort_order:
-        editing.selected_sort_order === null || editing.selected_sort_order === undefined
+        editing.selected_sort_order === null ||
+        editing.selected_sort_order === undefined
           ? ""
           : editing.selected_sort_order,
     });
@@ -302,20 +333,21 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           extra_fixed_cost: option.extra_fixed_cost,
           km_limit_per_day: option.km_limit_per_day,
           over_km_fee: option.over_km_fee,
-        })
-      )
+        }),
+      ),
     );
 
     setSharedCosts(
       (editing.shared_costs ?? []).map((row) =>
-        makeSharedCost({ name: row.name, amount: row.amount })
-      )
+        makeSharedCost({ name: row.name, amount: row.amount }),
+      ),
     );
 
     setShowAdvanced(
       (editing.options ?? []).some(
-        (option) => option.km_limit_per_day !== null || option.extra_fixed_cost > 0
-      )
+        (option) =>
+          option.km_limit_per_day !== null || option.extra_fixed_cost > 0,
+      ),
     );
   }, [editing]);
 
@@ -325,10 +357,13 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
         days: trip.days,
         distance_km: trip.distance_km,
         people_count: trip.people_count,
-        options: options.map((option, index) => ({ ...option, sort_order: index })),
+        options: options.map((option, index) => ({
+          ...option,
+          sort_order: index,
+        })),
         shared_costs: sharedCosts,
       }),
-    [trip, options, sharedCosts]
+    [trip, options, sharedCosts],
   );
 
   const hasKmLimit = options.some((option) => option.km_limit_per_day !== null);
@@ -337,7 +372,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
   // được tên bill hay chưa — danh sách partyBills có thể tải lỗi/chưa xong.
   const isAttached = trip.party_bill_id !== "";
   const linkedBill = partyBills.find(
-    (bill) => String(bill.id) === String(trip.party_bill_id)
+    (bill) => String(bill.id) === String(trip.party_bill_id),
   );
 
   const setTripField = (field) => (event) => {
@@ -348,12 +383,17 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
 
   const setOptionField = (index, field, value) => {
     setOptions((prev) =>
-      prev.map((option, i) => (i === index ? { ...option, [field]: value } : option))
+      prev.map((option, i) =>
+        i === index ? { ...option, [field]: value } : option,
+      ),
     );
   };
 
   const addOption = () =>
-    setOptions((prev) => [...prev, makeOption({ name: `Phương án ${prev.length + 1}` })]);
+    setOptions((prev) => [
+      ...prev,
+      makeOption({ name: `Phương án ${prev.length + 1}` }),
+    ]);
 
   // Bỏ phương án làm dịch chỉ số các phương án phía sau. Nếu "Xe thực tế
   // thuê" đang trỏ vào phương án bị xóa hoặc vào một vị trí bị dịch chuyển,
@@ -362,19 +402,21 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
     if (options.length <= 2) return;
     setOptions((prev) => prev.filter((_, i) => i !== index));
     setTrip((prev) =>
-      prev.selected_sort_order !== "" && Number(prev.selected_sort_order) >= index
+      prev.selected_sort_order !== "" &&
+      Number(prev.selected_sort_order) >= index
         ? { ...prev, selected_sort_order: "" }
-        : prev
+        : prev,
     );
   };
 
   const setSharedCostField = (index, field, value) => {
     setSharedCosts((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)),
     );
   };
 
-  const addSharedCost = () => setSharedCosts((prev) => [...prev, makeSharedCost()]);
+  const addSharedCost = () =>
+    setSharedCosts((prev) => [...prev, makeSharedCost()]);
 
   const removeSharedCost = (index) =>
     setSharedCosts((prev) => prev.filter((_, i) => i !== index));
@@ -389,10 +431,15 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(buildCopyText(trip, result, hasKmLimit));
+      await navigator.clipboard.writeText(
+        buildCopyText(trip, result, hasKmLimit),
+      );
       setMessage({ type: "success", text: "Đã copy kết quả." });
     } catch {
-      setMessage({ type: "error", text: "Trình duyệt không cho copy. Hãy bôi đen và copy tay." });
+      setMessage({
+        type: "error",
+        text: "Trình duyệt không cho copy. Hãy bôi đen và copy tay.",
+      });
     }
   };
 
@@ -407,9 +454,12 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       distance_km: trip.distance_km,
       people_count: trip.people_count,
       note: trip.note || null,
-      party_bill_id: trip.party_bill_id === "" ? null : Number(trip.party_bill_id),
+      party_bill_id:
+        trip.party_bill_id === "" ? null : Number(trip.party_bill_id),
       selected_sort_order:
-        trip.selected_sort_order === "" ? null : Number(trip.selected_sort_order),
+        trip.selected_sort_order === ""
+          ? null
+          : Number(trip.selected_sort_order),
       options: options.map((option, index) => ({
         name: option.name || `Phương án ${index + 1}`,
         sort_order: index,
@@ -471,7 +521,11 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       {editing && (
         <div className="px-4 py-3 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-between gap-3">
           <span>Đang sửa bản ghi đã lưu trước đó.</span>
-          <button type="button" onClick={resetForm} className="underline font-medium">
+          <button
+            type="button"
+            onClick={resetForm}
+            className="underline font-medium"
+          >
             Hủy sửa
           </button>
         </div>
@@ -493,11 +547,22 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           </div>
           <div>
             <label className={labelClass}>Ngày đi</label>
-            <input type="date" className={inputClass} value={trip.date} onChange={setTripField("date")} />
+            <input
+              type="date"
+              className={inputClass}
+              value={trip.date}
+              onChange={setTripField("date")}
+            />
           </div>
           <div>
             <label className={labelClass}>Số ngày thuê</label>
-            <input type="number" min="1" className={inputClass} value={trip.days} onChange={setTripField("days")} />
+            <input
+              type="number"
+              min="1"
+              className={inputClass}
+              value={trip.days}
+              onChange={setTripField("days")}
+            />
           </div>
           <div>
             <label className={labelClass}>Tổng km (cả đi lẫn về)</label>
@@ -521,7 +586,12 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           </div>
           <div className="sm:col-span-2 lg:col-span-1">
             <label className={labelClass}>Ghi chú</label>
-            <input type="text" className={inputClass} value={trip.note} onChange={setTripField("note")} />
+            <input
+              type="text"
+              className={inputClass}
+              value={trip.note}
+              onChange={setTripField("note")}
+            />
           </div>
 
           <div>
@@ -536,7 +606,8 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                   party_bill_id: value,
                   // Bỏ gắn thì xóa luôn lựa chọn "xe thực tế thuê" cũ — không
                   // để nó âm thầm theo qua lần gắn bill khác.
-                  selected_sort_order: value === "" ? "" : prev.selected_sort_order,
+                  selected_sort_order:
+                    value === "" ? "" : prev.selected_sort_order,
                 }));
               }}
             >
@@ -544,7 +615,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
               {partyBills.map((bill) => (
                 <option key={bill.id} value={bill.id}>
                   {bill.name || `Bill #${bill.id}`}
-                  {bill.date ? ` · ${new Date(bill.date).toLocaleDateString("vi-VN")}` : ""}
+                  {bill.date
+                    ? ` · ${new Date(bill.date).toLocaleDateString("vi-VN")}`
+                    : ""}
                 </option>
               ))}
             </select>
@@ -562,7 +635,10 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                 className={inputClass}
                 value={trip.selected_sort_order}
                 onChange={(event) =>
-                  setTrip((prev) => ({ ...prev, selected_sort_order: event.target.value }))
+                  setTrip((prev) => ({
+                    ...prev,
+                    selected_sort_order: event.target.value,
+                  }))
                 }
               >
                 <option value="">Phương án rẻ nhất</option>
@@ -596,14 +672,19 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
             const meta = fuelMeta(option.fuel_type);
 
             return (
-              <div key={index} className="border border-slate-200 rounded-lg p-4">
+              <div
+                key={index}
+                className="border border-slate-200 rounded-lg p-4"
+              >
                 <div className="flex items-center justify-between mb-3">
                   <input
                     type="text"
                     className="font-medium text-gray-900 border-b border-dashed border-slate-300 focus:outline-none focus:border-blue-500 bg-transparent"
                     placeholder={`Phương án ${index + 1}`}
                     value={option.name}
-                    onChange={(event) => setOptionField(index, "name", event.target.value)}
+                    onChange={(event) =>
+                      setOptionField(index, "name", event.target.value)
+                    }
                   />
                   {options.length > 2 && (
                     <button
@@ -619,13 +700,17 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className={labelClass}>Giá thuê / ngày (đ)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      className={inputClass}
+                    <CurrencyInput
+                      baseClassName={inputClass}
                       value={option.rental_per_day}
-                      onChange={(event) =>
-                        setOptionField(index, "rental_per_day", Number(event.target.value) || 0)
+                      onChange={(value) =>
+                        setOptionField(index, "rental_per_day", value)
+                      }
+                    />
+                    <ThousandHint
+                      value={option.rental_per_day}
+                      onApply={(value) =>
+                        setOptionField(index, "rental_per_day", value)
                       }
                     />
                   </div>
@@ -634,7 +719,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                     <select
                       className={inputClass}
                       value={option.fuel_type}
-                      onChange={(event) => setOptionField(index, "fuel_type", event.target.value)}
+                      onChange={(event) =>
+                        setOptionField(index, "fuel_type", event.target.value)
+                      }
                     >
                       {FUEL_TYPES.map((item) => (
                         <option key={item.value} value={item.value}>
@@ -647,7 +734,9 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                   {option.fuel_type !== "none" && (
                     <>
                       <div>
-                        <label className={labelClass}>Tiêu hao ({meta.unit})</label>
+                        <label className={labelClass}>
+                          Tiêu hao ({meta.unit})
+                        </label>
                         <input
                           type="number"
                           min="0"
@@ -655,27 +744,43 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                           className={inputClass}
                           value={option.consumption_per_100}
                           onChange={(event) =>
-                            setOptionField(index, "consumption_per_100", Number(event.target.value) || 0)
+                            setOptionField(
+                              index,
+                              "consumption_per_100",
+                              Number(event.target.value) || 0,
+                            )
                           }
                         />
                       </div>
                       <div>
-                        <label className={labelClass}>Đơn giá ({meta.priceUnit}) — 0 là miễn phí</label>
-                        <input
-                          type="number"
-                          min="0"
-                          className={inputClass}
+                        <label className={labelClass}>
+                          Đơn giá ({meta.priceUnit}) — 0 là miễn phí
+                        </label>
+                        <CurrencyInput
+                          baseClassName={inputClass}
                           value={option.fuel_unit_price}
-                          onChange={(event) =>
-                            setOptionField(index, "fuel_unit_price", Number(event.target.value) || 0)
+                          onChange={(value) =>
+                            setOptionField(index, "fuel_unit_price", value)
+                          }
+                        />
+                        <ThousandHint
+                          value={option.fuel_unit_price}
+                          onApply={(value) =>
+                            setOptionField(index, "fuel_unit_price", value)
                           }
                         />
                         {option.fuel_type === "petrol" && marketPrice && (
                           <MarketPriceHint
                             marketPrice={marketPrice}
-                            applied={option.fuel_unit_price === marketPrice.price}
+                            applied={
+                              option.fuel_unit_price === marketPrice.price
+                            }
                             onApply={() =>
-                              setOptionField(index, "fuel_unit_price", marketPrice.price)
+                              setOptionField(
+                                index,
+                                "fuel_unit_price",
+                                marketPrice.price,
+                              )
                             }
                           />
                         )}
@@ -687,19 +792,27 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                 {showAdvanced && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3 pt-3 border-t border-dashed border-slate-200">
                     <div>
-                      <label className={labelClass}>Chi phí cố định khác (đ)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className={inputClass}
+                      <label className={labelClass}>
+                        Chi phí cố định khác (đ)
+                      </label>
+                      <CurrencyInput
+                        baseClassName={inputClass}
                         value={option.extra_fixed_cost}
-                        onChange={(event) =>
-                          setOptionField(index, "extra_fixed_cost", Number(event.target.value) || 0)
+                        onChange={(value) =>
+                          setOptionField(index, "extra_fixed_cost", value)
+                        }
+                      />
+                      <ThousandHint
+                        value={option.extra_fixed_cost}
+                        onApply={(value) =>
+                          setOptionField(index, "extra_fixed_cost", value)
                         }
                       />
                     </div>
                     <div>
-                      <label className={labelClass}>Giới hạn km/ngày (trống = không giới hạn)</label>
+                      <label className={labelClass}>
+                        Giới hạn km/ngày (trống = không giới hạn)
+                      </label>
                       <input
                         type="number"
                         min="1"
@@ -709,20 +822,26 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                           setOptionField(
                             index,
                             "km_limit_per_day",
-                            event.target.value === "" ? null : Number(event.target.value)
+                            event.target.value === ""
+                              ? null
+                              : Number(event.target.value),
                           )
                         }
                       />
                     </div>
                     <div>
                       <label className={labelClass}>Phí vượt (đ/km)</label>
-                      <input
-                        type="number"
-                        min="0"
-                        className={inputClass}
+                      <CurrencyInput
+                        baseClassName={inputClass}
                         value={option.over_km_fee}
-                        onChange={(event) =>
-                          setOptionField(index, "over_km_fee", Number(event.target.value) || 0)
+                        onChange={(value) =>
+                          setOptionField(index, "over_km_fee", value)
+                        }
+                      />
+                      <ThousandHint
+                        value={option.over_km_fee}
+                        onApply={(value) =>
+                          setOptionField(index, "over_km_fee", value)
                         }
                       />
                     </div>
@@ -745,41 +864,60 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
       {/* Chi phí chung cả chuyến */}
       <section className="bg-white rounded-xl border border-slate-200 p-4 sm:p-5">
         <div className="mb-1 flex items-baseline justify-between gap-3">
-          <h2 className="font-semibold text-gray-900">Chi phí chung cả chuyến</h2>
+          <h2 className="font-semibold text-gray-900">
+            Chi phí chung cả chuyến
+          </h2>
           <span className="text-sm text-gray-500">
             Tổng {formatCurrency(result.total_shared_cost)}
           </span>
         </div>
         <p className="text-sm text-gray-500 mb-3">
-          Các khoản áp như nhau cho mọi phương án, không ảnh hưởng việc so sánh xe.
+          Các khoản áp như nhau cho mọi phương án, không ảnh hưởng việc so sánh
+          xe.
         </p>
 
         <div className="space-y-2">
           {sharedCosts.map((row, index) => (
-            <div key={index} className="flex flex-wrap items-center gap-2">
+            // Lưới 3 cột thay vì flex-wrap: mỗi khoản chi luôn nằm gọn một
+            // dòng, kể cả trên điện thoại. Cột tên co giãn, cột tiền cố định.
+            <div
+              key={index}
+              className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-start gap-2"
+            >
               <input
                 type="text"
-                className={`${inputClass} flex-1 min-w-[140px]`}
+                className={inputClass}
                 placeholder="Tên khoản chi"
                 value={row.name}
-                onChange={(event) => setSharedCostField(index, "name", event.target.value)}
-              />
-              <input
-                type="number"
-                min="0"
-                className={`${inputClass} w-40`}
-                placeholder="0"
-                value={row.amount}
                 onChange={(event) =>
-                  setSharedCostField(index, "amount", Number(event.target.value) || 0)
+                  setSharedCostField(index, "name", event.target.value)
                 }
               />
+              <div className="w-28 sm:w-40">
+                <CurrencyInput
+                  baseClassName={inputClass}
+                  value={row.amount}
+                  onChange={(value) =>
+                    setSharedCostField(index, "amount", value)
+                  }
+                />
+                <ThousandHint
+                  value={row.amount}
+                  onApply={(value) =>
+                    setSharedCostField(index, "amount", value)
+                  }
+                />
+              </div>
               <button
                 type="button"
                 onClick={() => removeSharedCost(index)}
-                className="px-3 py-2 text-red-600 text-sm hover:underline"
+                aria-label={`Xóa khoản chi ${row.name || index + 1}`}
+                className="px-2 py-2 text-red-600 text-sm hover:underline sm:px-3"
               >
-                Xóa
+                <span aria-hidden="true" className="sm:hidden">
+                  ✕
+                </span>
+                <span className="hidden sm:inline">Xóa</span>
               </button>
             </div>
           ))}
@@ -825,14 +963,24 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                       </span>
                     )}
                   </td>
-                  <td className="py-2 px-3 text-right">{formatCurrency(option.rental_cost)}</td>
-                  <td className="py-2 px-3 text-right">{formatCurrency(option.fuel_cost)}</td>
-                  <td className="py-2 px-3 text-right">{formatCurrency(option.over_km_cost)}</td>
-                  <td className="py-2 px-3 text-right">{formatCurrency(option.extra_fixed_cost)}</td>
+                  <td className="py-2 px-3 text-right">
+                    {formatCurrency(option.rental_cost)}
+                  </td>
+                  <td className="py-2 px-3 text-right">
+                    {formatCurrency(option.fuel_cost)}
+                  </td>
+                  <td className="py-2 px-3 text-right">
+                    {formatCurrency(option.over_km_cost)}
+                  </td>
+                  <td className="py-2 px-3 text-right">
+                    {formatCurrency(option.extra_fixed_cost)}
+                  </td>
                   <td className="py-2 px-3 text-right font-semibold text-gray-900">
                     {formatCurrency(option.total_cost)}
                   </td>
-                  <td className="py-2 pl-3 text-right">{formatCurrency(option.cost_per_km)}</td>
+                  <td className="py-2 pl-3 text-right">
+                    {formatCurrency(option.cost_per_km)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -859,14 +1007,21 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
           </div>
         </div>
 
-        {(result.total_shared_cost > 0 || trip.people_count > 0 || isAttached) && (
+        {(result.total_shared_cost > 0 ||
+          trip.people_count > 0 ||
+          isAttached) && (
           <div className="mt-5 pt-4 border-t border-slate-200">
-            <h3 className="font-semibold text-gray-900 mb-2">Tổng chi phí chuyến đi</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">
+              Tổng chi phí chuyến đi
+            </h3>
 
             {result.total_shared_cost > 0 && (
               <div className="text-sm text-gray-600 mb-3 space-y-0.5">
                 {result.shared_costs.map((row) => (
-                  <div key={row.sort_order} className="flex justify-between max-w-xs">
+                  <div
+                    key={row.sort_order}
+                    className="flex justify-between max-w-xs"
+                  >
                     <span>{row.name}</span>
                     <span>{formatCurrency(row.amount)}</span>
                   </div>
@@ -908,15 +1063,19 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
             {isAttached ? (
               <div className="mt-3 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
                 Tiền xe được chia qua bill tiệc{" "}
-                <Link to={`/party-bills/${trip.party_bill_id}`} className="font-medium underline">
+                <Link
+                  to={`/party-bills/${trip.party_bill_id}`}
+                  className="font-medium underline"
+                >
                   {linkedBill
                     ? linkedBill.name || `Bill #${linkedBill.id}`
                     : "Bill tiệc đã gắn (chưa tải được tên)"}
                 </Link>
                 {result.total_shared_cost > 0 && (
                   <div className="text-blue-600 mt-1">
-                    Số đẩy sang đã gồm chi phí chung ({formatCurrency(result.total_shared_cost)}) —
-                    đừng gõ lại gửi xe / trạm thu phí thành dòng riêng bên bill tiệc.
+                    Số đẩy sang đã gồm chi phí chung (
+                    {formatCurrency(result.total_shared_cost)}) — đừng gõ lại
+                    gửi xe / trạm thu phí thành dòng riêng bên bill tiệc.
                   </div>
                 )}
               </div>
