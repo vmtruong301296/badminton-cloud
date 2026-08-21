@@ -177,4 +177,13 @@ export const bracketsApi = {
     api.delete(`/player-lists/${playerListId}/brackets`),
 };
 
+// Car Rentals (So sánh chi phí thuê xe)
+export const carRentalsApi = {
+  getAll: () => api.get("/car-rentals"),
+  getById: (id) => api.get(`/car-rentals/${id}`),
+  create: (data) => api.post("/car-rentals", data),
+  update: (id, data) => api.put(`/car-rentals/${id}`, data),
+  delete: (id) => api.delete(`/car-rentals/${id}`),
+};
+
 export default api;

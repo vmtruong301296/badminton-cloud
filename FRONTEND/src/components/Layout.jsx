@@ -64,6 +64,12 @@ export default function Layout({ children }) {
       permission: "tournament_brackets.view",
     },
     {
+      path: "/car-rental",
+      label: "Thuê xe",
+      icon: "🚗",
+      permission: "car_rentals.view",
+    },
+    {
       path: "/master",
       label: "Master",
       icon: "⚙️",

@@ -20,6 +20,7 @@ import CreatePartyBill from "./screens/party/CreatePartyBill";
 import EditPartyBill from "./screens/party/EditPartyBill";
 import PartyBillDetail from "./screens/party/PartyBillDetail";
 import TournamentBrackets from "./screens/tournament/TournamentBrackets";
+import CarRentalComparison from "./screens/car-rental/CarRentalComparison";
 
 function HomeRedirect() {
   const { hasPermission } = useAuth();
@@ -248,6 +249,16 @@ function AppRoutes() {
           <ProtectedRoute requiredPermission="tournament_brackets.view">
             <Layout>
               <TournamentBrackets />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/car-rental"
+        element={
+          <ProtectedRoute requiredPermission="car_rentals.view">
+            <Layout>
+              <CarRentalComparison />
             </Layout>
           </ProtectedRoute>
         }
