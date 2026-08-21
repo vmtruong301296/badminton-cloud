@@ -175,7 +175,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                             <span className="font-semibold">
                               {formatCurrency(option.trip_total_cost)}
                             </span>
-                            {item.people_count > 0 && (
+                            {item.people_count > 0 && !item.party_bill && (
                               <span className="text-gray-600">
                                 {" · "}
                                 {formatCurrency(option.per_person_cost)}/người

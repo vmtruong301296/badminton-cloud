@@ -88,6 +88,7 @@ function breakEvenText(result, distanceKm, hasKmLimit) {
 
 function buildCopyText(trip, result, hasKmLimit) {
   const lines = [];
+  const isAttached = trip.party_bill_id !== "";
 
   lines.push(`🚗 ${trip.name || "So sánh chi phí thuê xe"}`);
   lines.push(
@@ -110,7 +111,7 @@ function buildCopyText(trip, result, hasKmLimit) {
 
     const perKm = `${formatCurrency(option.cost_per_km)}/km`;
     lines.push(
-      trip.people_count > 0
+      trip.people_count > 0 && !isAttached
         ? `   ${perKm} · ${formatCurrency(option.per_person_cost)}/người`
         : `   ${perKm}`
     );
@@ -122,6 +123,11 @@ function buildCopyText(trip, result, hasKmLimit) {
   }
   lines.push(breakEvenText(result, trip.distance_km, hasKmLimit));
 
+  if (isAttached) {
+    lines.push("");
+    lines.push("Tiền xe được chia qua bill tiệc.");
+  }
+
   if (result.total_shared_cost > 0) {
     lines.push("");
     lines.push(`Chi phí chung: ${formatCurrency(result.total_shared_cost)}`);
@@ -132,7 +138,9 @@ function buildCopyText(trip, result, hasKmLimit) {
     lines.push("TỔNG CHI PHÍ CHUYẾN ĐI");
     result.options.forEach((option) => {
       const perPerson =
-        trip.people_count > 0 ? ` · ${formatCurrency(option.per_person_cost)}/người` : "";
+        trip.people_count > 0 && !isAttached
+          ? ` · ${formatCurrency(option.per_person_cost)}/người`
+          : "";
       lines.push(
         `${option.is_cheapest ? "✅" : "▫️"} ${option.name}: ${formatCurrency(option.trip_total_cost)}${perPerson}`
       );
@@ -540,7 +548,7 @@ export default function CarRentalCalculator({ editing, onSaved, onCancelEdit }) 
                 </option>
               ))}
             </select>
-            {partyBills.length === 0 && (
+            {partyBills.length === 0 && !isAttached && (
               <p className="mt-1 text-xs text-gray-500">
                 Chưa có bill tiệc nào để gắn vào.
               </p>
