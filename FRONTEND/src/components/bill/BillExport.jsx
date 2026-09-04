@@ -253,12 +253,12 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 	if (hasSubBills) {
 		return (
 			<div id="bill-export" className="bg-white p-6 mx-auto" style={{ fontFamily: "Arial, sans-serif", maxWidth: "1728px" }}>
-				<div className="grid grid-cols-2 gap-6">
+				<div className="grid grid-cols-[3fr_2fr] gap-6">
 					{/* Cột trái: Bill chính */}
-					<div className="col-span-1">{renderBillContent(bill, true, bill.sub_bills || [])}</div>
+					<div>{renderBillContent(bill, true, bill.sub_bills || [])}</div>
 
 					{/* Cột phải: Bill phụ và QR thanh toán */}
-					<div className="col-span-1">
+					<div>
 						<div className="border-l-2 border-gray-800 pl-6">
 							{/* Bill phụ */}
 							{bill.sub_bills.map((subBill) => (
