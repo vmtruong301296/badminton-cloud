@@ -65,16 +65,15 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 				<table className="w-full border-collapse text-sm">
 					<thead>
 						<tr className="bg-gray-100">
-							<th className="border border-gray-300 px-3 py-2 text-left">STT</th>
+							<th className="border border-gray-300 px-2 py-2 w-10 text-center">TT</th>
 							<th className="border border-gray-300 px-3 py-2 text-left">Tên</th>
-							<th className="border border-gray-300 px-3 py-2 text-right">Mức tính</th>
+							<th className="border border-gray-300 px-2 py-2 w-14 text-right">Mức tính</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Chi phí thêm</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Tiền nợ</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Tổng tiền</th>
 							{subBills && subBills.length > 0 && (
 								<th className="border border-gray-300 px-3 py-2 text-right">TT + Bill sau</th>
 							)}
-							<th className="border border-gray-300 px-3 py-2 text-center">Đã TT</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -119,9 +118,9 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 								
 								return (
 								<tr key={player.id}>
-									<td className="border border-gray-300 px-3 py-2">{index + 1}</td>
+									<td className="border border-gray-300 px-2 py-2 text-center">{index + 1}</td>
 									<td className="border border-gray-300 px-3 py-2 font-medium">{player.user?.name}</td>
-									<td className="border border-gray-300 px-3 py-2 text-right">{formatRatio(player.ratio_value)}</td>
+									<td className="border border-gray-300 px-2 py-2 text-right">{formatRatio(player.ratio_value)}</td>
 									<td className="border border-gray-300 px-3 py-2 text-right">
 										{player.bill_player_menus && player.bill_player_menus.length > 0 ? (
 											<div className="text-right">
@@ -197,7 +196,6 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 											})()}
 										</td>
 									)}
-									<td className="border border-gray-300 px-3 py-2 text-center">{player.is_paid ? "✓" : ""}</td>
 								</tr>
 								);
 							});
