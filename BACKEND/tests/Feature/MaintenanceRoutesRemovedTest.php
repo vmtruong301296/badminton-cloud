@@ -27,4 +27,13 @@ class MaintenanceRoutesRemovedTest extends TestCase
 
         $this->actingAs($user)->getJson('/api/clear/cache/123')->assertNotFound();
     }
+
+    // Người chơi nào đăng nhập cũng chạy lại RolePermissionSeeder được — seed quyền nay chạy tay trên máy chủ:
+    // php artisan db:seed --class=RolePermissionSeeder --force
+    public function test_route_seed_quyen_khong_con(): void
+    {
+        $user = User::create(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
+
+        $this->actingAs($user)->getJson('/api/seed/role-permission')->assertNotFound();
+    }
 }

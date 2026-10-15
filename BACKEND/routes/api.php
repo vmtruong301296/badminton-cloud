@@ -16,7 +16,6 @@ use App\Http\Controllers\Api\RatioController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\ShuttleTypeController;
 use App\Http\Controllers\Api\UserController;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Route;
 
 // Authentication (Public routes)
@@ -26,17 +25,6 @@ Route::get('me', [AuthController::class, 'me'])->middleware('auth');
 
 // Protected routes - require authentication
 Route::middleware('auth')->group(function () {
-
-    Route::get('/seed/role-permission', function () {
-
-        // Chạy seeder
-        Artisan::call('db:seed', [
-            '--class' => 'RolePermissionSeeder',
-            '--force' => true,
-        ]);
-
-        return 'RolePermissionSeeder executed successfully!';
-    });
 
     // Players (Người chơi)
     Route::apiResource('players', UserController::class);
