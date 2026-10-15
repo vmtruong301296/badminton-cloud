@@ -10,7 +10,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        // target: "http://localhost:8000",
+        // Máy chủ OVH (từ 15/10/2026) — chạy dev là đọc/ghi DỮ LIỆU THẬT
+        target: "https://badminton-bill.duckdns.org",
         changeOrigin: true,
       },
     },
