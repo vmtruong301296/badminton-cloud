@@ -1,6 +1,7 @@
 
 # Claude Code local config
-.claude/
+.claude/*
+!.claude/agents/
 
 # Local secrets — do not commit
 .admin-credentials.txt
