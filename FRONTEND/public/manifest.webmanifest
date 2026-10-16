@@ -1,0 +1,12 @@
+{
+  "name": "Sổ cầu lông",
+  "short_name": "Sổ cầu lông",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#047857",
+  "background_color": "#FFFFFF",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
