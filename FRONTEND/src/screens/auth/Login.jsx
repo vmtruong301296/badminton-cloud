@@ -44,28 +44,10 @@ export default function Login() {
 					{/* Header with gradient */}
 					<div className="bg-gradient-to-r from-blue-600 to-green-600 px-8 py-10 text-center">
 						<div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-full mb-4 shadow-lg">
-							<svg
-								className="w-12 h-12 text-blue-600"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-								xmlns="http://www.w3.org/2000/svg">
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-								/>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-								/>
-							</svg>
+							<img src="/favicon.svg" alt="" className="w-12 h-12" />
 						</div>
-						<h2 className="text-3xl font-bold text-white mb-2">Chào mừng trở lại</h2>
-						<p className="text-blue-100 text-sm">Badminton Court Management System</p>
+						<h2 className="text-3xl font-bold text-white mb-2">Sổ cầu lông</h2>
+						<p className="text-blue-100 text-sm">Chào mừng trở lại</p>
 					</div>
 
 					{/* Form */}
