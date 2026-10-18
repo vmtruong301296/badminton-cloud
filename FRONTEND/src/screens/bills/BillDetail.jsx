@@ -697,11 +697,15 @@ export default function BillDetail() {
   return (
     <div className="px-2 sm:px-0 pb-6 md:pb-0">
       <header className="mb-5 sm:mb-7">
-        {/* Back link + status pill */}
+        {/* Back link + status pill — bill con quay về bill chính của nó */}
         <div className="mb-3 flex items-center justify-between gap-2">
           <button
             type="button"
-            onClick={() => navigate("/")}
+            onClick={() =>
+              navigate(
+                bill.parent_bill_id ? `/bills/${bill.parent_bill_id}` : "/",
+              )
+            }
             className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:h-10 sm:px-3 sm:text-sm"
           >
             <svg
@@ -717,7 +721,9 @@ export default function BillDetail() {
             >
               <path d="M19 12H5M12 19l-7-7 7-7" />
             </svg>
-            Danh sách bills
+            {bill.parent_bill_id
+              ? `Bill chính #${bill.parent_bill_id}`
+              : "Danh sách bills"}
           </button>
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:text-xs ${
