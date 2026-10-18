@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { billsApi, shuttlesApi, menusApi } from "../../services/api";
 import {
@@ -8,6 +8,7 @@ import {
   formatRatio,
   shuttleUnitPrice,
 } from "../../utils/formatters";
+import { selectableMenus } from "../../utils/menus";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
@@ -76,6 +77,9 @@ export default function CreateBill() {
     if (!menu) return;
     setMenus((prev) => [menu, ...prev]);
   };
+
+  /** Ô "Chọn menu" chỉ có món đang bật; QuickAddMenu vẫn nhận đủ để chặn trùng tên. */
+  const activeMenus = useMemo(() => selectableMenus(menus), [menus]);
 
   useEffect(() => {
     if (parentBillId) {
@@ -595,7 +599,7 @@ export default function CreateBill() {
                                 onUpdate={(updated) =>
                                   handleUpdatePlayer(index, updated)
                                 }
-                                menus={menus}
+                                menus={activeMenus}
                               />
                             </div>
                           </div>

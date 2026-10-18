@@ -350,6 +350,13 @@ class BillController extends Controller
             /** @var Bill $bill */
             $bill = Bill::with(['billShuttles', 'billPlayers.billPlayerMenus'])->findOrFail($id);
 
+            // Giá nước đã lưu trong bill theo từng món: sửa bill giữ giá này,
+            // chỉ món chưa có trong bill mới lấy giá menu hiện tại
+            $billMenuPrices = $bill->billPlayers
+                ->flatMap->billPlayerMenus
+                ->pluck('price_each', 'menu_id')
+                ->all();
+
             $billDate = \Carbon\Carbon::parse($request->date)->toDateString();
 
             // Calculate total shuttle price
@@ -379,7 +386,7 @@ class BillController extends Controller
                 if (isset($playerData['menus']) && is_array($playerData['menus'])) {
                     foreach ($playerData['menus'] as $menuData) {
                         $menu = Menu::findOrFail($menuData['menu_id']);
-                        $menuExtraTotal += $menu->price * $menuData['quantity'];
+                        $menuExtraTotal += ($billMenuPrices[$menu->id] ?? $menu->price) * $menuData['quantity'];
                     }
                 }
 
@@ -469,7 +476,7 @@ class BillController extends Controller
                 foreach ($playerData['menus'] as $menuData) {
                     $menu = Menu::findOrFail($menuData['menu_id']);
                     $quantity = $menuData['quantity'];
-                    $priceEach = $menu->price;
+                    $priceEach = $billMenuPrices[$menu->id] ?? $menu->price;
                     $subtotal = $priceEach * $quantity;
 
                     $billPlayer->billPlayerMenus()->create([

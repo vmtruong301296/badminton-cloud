@@ -3,11 +3,41 @@ import { menusApi } from '../../services/api';
 import { formatCurrency } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 
+/** Nút gạt bật/tắt: món tắt không hiện trong ô "Chọn menu" khi tạo / sửa bill. */
+function ActiveToggle({ active, disabled, onToggle }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={active}
+      onClick={onToggle}
+      disabled={disabled}
+      className="inline-flex items-center gap-2 py-1 disabled:opacity-60"
+    >
+      <span
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${
+          active ? 'bg-green-600' : 'bg-gray-300'
+        }`}
+      >
+        <span
+          className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            active ? 'translate-x-5' : ''
+          }`}
+        />
+      </span>
+      <span className={`text-sm ${active ? 'text-green-700' : 'text-gray-500'}`}>
+        {active ? 'Đang dùng' : 'Đã tắt'}
+      </span>
+    </button>
+  );
+}
+
 export default function MenusManagement() {
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingMenu, setEditingMenu] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -51,6 +81,25 @@ export default function MenusManagement() {
     } catch (error) {
       console.error('Error saving menu:', error);
       alert('Có lỗi xảy ra');
+    }
+  };
+
+  /** Đổi ngay trên màn rồi mới gọi API; lỗi thì trả lại trạng thái cũ. */
+  const handleToggleActive = async (menu) => {
+    const wasActive = menu.is_active !== false;
+    const setActive = (value) =>
+      setMenus((prev) => prev.map((m) => (m.id === menu.id ? { ...m, is_active: value } : m)));
+
+    setTogglingId(menu.id);
+    setActive(!wasActive);
+    try {
+      await menusApi.update(menu.id, { is_active: !wasActive });
+    } catch (error) {
+      console.error('Error toggling menu:', error);
+      setActive(wasActive);
+      alert('Có lỗi xảy ra');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -145,15 +194,25 @@ export default function MenusManagement() {
                     Giá
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Trạng thái
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                     Thao tác
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {menus.map((menu) => (
-                  <tr key={menu.id}>
+                  <tr key={menu.id} className={menu.is_active === false ? 'text-gray-400' : ''}>
                     <td className="px-6 py-4 whitespace-nowrap font-medium">{menu.name}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{formatCurrency(menu.price)}</td>
+                    <td className="px-6 py-3 whitespace-nowrap">
+                      <ActiveToggle
+                        active={menu.is_active !== false}
+                        disabled={togglingId === menu.id}
+                        onToggle={() => handleToggleActive(menu)}
+                      />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <button
                         onClick={() => handleEdit(menu)}
@@ -178,9 +237,20 @@ export default function MenusManagement() {
           <div className="md:hidden space-y-3">
             {menus.map((menu) => (
               <div key={menu.id} className="bg-white shadow rounded-lg p-4">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="font-semibold text-gray-900">{menu.name}</h3>
-                  <span className="text-lg font-bold text-gray-900">{formatCurrency(menu.price)}</span>
+                <div
+                  className={`flex justify-between items-start mb-2 ${
+                    menu.is_active === false ? 'text-gray-400' : 'text-gray-900'
+                  }`}
+                >
+                  <h3 className="font-semibold">{menu.name}</h3>
+                  <span className="text-lg font-bold">{formatCurrency(menu.price)}</span>
+                </div>
+                <div className="mb-3">
+                  <ActiveToggle
+                    active={menu.is_active !== false}
+                    disabled={togglingId === menu.id}
+                    onToggle={() => handleToggleActive(menu)}
+                  />
                 </div>
                 <div className="flex gap-2 pt-3 border-t border-gray-200">
                   <button
