@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { billsApi, shuttlesApi, menusApi } from "../../services/api";
 import { formatDate, shuttleUnitPrice } from "../../utils/formatters";
-import { selectableMenus } from "../../utils/menus";
+import {
+  billMenuPrices,
+  selectableMenus,
+  withBillPrices,
+} from "../../utils/menus";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
@@ -19,6 +23,7 @@ export default function EditBill() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
+  const [billPrices, setBillPrices] = useState({});
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -95,6 +100,7 @@ export default function EditBill() {
       // Set cả shuttleTypes và formData cùng lúc để tránh race condition
       setShuttleTypes(shuttleTypesData);
       setFormData(newFormData);
+      setBillPrices(billMenuPrices(bill.bill_players));
 
       // Tính preview ngay sau khi có đầy đủ dữ liệu
       if (mappedPlayers.length > 0) {
@@ -207,8 +213,12 @@ export default function EditBill() {
   /**
    * Ô "Chọn menu" chỉ có món đang bật. Món đã tắt có sẵn trong bill vẫn nằm ở
    * "Menu đã chọn" (lấy từ bill_player_menus), lưu lại không mất.
+   * Món đã có trong bill hiện theo giá đã lưu, khớp với giá máy chủ giữ khi lưu.
    */
-  const activeMenus = useMemo(() => selectableMenus(menus), [menus]);
+  const activeMenus = useMemo(
+    () => withBillPrices(selectableMenus(menus), billPrices),
+    [menus, billPrices],
+  );
 
   /** Khi đổi ngày bill: tải lại giá cầu áp dụng cho ngày đó (lần đầu sau load bill đã có trong loadInitialData). */
   useEffect(() => {

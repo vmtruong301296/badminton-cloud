@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { findMenuByName, selectableMenus } from "./menus";
+import {
+  billMenuPrices,
+  findMenuByName,
+  selectableMenus,
+  withBillPrices,
+} from "./menus";
 
 const menu = (overrides = {}) => ({
   id: 1,
@@ -42,5 +47,30 @@ describe("findMenuByName", () => {
 
   it("không trùng thì trả undefined", () => {
     expect(findMenuByName([menu()], "Revive")).toBeUndefined();
+  });
+});
+
+describe("billMenuPrices", () => {
+  it("lấy giá đã lưu của từng món trong bill, gom mọi người chơi", () => {
+    const billPlayers = [
+      { bill_player_menus: [{ menu_id: 5, price_each: 15000 }] },
+      { bill_player_menus: [{ menu_id: 3, price_each: 5000 }] },
+      { bill_player_menus: null },
+    ];
+
+    expect(billMenuPrices(billPlayers)).toEqual({ 5: 15000, 3: 5000 });
+  });
+});
+
+describe("withBillPrices", () => {
+  it("món đã có trong bill dùng giá đã lưu, món khác giữ giá hiện tại", () => {
+    const menus = [
+      menu({ id: 5, name: "Sting", price: 17000 }),
+      menu({ id: 1, name: "Trà đá", price: 5000 }),
+    ];
+
+    expect(withBillPrices(menus, { 5: 15000 }).map((m) => m.price)).toEqual([
+      15000, 5000,
+    ]);
   });
 });
