@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { menusApi } from "../../services/api";
 import CurrencyInput from "../common/CurrencyInput";
+import { findMenuByName } from "../../utils/menus";
 
 /**
  * QuickAddMenu
@@ -8,7 +9,7 @@ import CurrencyInput from "../common/CurrencyInput";
  * Quản lý Menu nước. Tạo xong gọi `onCreated(menu)` để màn cha chèn món mới vào
  * đầu danh sách `menus` — mọi MenuItemPicker thấy ngay, không cần reload.
  *
- * `menus` dùng để chặn tạo trùng tên.
+ * `menus` (đủ cả món đã tắt) dùng để chặn tạo trùng tên.
  */
 export default function QuickAddMenu({ menus = [], onCreated }) {
   const [showModal, setShowModal] = useState(false);
@@ -40,13 +41,15 @@ export default function QuickAddMenu({ menus = [], onCreated }) {
       return;
     }
 
-    // Trùng tên thì không tạo mới — món cũ đã có sẵn trong dropdown để chọn
-    const nameKey = name.toLowerCase();
-    const existing = menus.find(
-      (m) => (m.name || "").trim().toLowerCase() === nameKey,
-    );
+    // Trùng tên thì không tạo mới — món đang bật đã có sẵn trong dropdown,
+    // món đã tắt thì bật lại thay vì tạo bản trùng
+    const existing = findMenuByName(menus, name);
     if (existing) {
-      alert(`Menu "${existing.name}" đã tồn tại, hãy chọn trong danh sách.`);
+      alert(
+        existing.is_active === false
+          ? `Menu "${existing.name}" đang tắt, hãy bật lại trong Quản lý Menu nước.`
+          : `Menu "${existing.name}" đã tồn tại, hãy chọn trong danh sách.`,
+      );
       return;
     }
 

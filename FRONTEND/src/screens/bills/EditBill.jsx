@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { billsApi, shuttlesApi, menusApi } from "../../services/api";
 import { formatDate, shuttleUnitPrice } from "../../utils/formatters";
+import { selectableMenus } from "../../utils/menus";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
@@ -202,6 +203,12 @@ export default function EditBill() {
     if (!menu) return;
     setMenus((prev) => [menu, ...prev]);
   };
+
+  /**
+   * Ô "Chọn menu" chỉ có món đang bật. Món đã tắt có sẵn trong bill vẫn nằm ở
+   * "Menu đã chọn" (lấy từ bill_player_menus), lưu lại không mất.
+   */
+  const activeMenus = useMemo(() => selectableMenus(menus), [menus]);
 
   /** Khi đổi ngày bill: tải lại giá cầu áp dụng cho ngày đó (lần đầu sau load bill đã có trong loadInitialData). */
   useEffect(() => {
@@ -729,7 +736,7 @@ export default function EditBill() {
                                 onUpdate={(updated) =>
                                   handleUpdatePlayer(index, updated)
                                 }
-                                menus={menus}
+                                menus={activeMenus}
                               />
                             </div>
                           </div>

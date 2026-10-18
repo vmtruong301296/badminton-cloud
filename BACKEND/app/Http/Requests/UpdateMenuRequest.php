@@ -24,6 +24,7 @@ class UpdateMenuRequest extends FormRequest
         return [
             'name' => 'sometimes|string|max:255',
             'price' => 'sometimes|integer',
+            'is_active' => 'sometimes|boolean',
         ];
     }
 }
