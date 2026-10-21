@@ -11,8 +11,7 @@ import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
-import { Loader, Plus, Trash2, X } from "../../components/ui/icons";
-import { Check } from "../../components/party/partyIcons";
+import { Check, Loader, Plus, Trash2, X } from "../../components/ui/icons";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 

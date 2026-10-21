@@ -18,15 +18,13 @@ import {
   Pencil,
   Trash2,
   UtensilsCrossed,
-} from "../../components/ui/icons";
-import {
-  Calendar,
+  CalendarDays,
   Check,
   Circle,
   Clock,
   Download,
   Send,
-} from "../../components/party/partyIcons";
+} from "../../components/ui/icons";
 import {
   nodeToBlob,
   nodeToPng,
@@ -590,7 +588,7 @@ export default function PartyBillDetail() {
             </span>
             <span>Bill tiệc #{bill.id}</span>
             <span className="inline-flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
+              <CalendarDays className="h-4 w-4" />
               {formatDate(bill.date)}
             </span>
           </span>

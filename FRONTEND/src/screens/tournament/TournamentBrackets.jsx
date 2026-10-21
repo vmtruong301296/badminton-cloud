@@ -4,7 +4,7 @@ import { playerListsApi, tournamentPlayersApi, bracketsApi } from '../../service
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import EmptyState from '../../components/ui/EmptyState';
-import { Plus, Users, Trophy } from '../../components/ui/icons';
+import { Download, Plus, Target, Upload, Users, Trophy } from '../../components/ui/icons';
 
 export default function TournamentBrackets() {
   const [playerLists, setPlayerLists] = useState([]);
@@ -363,6 +363,7 @@ export default function TournamentBrackets() {
               onClick={() => setShowImportModal(true)}
               className="btn btn-secondary w-full sm:w-auto"
             >
+              <Upload className="h-4 w-4" />
               Import Excel/CSV
             </button>
           </div>
@@ -500,6 +501,7 @@ export default function TournamentBrackets() {
               className="btn btn-primary w-full sm:w-auto"
               disabled={!canOrganize || availablePlayers.length === 0}
             >
+              <Target className="h-4 w-4" />
               Xếp bảng
             </button>
             {brackets.length > 0 && (
@@ -516,6 +518,7 @@ export default function TournamentBrackets() {
                 onClick={handleExportBrackets}
                 className="btn btn-secondary w-full sm:w-auto"
               >
+                <Download className="h-4 w-4" />
                 Xuất bảng
               </button>
             )}

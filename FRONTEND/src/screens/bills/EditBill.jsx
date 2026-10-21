@@ -16,7 +16,7 @@ import MenuItemPicker from "../../components/bill/MenuItemPicker";
 import QuickAddMenu from "../../components/bill/QuickAddMenu";
 import BillSummary from "../../components/bill/BillSummary";
 import PageHeader from "../../components/ui/PageHeader";
-import { Loader, Plus } from "../../components/ui/icons";
+import { Check, Loader, Plus } from "../../components/ui/icons";
 
 export default function EditBill() {
   const { id } = useParams();
@@ -740,19 +740,7 @@ export default function EditBill() {
                   </>
                 ) : (
                   <>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
+                    <Check className="h-4 w-4" strokeWidth={2.5} />
                     Lưu thay đổi
                   </>
                 )}
@@ -790,19 +778,7 @@ export default function EditBill() {
                 </>
               ) : (
                 <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
+                  <Check className="h-4 w-4" strokeWidth={2.5} />
                   Lưu thay đổi
                 </>
               )}

@@ -1,23 +1,9 @@
+import { Check } from '../ui/icons';
 import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from '../../utils/formatters';
 
 // Hiển thị bill trên màn hình chi tiết (KHÔNG phải ảnh xuất: ảnh xuất do BillExport.jsx dựng riêng).
 // Danh sách người chơi dạng hàng/thẻ thay cho bảng 8 cột: cột chứa nó chỉ rộng ~600 px trên desktop
 // (bố cục 2 cột) và ~360 px trên điện thoại, bảng không vừa mà không phải cuộn ngang hoặc bẻ tên 3–4 dòng.
-
-const CheckIcon = ({ className }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className={className}
-  >
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);
 
 const PAID_PILL =
   'inline-flex h-11 select-none items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition sm:h-9';
@@ -96,7 +82,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
             className="sr-only"
           />
           {player.is_paid ? (
-            <CheckIcon className="h-3.5 w-3.5" />
+            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
           ) : (
             <span className="h-3.5 w-3.5 rounded-full border-2 border-slate-400" aria-hidden="true" />
           )}
@@ -113,7 +99,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
         aria-label={player.is_paid ? 'Đã TT' : 'Chưa TT'}
       >
         {player.is_paid ? (
-          <CheckIcon className="h-3.5 w-3.5" />
+          <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
         ) : (
           <span className="h-3.5 w-3.5 rounded-full border-2 border-slate-300" aria-hidden="true" />
         )}

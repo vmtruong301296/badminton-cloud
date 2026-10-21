@@ -12,6 +12,7 @@ import Modal from "../../components/ui/Modal";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
 import {
+  ChartLine,
   ChevronLeft,
   CircleAlert,
   Plus,
@@ -19,23 +20,6 @@ import {
   Trash2,
 } from "../../components/ui/icons";
 import { useAuth } from "../../contexts/AuthContext";
-
-/** Biểu tượng "Thống kê" (đường biểu đồ) — chưa có trong ui/icons.jsx. */
-const ChartLine = ({ className }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className={className}
-  >
-    <path d="M3 3v16a2 2 0 0 0 2 2h16" />
-    <path d="m19 9-5 5-4-4-3 3" />
-  </svg>
-);
 
 const BALLS_PER_TUBE = 12;
 // Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống

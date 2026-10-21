@@ -20,39 +20,20 @@ import {
 } from "../../utils/exportImage";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
-import { ChevronLeft, CircleAlert, Loader, Pencil, Plus, Trash2 } from "../../components/ui/icons";
-
-// Biểu tượng chỉ dùng ở màn này (chưa có trong ui/icons.jsx).
-const LineIcon = ({ className, children }) => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={1.75}
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className={className}
-  >
-    {children}
-  </svg>
-);
-const CalendarDays = ({ className }) => (
-  <LineIcon className={className}>
-    <rect x="3" y="4" width="18" height="18" rx="2" />
-    <path d="M16 2v4M8 2v4M3 10h18" />
-  </LineIcon>
-);
-const Download = ({ className }) => (
-  <LineIcon className={className}>
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
-  </LineIcon>
-);
-const Send = ({ className }) => (
-  <LineIcon className={className}>
-    <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" />
-  </LineIcon>
-);
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  Circle,
+  CircleAlert,
+  Clock,
+  Download,
+  Loader,
+  Pencil,
+  Plus,
+  Send,
+  Trash2,
+} from "../../components/ui/icons";
 
 export default function BillDetail() {
   const { id } = useParams();
@@ -1260,23 +1241,11 @@ export default function BillDetail() {
                                 }}
                                 className="sr-only"
                               />
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                              >
-                                {player.is_paid ? (
-                                  <path d="M20 6L9 17l-5-5" />
-                                ) : (
-                                  <circle cx="12" cy="12" r="9" />
-                                )}
-                              </svg>
+                              {player.is_paid ? (
+                                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                              ) : (
+                                <Circle className="h-3.5 w-3.5" strokeWidth={2.5} />
+                              )}
                               {player.is_paid ? "Đã thanh toán" : "Đánh dấu TT"}
                             </label>
                           </div>
@@ -1374,20 +1343,7 @@ export default function BillDetail() {
 
                         {player.paid_at && (
                           <div className="mt-2 flex items-center gap-1 text-[11px] text-emerald-700">
-                            <svg
-                              width="12"
-                              height="12"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden
-                            >
-                              <circle cx="12" cy="12" r="10" />
-                              <polyline points="12 6 12 12 16 14" />
-                            </svg>
+                            <Clock className="h-3 w-3" strokeWidth={2.5} />
                             {new Date(player.paid_at).toLocaleString("vi-VN")}
                           </div>
                         )}
