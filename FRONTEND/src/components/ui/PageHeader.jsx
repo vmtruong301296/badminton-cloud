@@ -3,6 +3,7 @@ import { ChevronLeft } from "./icons";
 
 /**
  * Đầu màn: tiêu đề h1, mô tả, nút hành động.
+ * - description: chuỗi hoặc node (vd badge, ngày); khung bọc là div nên đặt được cả khối.
  * - actions: nằm bên phải trên desktop, xuống dưới tiêu đề trên điện thoại.
  * - back: { to, label } -> liên kết quay lại có mũi tên, đặt trên tiêu đề.
  */
@@ -24,7 +25,7 @@ export default function PageHeader({ title, description, actions, back }) {
             {title}
           </h1>
           {description && (
-            <p className="mt-1 text-sm text-slate-500">{description}</p>
+            <div className="mt-1 text-sm text-slate-500">{description}</div>
           )}
         </div>
         {actions && (
