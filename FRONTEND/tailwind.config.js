@@ -4,9 +4,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Fraunces", "Georgia", "serif"],
+        display: [
+          '"Be Vietnam Pro"',
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
         sans: [
-          '"DM Sans"',
+          '"Be Vietnam Pro"',
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
