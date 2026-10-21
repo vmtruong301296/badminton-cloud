@@ -8,7 +8,34 @@ import {
   roundToNearestThousand,
 } from "../../utils/formatters";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import Modal from "../../components/ui/Modal";
+import PageHeader from "../../components/ui/PageHeader";
+import EmptyState from "../../components/ui/EmptyState";
+import {
+  ChevronLeft,
+  CircleAlert,
+  Plus,
+  Receipt,
+  Trash2,
+} from "../../components/ui/icons";
 import { useAuth } from "../../contexts/AuthContext";
+
+/** Biểu tượng "Thống kê" (đường biểu đồ) — chưa có trong ui/icons.jsx. */
+const ChartLine = ({ className }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.75}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+    <path d="m19 9-5 5-4-4-3 3" />
+  </svg>
+);
 
 const BALLS_PER_TUBE = 12;
 // Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống
@@ -134,9 +161,9 @@ export default function Dashboard() {
     const allPaid = bill.bill_players?.every((p) => p.is_paid);
     const somePaid = bill.bill_players?.some((p) => p.is_paid);
 
-    if (allPaid) return "bg-green-100 text-green-800";
-    if (somePaid) return "bg-yellow-100 text-yellow-800";
-    return "bg-gray-100 text-gray-800";
+    if (allPaid) return "bg-emerald-50 text-emerald-800";
+    if (somePaid) return "bg-amber-50 text-amber-800";
+    return "bg-slate-100 text-slate-700";
   };
 
   const getStatusText = (bill) => {
@@ -616,114 +643,85 @@ export default function Dashboard() {
   }, [allBills, statsMode, statsMonth, statsYear]);
 
   return (
-    <div className="px-2 sm:px-0 pb-24 md:pb-0">
-      <header className="mb-5 sm:mb-8">
-        <div className="flex items-center justify-between gap-3 sm:gap-4 sm:items-end">
-          <div className="min-w-0 flex-1">
-            <p className="hidden text-xs font-medium uppercase tracking-[0.18em] text-emerald-700/80 sm:block">
-              Quản lý chi tiêu
-            </p>
-            <h1 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:mt-1 sm:text-4xl">
-              Danh sách Bills
-            </h1>
-            <p className="mt-0.5 text-xs text-slate-500 sm:mt-1.5 sm:text-sm">
-              {loading ? (
-                <span className="inline-block h-3.5 w-24 skeleton align-middle" />
-              ) : (
-                <>
-                  <span className="font-tabular font-semibold text-slate-700">
-                    {bills.length}
-                  </span>{" "}
-                  {bills.length === 1 ? "bill" : "bills"} hiển thị
-                  {filters.date_from || filters.date_to ? " theo bộ lọc" : ""}
-                </>
-              )}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+    <div className="px-4 sm:px-0 pb-24 md:pb-0">
+      <PageHeader
+        title="Danh sách Bills"
+        description={
+          loading ? (
+            <span className="inline-block h-3.5 w-24 skeleton align-middle" />
+          ) : (
+            <>
+              <span className="font-tabular font-semibold text-slate-700">
+                {bills.length}
+              </span>{" "}
+              {bills.length === 1 ? "bill" : "bills"} hiển thị
+              {filters.date_from || filters.date_to ? " theo bộ lọc" : ""}
+            </>
+          )
+        }
+        actions={
+          <>
             <button
+              type="button"
               onClick={openStatsModal}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 shadow-card transition hover:border-slate-300 hover:bg-slate-50 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:h-11 sm:gap-2 sm:px-4"
+              className="btn btn-secondary"
             >
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M3 3v18h18" />
-                <path d="M7 14l4-4 4 3 5-6" />
-              </svg>
-              <span>Thống kê</span>
+              <ChartLine className="h-[18px] w-[18px]" />
+              Thống kê
             </button>
             {hasPermission("bills.create") && (
               <Link
                 to="/bills/create"
-                className="hidden h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:inline-flex"
+                className="btn btn-primary hidden sm:inline-flex"
               >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+                <Plus className="h-4 w-4" />
                 Tạo Bill
               </Link>
             )}
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       {/* Filters — toolbar gọn 1 hàng trên desktop */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-card">
-        <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
+      <section className="card mb-6 !p-3 sm:!p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
           {/* Dates */}
           <div className="grid grid-cols-2 gap-3 lg:flex lg:gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label htmlFor="filter-date-from" className="field-label">
                 Từ ngày
               </label>
               <input
+                id="filter-date-from"
                 type="date"
                 value={filters.date_from}
                 onChange={(e) =>
                   setFilters({ ...filters, date_from: e.target.value })
                 }
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-40"
+                className="field-input lg:w-40"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label htmlFor="filter-date-to" className="field-label">
                 Đến ngày
               </label>
               <input
+                id="filter-date-to"
                 type="date"
                 value={filters.date_to}
                 onChange={(e) =>
                   setFilters({ ...filters, date_to: e.target.value })
                 }
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-40"
+                className="field-input lg:w-40"
               />
             </div>
           </div>
 
           {/* Status chips */}
-          <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+          <div role="group" aria-labelledby="filter-status-label">
+            <span id="filter-status-label" className="field-label">
               Trạng thái
-            </label>
+            </span>
             <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
               {[
                 {
@@ -761,7 +759,7 @@ export default function Dashboard() {
                         : [...filters.status, opt.value];
                       setFilters({ ...filters, status: next });
                     }}
-                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-3.5 sm:text-sm ${
+                    className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
                       isActive
                         ? opt.activeCls
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -782,15 +780,16 @@ export default function Dashboard() {
           {/* Limit + Clear — đẩy sang phải trên desktop */}
           <div className="grid grid-cols-2 gap-3 lg:ml-auto lg:flex lg:items-end lg:gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label htmlFor="filter-limit" className="field-label">
                 Số bill / trang
               </label>
               <select
+                id="filter-limit"
                 value={filters.limit}
                 onChange={(e) =>
                   setFilters({ ...filters, limit: parseInt(e.target.value) })
                 }
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm font-medium text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-24"
+                className="field-input font-medium lg:w-24"
               >
                 <option value={10}>10</option>
                 <option value={20}>20</option>
@@ -811,21 +810,9 @@ export default function Dashboard() {
                     limit: 10,
                   })
                 }
-                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 lg:w-auto"
+                className="btn btn-secondary w-full lg:w-auto"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                </svg>
+                <Trash2 className="h-4 w-4" />
                 <span className="sm:hidden">Xóa lọc</span>
                 <span className="hidden sm:inline">Xóa bộ lọc</span>
               </button>
@@ -833,286 +820,6 @@ export default function Dashboard() {
           </div>
         </div>
       </section>
-
-      {/* removed legacy filter blocks */}
-      <div className="hidden">
-        <div className="sm:hidden space-y-4">
-          {/* Row 1: Từ ngày bên trái, Đến ngày bên phải */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Từ ngày
-              </label>
-              <input
-                type="date"
-                value={filters.date_from}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_from: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Đến ngày
-              </label>
-              <input
-                type="date"
-                value={filters.date_to}
-                onChange={(e) =>
-                  setFilters({ ...filters, date_to: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-              />
-            </div>
-          </div>
-          {/* Row 2: Trạng thái bên trái, Số bill hiển thị và Nút xóa bộ lọc bên phải */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Trạng thái
-              </label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.status.includes("paid")}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFilters({
-                          ...filters,
-                          status: [...filters.status, "paid"],
-                        });
-                      } else {
-                        setFilters({
-                          ...filters,
-                          status: filters.status.filter((s) => s !== "paid"),
-                        });
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700">Đã thanh toán</span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.status.includes("partial")}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFilters({
-                          ...filters,
-                          status: [...filters.status, "partial"],
-                        });
-                      } else {
-                        setFilters({
-                          ...filters,
-                          status: filters.status.filter((s) => s !== "partial"),
-                        });
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Thanh toán 1 phần
-                  </span>
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={filters.status.includes("unpaid")}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setFilters({
-                          ...filters,
-                          status: [...filters.status, "unpaid"],
-                        });
-                      } else {
-                        setFilters({
-                          ...filters,
-                          status: filters.status.filter((s) => s !== "unpaid"),
-                        });
-                      }
-                    }}
-                    className="mr-2"
-                  />
-                  <span className="text-sm text-gray-700">Chưa thanh toán</span>
-                </label>
-              </div>
-            </div>
-            <div className="flex-1 flex flex-col gap-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Số bill hiển thị
-                </label>
-                <select
-                  value={filters.limit}
-                  onChange={(e) =>
-                    setFilters({ ...filters, limit: parseInt(e.target.value) })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value={10}>10</option>
-                  <option value={20}>20</option>
-                  <option value={30}>30</option>
-                  <option value={40}>40</option>
-                  <option value={50}>50</option>
-                </select>
-              </div>
-              <div className="flex items-end">
-                <button
-                  onClick={() =>
-                    setFilters({
-                      date_from: "",
-                      date_to: "",
-                      player_id: "",
-                      status: [],
-                      limit: 10,
-                    })
-                  }
-                  className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                >
-                  Xóa bộ lọc
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden sm:grid grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Từ ngày
-            </label>
-            <input
-              type="date"
-              value={filters.date_from}
-              onChange={(e) =>
-                setFilters({ ...filters, date_from: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Đến ngày
-            </label>
-            <input
-              type="date"
-              value={filters.date_to}
-              onChange={(e) =>
-                setFilters({ ...filters, date_to: e.target.value })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            />
-          </div>
-          <div className="sm:col-span-2 lg:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Trạng thái
-            </label>
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={filters.status.includes("paid")}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFilters({
-                        ...filters,
-                        status: [...filters.status, "paid"],
-                      });
-                    } else {
-                      setFilters({
-                        ...filters,
-                        status: filters.status.filter((s) => s !== "paid"),
-                      });
-                    }
-                  }}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Đã thanh toán</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={filters.status.includes("partial")}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFilters({
-                        ...filters,
-                        status: [...filters.status, "partial"],
-                      });
-                    } else {
-                      setFilters({
-                        ...filters,
-                        status: filters.status.filter((s) => s !== "partial"),
-                      });
-                    }
-                  }}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Thanh toán 1 phần</span>
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={filters.status.includes("unpaid")}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setFilters({
-                        ...filters,
-                        status: [...filters.status, "unpaid"],
-                      });
-                    } else {
-                      setFilters({
-                        ...filters,
-                        status: filters.status.filter((s) => s !== "unpaid"),
-                      });
-                    }
-                  }}
-                  className="mr-2"
-                />
-                <span className="text-sm text-gray-700">Chưa thanh toán</span>
-              </label>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Số bill hiển thị
-            </label>
-            <select
-              value={filters.limit}
-              onChange={(e) =>
-                setFilters({ ...filters, limit: parseInt(e.target.value) })
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={30}>30</option>
-              <option value={40}>40</option>
-              <option value={50}>50</option>
-            </select>
-          </div>
-          <div className="sm:col-span-2 lg:col-span-1 flex items-end">
-            <button
-              onClick={() =>
-                setFilters({
-                  date_from: "",
-                  date_to: "",
-                  player_id: "",
-                  status: [],
-                  limit: 10,
-                })
-              }
-              className="w-full sm:w-auto px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-            >
-              Xóa bộ lọc
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Main Content: Bills Table and Unpaid Players */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -1156,233 +863,194 @@ export default function Dashboard() {
               </div>
             </div>
           ) : billGroups.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-card">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M9 11l3 3L22 4" />
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                </svg>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900">
-                Chưa có bill nào
-              </h3>
-              <p className="mt-1.5 text-sm text-slate-500">
-                Thử xóa bộ lọc hoặc tạo bill mới để bắt đầu.
-              </p>
-              {hasPermission("bills.create") && (
-                <Link
-                  to="/bills/create"
-                  className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover"
-                >
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
-                  Tạo bill đầu tiên
-                </Link>
-              )}
-            </div>
+            <EmptyState
+              icon={Receipt}
+              title="Chưa có bill nào"
+              description="Thử xóa bộ lọc hoặc tạo bill mới để bắt đầu."
+              action={
+                hasPermission("bills.create") && (
+                  <Link to="/bills/create" className="btn btn-primary">
+                    <Plus className="h-4 w-4" />
+                    Tạo bill đầu tiên
+                  </Link>
+                )
+              }
+            />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-              {/* Desktop Table View */}
-              <div className="hidden md:block space-y-4">
-                {billGroups.map((group) => {
-                  const mainBill = group.mainBill;
-                  const subBills = group.subBills;
-                  const mainBillWarning = isOverdueWarning(mainBill);
-                  const mainBillAllPaid =
-                    mainBill.bill_players?.every((p) => p.is_paid) &&
-                    mainBill.bill_players?.length > 0;
+              <div className="hidden md:block">
+                <table className="min-w-full">
+                  <thead className="bg-slate-50 text-xs font-medium text-slate-500">
+                    <tr>
+                      <th scope="col" className="px-5 py-3 text-left">
+                        Ngày
+                      </th>
+                      <th scope="col" className="px-5 py-3 text-left">
+                        Loại
+                      </th>
+                      <th scope="col" className="px-5 py-3 text-right">
+                        Tổng tiền
+                      </th>
+                      <th scope="col" className="px-5 py-3 text-left">
+                        Trạng thái
+                      </th>
+                      <th scope="col" className="px-5 py-3 text-right">
+                        Chưa TT
+                      </th>
+                      <th scope="col" className="px-5 py-3 text-right">
+                        Thao tác
+                      </th>
+                    </tr>
+                  </thead>
+                  {billGroups.map((group) => {
+                    const mainBill = group.mainBill;
+                    const subBills = group.subBills;
+                    const mainBillWarning = isOverdueWarning(mainBill);
+                    const mainBillAllPaid =
+                      mainBill.bill_players?.every((p) => p.is_paid) &&
+                      mainBill.bill_players?.length > 0;
 
-                  return (
-                    <div
-                      key={mainBill.id}
-                      className={`border-2 rounded-lg overflow-hidden ${
-                        mainBillWarning
-                          ? "border-red-300"
-                          : mainBillAllPaid
-                            ? "border-green-300"
-                            : "border-gray-300"
-                      }`}
-                    >
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Ngày
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Loại
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Tổng tiền
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Trạng thái
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Chưa TT
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Thao tác
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
-                          {/* Main Bill Row */}
-                          <tr
-                            className={`hover:bg-gray-50 ${
-                              mainBillWarning
-                                ? "bg-red-100 hover:bg-red-200"
-                                : mainBillAllPaid
-                                  ? "bg-green-50 hover:bg-green-100"
-                                  : ""
-                            }`}
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {formatDate(mainBill.date)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                    return (
+                      <tbody
+                        key={mainBill.id}
+                        className="border-t border-slate-200 text-sm text-slate-700"
+                      >
+                        {/* Main Bill Row */}
+                        <tr
+                          className={
+                            mainBillWarning
+                              ? "bg-rose-50"
+                              : mainBillAllPaid
+                                ? "bg-emerald-50/60"
+                                : ""
+                          }
+                        >
+                          <td className="whitespace-nowrap px-5 py-3.5 font-tabular text-slate-900">
+                            {formatDate(mainBill.date)}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5">
+                            <span className="flex items-center gap-2">
+                              <span className="badge badge-slate">
                                 Bill chính #{mainBill.id}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                              {formatCurrencyRounded(mainBill.total_amount)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span
-                                className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(mainBill)}`}
-                              >
-                                {getStatusText(mainBill)}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {mainBill.bill_players?.filter((p) => !p.is_paid)
-                                .length || 0}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              <div className="flex space-x-3">
-                                {hasPermission("bills.view") && (
-                                  <Link
-                                    to={`/bills/${mainBill.id}`}
-                                    className="text-blue-600 hover:text-blue-900"
-                                  >
-                                    Chi tiết
-                                  </Link>
-                                )}
-                                {hasPermission("bills.delete") && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleDeleteClick(mainBill.id)
-                                    }
-                                    className="text-red-600 hover:text-red-900"
-                                  >
-                                    Xóa
-                                  </button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                          {/* Sub Bills Rows */}
-                          {subBills.map((subBill) => {
-                            const subBillWarning = isOverdueWarning(subBill);
-                            const subBillAllPaid =
-                              subBill.bill_players?.every((p) => p.is_paid) &&
-                              subBill.bill_players?.length > 0;
-                            return (
-                              <tr
-                                key={subBill.id}
-                                className={`hover:bg-gray-50 bg-blue-50 ${
-                                  subBillWarning
-                                    ? "bg-red-100 hover:bg-red-200"
-                                    : subBillAllPaid
-                                      ? "bg-green-50 hover:bg-green-100"
-                                      : ""
-                                }`}
-                              >
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {/* {formatDate(subBill.date)} */}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                      Bill con
-                                    </span>
-                                    <span className="text-xs text-gray-600">
-                                      của Bill #{mainBill.id}
-                                    </span>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {formatCurrencyRounded(subBill.total_amount)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span
-                                    className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(subBill)}`}
-                                  >
-                                    {getStatusText(subBill)}
+                              {mainBillWarning && (
+                                <span className="badge badge-rose">Quá hạn</span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5 text-right font-tabular font-medium text-slate-900">
+                            {formatCurrencyRounded(mainBill.total_amount)}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5">
+                            <span className={`badge ${getStatusColor(mainBill)}`}>
+                              {getStatusText(mainBill)}
+                            </span>
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5 text-right font-tabular">
+                            {mainBill.bill_players?.filter((p) => !p.is_paid)
+                              .length || 0}
+                          </td>
+                          <td className="whitespace-nowrap px-5 py-3.5">
+                            <div className="flex justify-end gap-2">
+                              {hasPermission("bills.view") && (
+                                <Link
+                                  to={`/bills/${mainBill.id}`}
+                                  className="btn btn-secondary btn-sm"
+                                >
+                                  Chi tiết
+                                </Link>
+                              )}
+                              {hasPermission("bills.delete") && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteClick(mainBill.id)}
+                                  className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                >
+                                  Xóa
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {/* Sub Bills Rows */}
+                        {subBills.map((subBill) => {
+                          const subBillWarning = isOverdueWarning(subBill);
+                          const subBillAllPaid =
+                            subBill.bill_players?.every((p) => p.is_paid) &&
+                            subBill.bill_players?.length > 0;
+                          return (
+                            <tr
+                              key={subBill.id}
+                              className={`border-t border-slate-100 ${
+                                subBillWarning
+                                  ? "bg-rose-50"
+                                  : subBillAllPaid
+                                    ? "bg-emerald-50/60"
+                                    : "bg-sky-50/60"
+                              }`}
+                            >
+                              <td className="whitespace-nowrap border-l-2 border-sky-300 px-5 py-3.5 text-slate-900">
+                                {/* {formatDate(subBill.date)} */}
+                              </td>
+                              <td className="whitespace-nowrap px-5 py-3.5">
+                                <span className="flex items-center gap-2">
+                                  <span className="badge badge-sky">Bill con</span>
+                                  <span className="text-xs text-slate-500">
+                                    của Bill #{mainBill.id}
                                   </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {subBill.bill_players?.filter(
-                                    (p) => !p.is_paid,
-                                  ).length || 0}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                  <div className="flex space-x-3">
-                                    {hasPermission("bills.view") && (
-                                      <Link
-                                        to={`/bills/${subBill.id}`}
-                                        className="text-blue-600 hover:text-blue-900"
-                                      >
-                                        Chi tiết
-                                      </Link>
-                                    )}
-                                    {hasPermission("bills.delete") && (
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          handleDeleteClick(subBill.id)
-                                        }
-                                        className="text-red-600 hover:text-red-900"
-                                      >
-                                        Xóa
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  );
-                })}
+                                  {subBillWarning && (
+                                    <span className="badge badge-rose">
+                                      Quá hạn
+                                    </span>
+                                  )}
+                                </span>
+                              </td>
+                              <td className="whitespace-nowrap px-5 py-3.5 text-right font-tabular font-medium text-slate-900">
+                                {formatCurrencyRounded(subBill.total_amount)}
+                              </td>
+                              <td className="whitespace-nowrap px-5 py-3.5">
+                                <span
+                                  className={`badge ${getStatusColor(subBill)}`}
+                                >
+                                  {getStatusText(subBill)}
+                                </span>
+                              </td>
+                              <td className="whitespace-nowrap px-5 py-3.5 text-right font-tabular">
+                                {subBill.bill_players?.filter((p) => !p.is_paid)
+                                  .length || 0}
+                              </td>
+                              <td className="whitespace-nowrap px-5 py-3.5">
+                                <div className="flex justify-end gap-2">
+                                  {hasPermission("bills.view") && (
+                                    <Link
+                                      to={`/bills/${subBill.id}`}
+                                      className="btn btn-secondary btn-sm"
+                                    >
+                                      Chi tiết
+                                    </Link>
+                                  )}
+                                  {hasPermission("bills.delete") && (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleDeleteClick(subBill.id)
+                                      }
+                                      className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                    >
+                                      Xóa
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    );
+                  })}
+                </table>
               </div>
 
-              {/* Mobile Card View */}
               <div className="md:hidden space-y-3 p-3">
                 {billGroups.map((group) => {
                   const mainBill = group.mainBill;
@@ -1418,15 +1086,15 @@ export default function Dashboard() {
                       >
                         <div className="mb-3 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            <div className="font-tabular text-sm font-medium text-slate-500">
                               {formatDate(mainBill.date)}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                              <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+                              <span className="badge badge-slate">
                                 Bill chính #{mainBill.id}
                               </span>
                               {mainBillWarning && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                                <span className="badge badge-rose gap-1">
                                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500" />
                                   Quá hạn
                                 </span>
@@ -1434,7 +1102,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                           <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusColor(mainBill)}`}
+                            className={`badge gap-1.5 ${getStatusColor(mainBill)}`}
                           >
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${mainBillAllPaid ? "bg-emerald-500" : mainUnpaid > 0 && mainBill.bill_players?.some((p) => p.is_paid) ? "bg-amber-500" : "bg-slate-400"}`}
@@ -1443,7 +1111,7 @@ export default function Dashboard() {
                           </span>
                         </div>
 
-                        <div className="font-display font-tabular text-2xl font-semibold leading-tight text-slate-900">
+                        <div className="font-tabular text-2xl font-semibold leading-tight tracking-tight text-slate-900">
                           {formatCurrencyRounded(mainBill.total_amount)}
                         </div>
                         <div className="mt-1 text-xs text-slate-500">
@@ -1465,22 +1133,9 @@ export default function Dashboard() {
                           {hasPermission("bills.view") && (
                             <Link
                               to={`/bills/${mainBill.id}`}
-                              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-card transition active:scale-[0.98] hover:bg-emerald-700"
+                              className="btn btn-primary flex-1"
                             >
                               Chi tiết
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                              >
-                                <path d="M5 12h14M13 5l7 7-7 7" />
-                              </svg>
                             </Link>
                           )}
                           {hasPermission("bills.delete") && (
@@ -1488,21 +1143,9 @@ export default function Dashboard() {
                               type="button"
                               onClick={() => handleDeleteClick(mainBill.id)}
                               aria-label={`Xóa bill #${mainBill.id}`}
-                              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition active:scale-[0.96] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                              className="btn btn-secondary w-11 !px-0 text-rose-600"
                             >
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                              >
-                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                              </svg>
+                              <Trash2 className="h-5 w-5" />
                             </button>
                           )}
                         </div>
@@ -1535,16 +1178,16 @@ export default function Dashboard() {
                             <div className="mb-3 flex items-start justify-between gap-3">
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-semibold text-sky-700">
+                                  <span className="badge badge-sky">
                                     Bill con
                                   </span>
-                                  <span className="text-[11px] text-slate-500">
+                                  <span className="text-xs text-slate-500">
                                     của #{mainBill.id}
                                   </span>
                                 </div>
                               </div>
                               <span
-                                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${getStatusColor(subBill)}`}
+                                className={`badge gap-1.5 ${getStatusColor(subBill)}`}
                               >
                                 <span
                                   className={`h-1.5 w-1.5 rounded-full ${subBillAllPaid ? "bg-emerald-500" : subUnpaid > 0 && subBill.bill_players?.some((p) => p.is_paid) ? "bg-amber-500" : "bg-slate-400"}`}
@@ -1552,7 +1195,7 @@ export default function Dashboard() {
                                 {getStatusText(subBill)}
                               </span>
                             </div>
-                            <div className="font-display font-tabular text-xl font-semibold text-slate-900">
+                            <div className="font-tabular text-xl font-semibold tracking-tight text-slate-900">
                               {formatCurrencyRounded(subBill.total_amount)}
                             </div>
                             <div className="mt-1 text-xs text-slate-500">
@@ -1573,22 +1216,9 @@ export default function Dashboard() {
                               {hasPermission("bills.view") && (
                                 <Link
                                   to={`/bills/${subBill.id}`}
-                                  className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-sky-600 text-sm font-semibold text-white shadow-card transition active:scale-[0.98] hover:bg-sky-700"
+                                  className="btn btn-secondary flex-1"
                                 >
                                   Chi tiết
-                                  <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden
-                                  >
-                                    <path d="M5 12h14M13 5l7 7-7 7" />
-                                  </svg>
                                 </Link>
                               )}
                               {hasPermission("bills.delete") && (
@@ -1596,21 +1226,9 @@ export default function Dashboard() {
                                   type="button"
                                   onClick={() => handleDeleteClick(subBill.id)}
                                   aria-label={`Xóa bill con #${subBill.id}`}
-                                  className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition active:scale-[0.96] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                                  className="btn btn-secondary w-11 !px-0 text-rose-600"
                                 >
-                                  <svg
-                                    width="18"
-                                    height="18"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden
-                                  >
-                                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                                  </svg>
+                                  <Trash2 className="h-5 w-5" />
                                 </button>
                               )}
                             </div>
@@ -1623,29 +1241,29 @@ export default function Dashboard() {
               </div>
 
               {/* Legend/Chú thích */}
-              <div className="bg-gray-50 px-4 sm:px-6 py-4 border-t border-gray-200">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 text-sm">
-                  <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-2 sm:gap-4">
+              <div className="border-t border-slate-200 bg-slate-50 px-4 py-4 sm:px-6">
+                <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-red-100 border border-red-300 rounded flex-shrink-0"></div>
-                      <span className="text-gray-700 text-xs sm:text-sm">
+                      <div className="h-4 w-4 flex-shrink-0 rounded border border-rose-300 bg-rose-100"></div>
+                      <span className="text-xs text-slate-600 sm:text-sm">
                         Bill quá hạn 1 tuần và còn người chưa thanh toán
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-green-50 border border-green-200 rounded flex-shrink-0"></div>
-                      <span className="text-gray-700 text-xs sm:text-sm">
+                      <div className="h-4 w-4 flex-shrink-0 rounded border border-emerald-200 bg-emerald-50"></div>
+                      <span className="text-xs text-slate-600 sm:text-sm">
                         Bill đã thanh toán
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 bg-blue-50 border border-blue-200 rounded flex-shrink-0"></div>
-                      <span className="text-gray-700 text-xs sm:text-sm">
+                      <div className="h-4 w-4 flex-shrink-0 rounded border border-sky-200 bg-sky-50"></div>
+                      <span className="text-xs text-slate-600 sm:text-sm">
                         Bill con
                       </span>
                     </div>
                   </div>
-                  <div className="text-xs sm:text-sm font-semibold text-gray-700">
+                  <div className="text-xs font-semibold text-slate-700 sm:text-sm">
                     Tổng số bill: {totalMainBillsCount}
                   </div>
                 </div>
@@ -1653,7 +1271,7 @@ export default function Dashboard() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="border-t border-slate-200 bg-slate-50/50 px-4 py-4 sm:px-6">
+                <div className="border-t border-slate-200 px-4 py-4 sm:px-6">
                   <div className="flex flex-col items-center justify-between gap-3 sm:flex-row">
                     <div className="text-sm text-slate-600">
                       Trang{" "}
@@ -1665,28 +1283,16 @@ export default function Dashboard() {
                         {totalPages}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center justify-center gap-1.5">
                       <button
                         onClick={() =>
                           setCurrentPage((prev) => Math.max(1, prev - 1))
                         }
                         disabled={currentPage === 1}
                         aria-label="Trang trước"
-                        className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white"
+                        className="btn btn-secondary gap-1 !px-3"
                       >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                        >
-                          <path d="M15 18l-6-6 6-6" />
-                        </svg>
+                        <ChevronLeft className="h-4 w-4" />
                         <span className="hidden sm:inline">Trước</span>
                       </button>
                       <div className="flex items-center gap-1">
@@ -1706,10 +1312,10 @@ export default function Dashboard() {
                                 aria-current={
                                   currentPage === page ? "page" : undefined
                                 }
-                                className={`inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-medium font-tabular transition ${
+                                className={`btn min-w-11 font-tabular !px-2 sm:min-w-10 ${
                                   currentPage === page
-                                    ? "border-emerald-600 bg-emerald-600 text-white shadow-card"
-                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                                    ? "btn-primary"
+                                    : "btn-secondary"
                                 }`}
                               >
                                 {page}
@@ -1740,22 +1346,10 @@ export default function Dashboard() {
                         }
                         disabled={currentPage === totalPages}
                         aria-label="Trang sau"
-                        className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-white"
+                        className="btn btn-secondary gap-1 !px-3"
                       >
                         <span className="hidden sm:inline">Sau</span>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                        >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
+                        <ChevronLeft className="h-4 w-4 rotate-180" />
                       </button>
                     </div>
                   </div>
@@ -1767,60 +1361,57 @@ export default function Dashboard() {
 
         {/* Right column: Cầu khả dụng + DS chưa thanh toán */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+            <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+                <h2 className="text-base font-semibold text-slate-900">
                   Cầu khả dụng
-                </h3>
+                </h2>
                 {hasPermission("shuttles.view") && (
                   <Link
                     to="/master?tab=shuttles"
-                    className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap"
+                    className="-my-2 inline-flex min-h-11 items-center whitespace-nowrap text-sm font-medium text-blue-600 hover:text-blue-800 sm:min-h-0 sm:py-0"
                   >
                     Nhập kho
                   </Link>
                 )}
               </div>
-              <div className="text-sm font-semibold text-emerald-700 mt-1">
+              <div className="mt-1 text-sm font-semibold text-emerald-700">
                 Tổng: {formatShuttleStockDisplay(totalShuttleStockBalls)}
               </div>
             </div>
             {isTotalLowStock && (
-              <div className="border-b-2 border-red-500 bg-red-50 px-4 sm:px-6 py-3 animate-pulse">
+              <div className="border-b border-rose-200 bg-rose-50 px-4 py-3 sm:px-5">
                 <div className="flex items-start gap-2">
-                  <span className="text-lg leading-none">⚠️</span>
-                  <p className="text-xs sm:text-sm font-semibold text-red-700">
+                  <CircleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-600" />
+                  <p className="text-sm font-medium text-rose-700">
                     Tổng cầu còn lại dưới {LOW_STOCK_TUBES} ống — cần nhập thêm!
                   </p>
                 </div>
               </div>
             )}
-            <div className="divide-y divide-gray-200 max-h-[min(40vh,320px)] lg:max-h-[min(35vh,280px)] overflow-y-auto">
+            <div className="max-h-[min(40vh,320px)] divide-y divide-slate-100 overflow-y-auto lg:max-h-[min(35vh,280px)]">
               {loadingShuttles ? (
-                <div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
+                <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-5">
                   Đang tải...
                 </div>
               ) : shuttleTypes.length === 0 ? (
-                <div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
+                <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-5">
                   Chưa có loại cầu
                 </div>
               ) : shuttleTypesWithStock.length === 0 ? (
-                <div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
+                <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-5">
                   Không có loại cầu nào còn tồn kho
                 </div>
               ) : (
                 shuttleTypesWithStock.map((st) => {
                   const q = Number(st.stock_quantity) || 0;
                   return (
-                    <div
-                      key={st.id}
-                      className="px-4 sm:px-6 py-3 hover:bg-gray-50"
-                    >
-                      <div className="text-xs sm:text-sm font-semibold text-gray-900">
+                    <div key={st.id} className="px-4 py-3 sm:px-5">
+                      <div className="text-sm font-semibold text-slate-900">
                         {st.name}
                       </div>
-                      <div className="text-xs sm:text-sm mt-0.5 text-gray-700">
+                      <div className="mt-0.5 text-sm text-slate-600">
                         {formatShuttleStockDisplay(q)}
                       </div>
                     </div>
@@ -1830,25 +1421,25 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-4 sm:px-6 py-4 bg-gray-50 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">
+          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+            <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
+              <h2 className="text-base font-semibold text-slate-900">
                 DS chưa thanh toán ({unpaidPlayers.length})
-              </h3>
-              <div className="text-sm font-semibold text-red-600 mt-1">
+              </h2>
+              <div className="mt-1 text-sm font-semibold font-tabular text-rose-600">
                 Tổng:{" "}
                 {formatCurrencyRounded(
                   unpaidPlayers.reduce((sum, p) => sum + p.totalAmount, 0),
                 )}
               </div>
             </div>
-            <div className="divide-y divide-gray-200 max-h-[calc(100vh-300px)] overflow-y-auto">
+            <div className="max-h-[calc(100vh-300px)] divide-y divide-slate-100 overflow-y-auto">
               {loading ? (
-                <div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
+                <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-5">
                   Đang tải...
                 </div>
               ) : unpaidPlayers.length === 0 ? (
-                <div className="px-4 sm:px-6 py-8 text-center text-gray-500 text-sm">
+                <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-5">
                   Không có người chơi nào chưa thanh toán
                 </div>
               ) : (
@@ -1858,27 +1449,28 @@ export default function Dashboard() {
                   return (
                     <div
                       key={player.userId}
-                      className={`px-4 sm:px-6 py-3 relative ${
-                        isOverdue
-                          ? "bg-red-100 hover:bg-red-200"
-                          : "hover:bg-gray-50"
+                      className={`relative px-4 py-3 sm:px-5 ${
+                        isOverdue ? "bg-rose-50" : ""
                       }`}
                     >
-                      <div className="pr-14 sm:pr-8 mb-2">
-                        <div className="text-xs sm:text-sm font-semibold text-gray-900">
+                      <div className="mb-2 pr-12">
+                        <div className="break-words text-sm font-semibold text-slate-900">
                           {player.name}:{" "}
-                          <span className="text-red-600">
+                          <span className="font-tabular text-rose-600">
                             {formatCurrencyRounded(player.totalAmount)}
                           </span>
                         </div>
                       </div>
-                      <div className="text-xs sm:text-sm pr-14 sm:pr-8">
-                        <div className="text-gray-700 font-medium mb-1">
+                      <div className="pr-12 text-sm">
+                        <div className="mb-1 font-medium text-slate-700">
                           DS ngày thiếu:
                         </div>
                         <div className="space-y-1 pl-2">
                           {player.unpaidDates.map((dateItem, idx) => (
-                            <div key={idx} className="text-gray-600">
+                            <div
+                              key={idx}
+                              className="font-tabular text-slate-600"
+                            >
                               {formatDateForUnpaid(dateItem.date)} :{" "}
                               {formatCurrencyRounded(dateItem.amount)}
                             </div>
@@ -1886,7 +1478,7 @@ export default function Dashboard() {
                         </div>
                       </div>
                       {hasPermission("bills.mark_payment") && (
-                        <div className="absolute top-3 right-4 sm:right-4">
+                        <label className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center sm:right-2">
                           <input
                             type="checkbox"
                             checked={false}
@@ -1894,14 +1486,14 @@ export default function Dashboard() {
                               handleMarkPlayerPayment(player.userId)
                             }
                             disabled={isMarking}
-                            className="w-6 h-6 sm:w-5 sm:h-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                            title="Đánh dấu thanh toán tất cả bills"
+                            aria-label={`Đánh dấu thanh toán tất cả bills của ${player.name}`}
+                            className="h-5 w-5 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                           />
-                        </div>
+                        </label>
                       )}
                       {isMarking && (
-                        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center">
-                          <div className="text-xs sm:text-sm text-gray-600">
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/75">
+                          <div className="text-sm text-slate-600">
                             Đang xử lý...
                           </div>
                         </div>
@@ -1924,196 +1516,178 @@ export default function Dashboard() {
       />
 
       {/* Statistics Modal */}
-      {statsModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">
-                  Thống kê
-                </h3>
-                <div className="flex flex-wrap items-center gap-3">
-                  {/* Chọn kỳ thống kê: theo tháng hoặc cả năm */}
-                  <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
-                    {[
-                      { value: "month", label: "Tháng" },
-                      { value: "year", label: "Năm" },
-                    ].map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setStatsMode(option.value)}
-                        className={`px-3 py-2 text-sm font-medium transition ${
-                          statsMode === option.value
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                  <label className="text-sm font-medium text-gray-700">
-                    {statsMode === "year" ? "Chọn năm:" : "Chọn tháng:"}
-                  </label>
-                  {statsMode === "year" ? (
-                    <select
-                      value={statsYear}
-                      onChange={(e) => setStatsYear(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    >
-                      {availableYears.map((year) => (
-                        <option key={year} value={year}>
-                          {year}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type="month"
-                      value={statsMonth}
-                      onChange={(e) => setStatsMonth(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
-                    />
-                  )}
-                  <button
-                    onClick={() => setStatsModalOpen(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 text-sm"
+      <Modal
+        isOpen={statsModalOpen}
+        onClose={() => setStatsModalOpen(false)}
+        title="Thống kê"
+        size="xl"
+      >
+        <div className="mb-5 flex flex-wrap items-center gap-3">
+          {/* Chọn kỳ thống kê: theo tháng hoặc cả năm */}
+          <div className="inline-flex rounded-xl bg-slate-100 p-1">
+            {[
+              { value: "month", label: "Tháng" },
+              { value: "year", label: "Năm" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setStatsMode(option.value)}
+                aria-pressed={statsMode === option.value}
+                className={`h-9 rounded-lg px-4 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
+                  statsMode === option.value
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <label
+            htmlFor="stats-period"
+            className="text-sm font-medium text-slate-700"
+          >
+            {statsMode === "year" ? "Chọn năm:" : "Chọn tháng:"}
+          </label>
+          {statsMode === "year" ? (
+            <select
+              id="stats-period"
+              value={statsYear}
+              onChange={(e) => setStatsYear(Number(e.target.value))}
+              className="field-input !w-auto"
+            >
+              {availableYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              id="stats-period"
+              type="month"
+              value={statsMonth}
+              onChange={(e) => setStatsMonth(e.target.value)}
+              className="field-input !w-auto"
+            />
+          )}
+        </div>
+
+        <div className="space-y-4">
+          {/* Shuttle Statistics */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="mb-3 text-base font-semibold text-slate-900">
+              Tổng số lượng cầu
+            </h3>
+            {periodStats.shuttles.length === 0 ? (
+              <div className="text-sm text-slate-500">
+                Không có dữ liệu cầu trong{" "}
+                {statsMode === "year" ? "năm" : "tháng"} này
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {periodStats.shuttles.map((shuttle, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between gap-3 border-b border-slate-200 py-2 last:border-0"
                   >
-                    Đóng
-                  </button>
+                    <span className="min-w-0 break-words text-sm font-medium text-slate-700">
+                      {shuttle.name}
+                    </span>
+                    <span className="flex-shrink-0 font-tabular text-sm font-semibold text-slate-900">
+                      {shuttle.totalQuantity} quả
+                    </span>
+                  </div>
+                ))}
+                <div className="mt-2 flex items-center justify-between border-t-2 border-slate-300 pt-2">
+                  <span className="text-sm font-bold text-slate-900">
+                    Tổng cộng:
+                  </span>
+                  <span className="font-tabular text-sm font-bold text-slate-900">
+                    {periodStats.totalShuttles} quả
+                  </span>
+                </div>
+                {/* Ống cầu */}
+                <div className="mt-2 flex items-center justify-between rounded-lg bg-sky-50 px-3 py-2">
+                  <span className="text-sm font-bold text-sky-900">
+                    Tổng ống cầu:
+                  </span>
+                  <span className="text-sm font-bold text-sky-900">
+                    {periodStats.totalOngCau} ống
+                    {periodStats.remainingShuttles > 0 && (
+                      <span className="ml-1 text-xs font-normal text-slate-600">
+                        ({periodStats.remainingShuttles} quả lẻ)
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div className="mt-1 text-xs italic text-slate-500">
+                  * 1 ống cầu = 12 quả
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
-                {/* Shuttle Statistics - Chiếm 4 phần */}
-                <div className="lg:col-span-4 bg-gray-50 p-4 rounded-lg">
-                  <h4 className="text-base font-semibold mb-3 text-gray-900">
-                    Tổng số lượng cầu
-                  </h4>
-                  {periodStats.shuttles.length === 0 ? (
-                    <div className="text-sm text-gray-500">
-                      Không có dữ liệu cầu trong{" "}
-                      {statsMode === "year" ? "năm" : "tháng"} này
+          {/* Player Statistics */}
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <h3 className="mb-3 text-base font-semibold text-slate-900">
+              Tổng tiền theo người chơi ({periodStats.players.length})
+            </h3>
+            {periodStats.players.length === 0 ? (
+              <div className="text-sm text-slate-500">
+                Không có dữ liệu người chơi trong{" "}
+                {statsMode === "year" ? "năm" : "tháng"} này
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {periodStats.players.map((player, index) => (
+                  <div
+                    key={index}
+                    className="border-b border-slate-200 py-2 last:border-0"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0 break-words text-sm font-medium text-slate-700">
+                        #{index + 1} {player.name}
+                      </span>
+                      <span className="flex-shrink-0 font-tabular text-sm font-semibold text-slate-900">
+                        {formatCurrencyRounded(player.totalAmount)}
+                      </span>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {periodStats.shuttles.map((shuttle, index) => (
-                        <div
-                          key={index}
-                          className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0"
-                        >
-                          <span className="text-sm font-medium text-gray-700">
-                            {shuttle.name}
-                          </span>
-                          <span className="text-sm font-semibold text-gray-900">
-                            {shuttle.totalQuantity} quả
-                          </span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-gray-400">
-                        <span className="text-sm font-bold text-gray-900">
-                          Tổng cộng:
-                        </span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {periodStats.totalShuttles} quả
-                        </span>
-                      </div>
-                      {/* Ổng cầu */}
-                      <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-blue-400 bg-blue-50 px-2 py-2 rounded">
-                        <span className="text-sm font-bold text-blue-900">
-                          Tổng ống cầu:
-                        </span>
-                        <span className="text-sm font-bold text-blue-900">
-                          {periodStats.totalOngCau} ống
-                          {periodStats.remainingShuttles > 0 && (
-                            <span className="text-xs text-gray-600 ml-1">
-                              ({periodStats.remainingShuttles} quả lẻ)
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1 italic">
-                        * 1 ống cầu = 12 quả
-                      </div>
+                    <div className="mt-1 flex justify-end">
+                      <span className="text-xs text-slate-500">
+                        Số bill: {player.billCount || 0}
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                {/* Player Statistics - Chiếm 6 phần */}
-                <div className="lg:col-span-6 bg-gray-50 p-4 rounded-lg">
-                  <h4 className="text-base font-semibold mb-3 text-gray-900">
-                    Tổng tiền theo người chơi ({periodStats.players.length})
-                  </h4>
-                  {periodStats.players.length === 0 ? (
-                    <div className="text-sm text-gray-500">
-                      Không có dữ liệu người chơi trong{" "}
-                      {statsMode === "year" ? "năm" : "tháng"} này
-                    </div>
-                  ) : (
-                    <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                      {periodStats.players.map((player, index) => (
-                        <div
-                          key={index}
-                          className="py-2 border-b border-gray-200 last:border-0 mr-4"
-                        >
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm font-medium text-gray-700">
-                              #{index + 1} {player.name}
-                            </span>
-                            <span className="text-sm font-semibold text-gray-900">
-                              {formatCurrencyRounded(player.totalAmount)}
-                            </span>
-                          </div>
-                          <div className="flex justify-end mt-1">
-                            <span className="text-xs text-gray-500">
-                              Số bill: {player.billCount || 0}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                      <div className="flex justify-between items-center pt-2 mt-2 border-t-2 border-gray-400 sticky bottom-0 bg-gray-50">
-                        <span className="text-sm font-bold text-gray-900">
-                          Tổng cộng:
-                        </span>
-                        <span className="text-sm font-bold text-gray-900">
-                          {formatCurrencyRounded(
-                            periodStats.players.reduce(
-                              (sum, p) => sum + p.totalAmount,
-                              0,
-                            ),
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  </div>
+                ))}
+                <div className="mt-2 flex items-center justify-between border-t-2 border-slate-300 pt-2">
+                  <span className="text-sm font-bold text-slate-900">
+                    Tổng cộng:
+                  </span>
+                  <span className="font-tabular text-sm font-bold text-slate-900">
+                    {formatCurrencyRounded(
+                      periodStats.players.reduce(
+                        (sum, p) => sum + p.totalAmount,
+                        0,
+                      ),
+                    )}
+                  </span>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Sticky FAB — mobile only, primary action: create bill */}
       {hasPermission("bills.create") && (
         <Link
           to="/bills/create"
           aria-label="Tạo bill mới"
-          className="fab-enter fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-30 sm:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-700 md:hidden"
+          className="fab-enter fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-30 sm:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
         >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
+          <Plus className="h-6 w-6" strokeWidth={2.25} />
         </Link>
       )}
     </div>
