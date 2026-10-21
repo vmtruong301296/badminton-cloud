@@ -109,7 +109,7 @@ export default function ShuttleRow({
             value={shuttle.quantity}
             onChange={handleQuantityChange}
             min={1}
-            className="field-input"
+            baseClassName="field-input"
           />
         </div>
         <div className="sm:col-span-3">

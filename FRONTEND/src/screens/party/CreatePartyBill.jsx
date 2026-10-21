@@ -282,7 +282,7 @@ export default function CreatePartyBill() {
                       id="pbc-date"
                       value={form.date}
                       onChange={(value) => updateField("date", value)}
-                      className="field-input"
+                      baseClassName="field-input"
                     />
                   </div>
                   <div className="sm:order-3">
@@ -522,7 +522,7 @@ export default function CreatePartyBill() {
                                 }
                                 min={0}
                                 step={0.1}
-                                className="field-input"
+                                baseClassName="field-input"
                               />
                             </div>
                             <div>
@@ -767,7 +767,7 @@ export default function CreatePartyBill() {
                 }
                 min={0}
                 step={0.1}
-                className="field-input"
+                baseClassName="field-input"
               />
             </div>
           </div>

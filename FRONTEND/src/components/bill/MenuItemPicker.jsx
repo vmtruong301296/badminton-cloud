@@ -75,7 +75,7 @@ export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
               onChange={setQuantity}
               min={1}
               aria-label="Số lượng"
-              className="field-input"
+              baseClassName="field-input"
             />
           </div>
           <div className="col-span-7 sm:col-span-3">

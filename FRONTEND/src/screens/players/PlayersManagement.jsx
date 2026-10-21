@@ -353,7 +353,7 @@ export default function PlayersManagement() {
               onChange={(value) => setQuickAddData({ ...quickAddData, default_ratio: value })}
               min={0}
               step={0.1}
-              className="field-input"
+              baseClassName="field-input"
             />
           </div>
           <p className="text-xs text-slate-500">
@@ -449,7 +449,7 @@ export default function PlayersManagement() {
               onChange={(value) => setFormData({ ...formData, default_ratio: value })}
               min={0}
               step={0.1}
-              className="field-input"
+              baseClassName="field-input"
             />
           </div>
           {editingPlayer && (

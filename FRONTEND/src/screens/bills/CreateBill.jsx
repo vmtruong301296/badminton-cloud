@@ -342,7 +342,7 @@ export default function CreateBill() {
                         onChange={(value) =>
                           setFormData({ ...formData, date: value })
                         }
-                        className="field-input"
+                        baseClassName="field-input"
                       />
                     </div>
                     <div>
@@ -532,7 +532,7 @@ export default function CreateBill() {
                                       }
                                       min={0}
                                       step={0.1}
-                                      className="field-input"
+                                      baseClassName="field-input"
                                     />
                                   </div>
                                 </div>

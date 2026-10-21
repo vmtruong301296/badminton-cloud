@@ -148,7 +148,7 @@ export default function RatiosManagement() {
               onChange={(value) => setFormData({ ...formData, value })}
               min={0}
               step={0.1}
-              className="field-input"
+              baseClassName="field-input"
             />
           </div>
           <label
