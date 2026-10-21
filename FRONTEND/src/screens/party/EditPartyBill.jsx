@@ -13,6 +13,10 @@ import {
 import CurrencyInput from "../../components/common/CurrencyInput";
 import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
+import PageHeader from "../../components/ui/PageHeader";
+import Modal from "../../components/ui/Modal";
+import { Car, Loader, Plus, Trash2, X } from "../../components/ui/icons";
+import { Check } from "../../components/party/partyIcons";
 
 const todayStr = () => new Date().toISOString().split("T")[0];
 
@@ -326,7 +330,7 @@ export default function EditPartyBill() {
 
   if (initialLoading) {
     return (
-      <div className="px-2 sm:px-0">
+      <div className="px-4 sm:px-0">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-card">
           Đang tải dữ liệu bill…
         </div>
@@ -335,42 +339,11 @@ export default function EditPartyBill() {
   }
 
   return (
-    <div className="px-2 sm:px-0 pb-24 md:pb-0">
-      <header className="mb-5 sm:mb-7">
-        <div className="flex items-center justify-between gap-2 sm:block">
-          <button
-            type="button"
-            onClick={() => navigate(`/party-bills/${id}`)}
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:h-10 sm:px-3 sm:text-sm"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Về chi tiết
-          </button>
-          <h1 className="font-display min-w-0 truncate text-right text-base font-semibold leading-tight text-slate-900 sm:hidden">
-            Sửa Bill tiệc #{id}
-          </h1>
-        </div>
-        <div className="mt-2 hidden min-w-0 sm:block">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-amber-700/80">
-            SỬA BILL TIỆC
-          </p>
-          <h1 className="font-display mt-1 text-3xl font-semibold leading-tight text-slate-900">
-            Sửa Bill tiệc #{id}
-          </h1>
-        </div>
-      </header>
+    <div className="px-4 pb-24 sm:px-0 md:pb-0">
+      <PageHeader
+        back={{ to: `/party-bills/${id}`, label: "Về chi tiết" }}
+        title={`Sửa Bill tiệc #${id}`}
+      />
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
@@ -378,52 +351,56 @@ export default function EditPartyBill() {
           <div className="space-y-4 sm:space-y-6 lg:col-span-2">
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
               <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <p className="text-sm font-semibold text-slate-900">
                   Thông tin cơ bản
                 </p>
               </div>
               <div className="p-4 sm:p-5">
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
                   <div className="sm:order-1">
-                    <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                    <label htmlFor="pbc-date" className="field-label">
                       Ngày *
                     </label>
                     <DatePicker
+                      id="pbc-date"
                       value={form.date}
                       onChange={(value) => updateField("date", value)}
-                      className="w-full"
+                      className="field-input"
                     />
                   </div>
                   <div className="sm:order-3">
-                    <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                    <label htmlFor="pbc-base" className="field-label">
                       Tổng tiền tiệc *
                     </label>
                     <CurrencyInput
+                      id="pbc-base"
                       value={form.base_amount}
                       onChange={(value) => updateField("base_amount", value)}
-                      className="w-full"
+                      baseClassName="field-input"
                     />
                   </div>
                   <div className="col-span-2 sm:col-span-1 sm:order-2">
-                    <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                    <label htmlFor="pbc-name" className="field-label">
                       Tên/Nội dung *
                     </label>
                     <input
+                      id="pbc-name"
                       type="text"
                       value={form.name}
                       onChange={(e) => updateField("name", e.target.value)}
-                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      className="field-input"
                       required
                     />
                   </div>
                   <div className="col-span-2 sm:col-span-3 sm:order-4">
-                    <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                    <label htmlFor="pbc-note" className="field-label">
                       Ghi chú
                     </label>
                     <textarea
+                      id="pbc-note"
                       value={form.note}
                       onChange={(e) => updateField("note", e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      className="field-input !h-auto py-2"
                       rows={1}
                     />
                   </div>
@@ -434,27 +411,15 @@ export default function EditPartyBill() {
             {/* Extras */}
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <p className="text-sm font-semibold text-slate-900">
                   Chi phí thêm
                 </p>
                 <button
                   type="button"
                   onClick={addExtra}
-                  className="inline-flex h-9 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover sm:h-10 sm:text-sm"
+                  className="btn btn-primary btn-sm"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
+                  <Plus className="h-4 w-4" />
                   Thêm
                 </button>
               </div>
@@ -474,33 +439,23 @@ export default function EditPartyBill() {
                       value={extra.name}
                       onChange={(e) => updateExtra(idx, "name", e.target.value)}
                       placeholder="Tên chi phí"
-                      className="col-span-10 h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 sm:col-span-6 sm:order-1"
+                      aria-label={`Tên chi phí ${idx + 1}`}
+                      className="field-input col-span-10 sm:col-span-6 sm:order-1"
                     />
                     <button
                       type="button"
                       onClick={() => removeExtra(idx)}
                       aria-label="Xóa chi phí"
-                      className="col-span-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 sm:col-span-1 sm:order-3"
+                      className="btn btn-secondary col-span-2 w-full !px-0 hover:!border-rose-200 hover:!bg-rose-50 hover:!text-rose-700 sm:col-span-1 sm:order-3"
                     >
-                      <svg
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                      </svg>
+                      <Trash2 className="h-4 w-4" />
                     </button>
                     <div className="col-span-12 sm:col-span-5 sm:order-2">
                       <CurrencyInput
                         value={extra.amount}
                         onChange={(value) => updateExtra(idx, "amount", value)}
-                        className="w-full"
+                        baseClassName="field-input"
+                        aria-label={`Số tiền chi phí ${idx + 1}`}
                         placeholder="0"
                       />
                     </div>
@@ -511,21 +466,22 @@ export default function EditPartyBill() {
                     {lockedExtras.map((extra) => (
                       <div
                         key={extra.id}
-                        className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm"
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm"
                       >
-                        <span className="text-gray-700">
-                          🚗 {extra.name}
-                          <span className="text-gray-500">
+                        <span className="text-slate-700">
+                          <Car className="mr-1.5 inline-block h-4 w-4 align-[-3px] text-slate-500" />
+                          {extra.name}
+                          <span className="text-slate-500">
                             {" "}
                             · đến từ màn Thuê xe
                           </span>
                         </span>
-                        <span className="font-medium text-gray-900">
+                        <span className="font-tabular font-medium text-slate-900">
                           {formatCurrency(extra.amount)}
                         </span>
                       </div>
                     ))}
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-slate-500">
                       Sửa các khoản này ở màn Thuê xe. Chúng vẫn được tính vào
                       tổng.
                     </div>
@@ -537,7 +493,7 @@ export default function EditPartyBill() {
             {/* Participants */}
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <p className="text-sm font-semibold text-slate-900">
                   Người tham gia
                 </p>
                 {form.participants.length > 0 && (
@@ -549,23 +505,28 @@ export default function EditPartyBill() {
               <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 md:grid-cols-3 md:gap-6">
                 <div className="md:col-span-1">
                   <div className="mb-2 flex items-center justify-between">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    <label
+                      htmlFor="pbc-search"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Chọn người
-                    </div>
+                    </label>
                     <button
                       type="button"
                       onClick={openAddPlayer}
-                      className="text-xs font-medium text-emerald-700 hover:text-emerald-800"
+                      className="btn btn-ghost btn-sm -mr-2 text-emerald-700 hover:bg-emerald-50"
                     >
-                      + Thêm nhanh
+                      <Plus className="h-4 w-4" />
+                      Thêm nhanh
                     </button>
                   </div>
                   <input
+                    id="pbc-search"
                     type="text"
                     value={playerSearch}
                     onChange={(e) => setPlayerSearch(e.target.value)}
                     placeholder="Tìm tên..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/60 px-3 text-sm transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+                    className="field-input"
                   />
                   <div className="mt-2 grid max-h-[480px] grid-cols-2 gap-1.5 overflow-y-auto pr-1 text-sm sm:grid-cols-1 sm:gap-1">
                     {loadingPlayers ? (
@@ -582,7 +543,7 @@ export default function EditPartyBill() {
                           key={p.id}
                           type="button"
                           onClick={() => handleSelectPlayer(p)}
-                          className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left transition hover:border-emerald-200 hover:bg-emerald-50 sm:border-transparent sm:bg-transparent sm:px-3"
+                          className="min-h-[44px] w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-left transition hover:border-emerald-200 hover:bg-emerald-50 sm:border-transparent sm:bg-transparent sm:px-3"
                         >
                           <div className="truncate font-medium text-slate-900">
                             {p.name}
@@ -630,17 +591,17 @@ export default function EditPartyBill() {
                                 {p.name}
                               </h4>
                               {p.gender === "female" && (
-                                <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-[10px] font-semibold text-pink-700">
+                                <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-700">
                                   Nữ
                                 </span>
                               )}
                               {p.gender === "male" && (
-                                <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
+                                <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-medium text-sky-700">
                                   Nam
                                 </span>
                               )}
                               {p.is_paid && (
-                                <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
                                   Đã TT
                                 </span>
                               )}
@@ -654,77 +615,81 @@ export default function EditPartyBill() {
                                   type="button"
                                   onClick={() => removeParticipant(idx)}
                                   aria-label={`Xóa ${p.name}`}
-                                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                                  className="-my-1 inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 sm:h-9 sm:w-9"
                                 >
-                                  <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    aria-hidden
-                                  >
-                                    <path d="M18 6L6 18M6 6l12 12" />
-                                  </svg>
+                                  <X className="h-4 w-4" />
                                 </button>
                               )}
                             </div>
                           </div>
                           <div className="grid grid-cols-1 gap-2 p-3 sm:grid-cols-4">
                             <div>
-                              <label className="mb-1 block text-[11px] font-medium text-slate-600">
+                              <label
+                                htmlFor={`pbc-p${idx}-ratio`}
+                                className="mb-1 block text-xs font-medium text-slate-600"
+                              >
                                 Mức tính
                               </label>
                               <NumberInput
+                                id={`pbc-p${idx}-ratio`}
                                 value={p.ratio_value}
                                 onChange={(value) =>
                                   updateParticipant(idx, "ratio_value", value)
                                 }
                                 min={0}
                                 step={0.1}
-                                className="w-full"
+                                className="field-input"
                               />
                             </div>
                             <div>
-                              <label className="mb-1 block text-[11px] font-medium text-slate-600">
+                              <label
+                                htmlFor={`pbc-p${idx}-paid`}
+                                className="mb-1 block text-xs font-medium text-slate-600"
+                              >
                                 Đã chi
                               </label>
                               <CurrencyInput
+                                id={`pbc-p${idx}-paid`}
                                 value={p.paid_amount || 0}
                                 onChange={(value) =>
                                   updateParticipant(idx, "paid_amount", value)
                                 }
-                                className="w-full"
+                                baseClassName="field-input"
                                 placeholder="0"
                               />
                             </div>
                             <div>
-                              <label className="mb-1 block text-[11px] font-medium text-slate-600">
+                              <label
+                                htmlFor={`pbc-p${idx}-food`}
+                                className="mb-1 block text-xs font-medium text-slate-600"
+                              >
                                 Tiền thêm
                               </label>
                               <CurrencyInput
+                                id={`pbc-p${idx}-food`}
                                 value={p.food_amount || 0}
                                 onChange={(value) =>
                                   updateParticipant(idx, "food_amount", value)
                                 }
-                                className="w-full"
+                                baseClassName="field-input"
                                 placeholder="0"
                               />
                             </div>
                             <div>
-                              <label className="mb-1 block text-[11px] font-medium text-slate-600">
+                              <label
+                                htmlFor={`pbc-p${idx}-note`}
+                                className="mb-1 block text-xs font-medium text-slate-600"
+                              >
                                 Ghi chú
                               </label>
                               <input
+                                id={`pbc-p${idx}-note`}
                                 type="text"
                                 value={p.note || ""}
                                 onChange={(e) =>
                                   updateParticipant(idx, "note", e.target.value)
                                 }
-                                className="h-10 w-full rounded-lg border border-slate-200 bg-white px-2 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                                className="field-input"
                                 placeholder="—"
                               />
                             </div>
@@ -741,48 +706,23 @@ export default function EditPartyBill() {
               <button
                 type="button"
                 onClick={() => navigate(`/party-bills/${id}`)}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-card transition hover:bg-slate-50 hover:shadow-card-hover"
+                className="btn btn-secondary px-5"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-amber-600 px-6 text-sm font-semibold text-white shadow-card transition hover:bg-amber-700 hover:shadow-card-hover disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn btn-primary px-6"
               >
                 {saving ? (
                   <>
-                    <svg
-                      className="animate-spin"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M21 12a9 9 0 11-6.219-8.56" />
-                    </svg>
+                    <Loader className="h-4 w-4 animate-spin" />
                     Đang lưu…
                   </>
                 ) : (
                   <>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
+                    <Check className="h-4 w-4" />
                     Cập nhật
                   </>
                 )}
@@ -795,7 +735,7 @@ export default function EditPartyBill() {
             <div className="lg:sticky lg:top-20 space-y-4">
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
                 <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                  <p className="text-sm font-semibold text-emerald-700">
                     Tổng kết
                   </p>
                 </div>
@@ -831,7 +771,7 @@ export default function EditPartyBill() {
                     </span>
                   </div>
                   <div className="rounded-xl bg-emerald-50/70 p-3">
-                    <div className="text-[11px] font-medium uppercase tracking-wider text-emerald-700">
+                    <div className="text-xs font-medium text-emerald-700">
                       Tổng cộng
                     </div>
                     <div className="font-display font-tabular mt-1 text-2xl font-semibold text-emerald-700">
@@ -845,19 +785,19 @@ export default function EditPartyBill() {
         </div>
 
         {/* Mobile sticky footer */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur sm:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/90 px-4 pb-[calc(0.625rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur sm:hidden">
           <div className="mx-auto flex max-w-7xl gap-2">
             <button
               type="button"
               onClick={() => navigate(`/party-bills/${id}`)}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition active:bg-slate-50"
+              className="btn btn-secondary flex-1"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-amber-600 text-sm font-semibold text-white shadow-card transition active:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn btn-primary flex-1"
             >
               {saving ? "Đang lưu…" : "Cập nhật"}
             </button>
@@ -866,82 +806,78 @@ export default function EditPartyBill() {
       </form>
 
       {/* Quick add player modal */}
-      {showAddPlayer && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
-          onClick={() => setShowAddPlayer(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl bg-white shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="space-y-4 p-6">
-              <h3 className="font-display text-lg font-semibold text-slate-900">
-                Thêm nhanh người chơi
-              </h3>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
-                  Tên
-                </label>
-                <input
-                  type="text"
-                  value={newPlayer.name}
-                  onChange={(e) =>
-                    setNewPlayer({ ...newPlayer, name: e.target.value })
-                  }
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  placeholder="Tên người chơi"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
-                    Giới tính
-                  </label>
-                  <select
-                    value={newPlayer.gender}
-                    onChange={(e) => handleGenderChange(e.target.value)}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  >
-                    <option value="male">Nam</option>
-                    <option value="female">Nữ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
-                    Mức tính
-                  </label>
-                  <NumberInput
-                    value={newPlayer.default_ratio}
-                    onChange={(value) =>
-                      setNewPlayer({ ...newPlayer, default_ratio: value })
-                    }
-                    min={0}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddPlayer(false)}
-                  className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreatePlayer}
-                  className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700"
-                >
-                  Lưu
-                </button>
-              </div>
+      <Modal
+        isOpen={showAddPlayer}
+        onClose={() => setShowAddPlayer(false)}
+        title="Thêm nhanh người chơi"
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowAddPlayer(false)}
+              className="btn btn-secondary"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleCreatePlayer}
+              className="btn btn-primary"
+            >
+              Lưu
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="pbc-np-name" className="field-label">
+              Tên
+            </label>
+            <input
+              id="pbc-np-name"
+              type="text"
+              value={newPlayer.name}
+              onChange={(e) =>
+                setNewPlayer({ ...newPlayer, name: e.target.value })
+              }
+              className="field-input"
+              placeholder="Tên người chơi"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="pbc-np-gender" className="field-label">
+                Giới tính
+              </label>
+              <select
+                id="pbc-np-gender"
+                value={newPlayer.gender}
+                onChange={(e) => handleGenderChange(e.target.value)}
+                className="field-input"
+              >
+                <option value="male">Nam</option>
+                <option value="female">Nữ</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="pbc-np-ratio" className="field-label">
+                Mức tính
+              </label>
+              <NumberInput
+                id="pbc-np-ratio"
+                value={newPlayer.default_ratio}
+                onChange={(value) =>
+                  setNewPlayer({ ...newPlayer, default_ratio: value })
+                }
+                min={0}
+                step={0.1}
+                className="field-input"
+              />
             </div>
           </div>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
