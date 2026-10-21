@@ -8,6 +8,8 @@ import {
 } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
 import OptionBreakdown from "../../components/car-rental/OptionBreakdown";
+import EmptyState from "../../components/ui/EmptyState";
+import { Car, ChevronDown } from "../../components/ui/icons";
 
 export default function CarRentalHistory({ reloadKey, onEdit }) {
   const { hasPermission } = useAuth();
@@ -50,17 +52,17 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
   };
 
   if (loading) {
-    return <div className="text-gray-600 py-8 text-center">Đang tải...</div>;
+    return <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>;
   }
 
   if (error) {
     return (
-      <div className="py-8 text-center">
-        <div className="text-red-600 mb-3">{error}</div>
+      <div className="card py-8 text-center">
+        <div role="alert" className="mb-3 text-sm text-rose-600">{error}</div>
         <button
           type="button"
           onClick={load}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className="btn btn-primary"
         >
           Thử lại
         </button>
@@ -70,9 +72,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
 
   if (items.length === 0) {
     return (
-      <div className="text-gray-600 py-8 text-center">
-        Chưa có lần so sánh nào được lưu.
-      </div>
+      <EmptyState icon={Car} title="Chưa có lần so sánh nào được lưu." />
     );
   }
 
@@ -87,82 +87,92 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
         return (
           <div
             key={item.id}
-            className="bg-white rounded-xl border border-slate-200 overflow-hidden"
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
           >
             <button
               type="button"
               onClick={() => setExpandedId(expanded ? null : item.id)}
-              className="w-full text-left p-4 hover:bg-slate-50"
+              aria-expanded={expanded}
+              className="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40"
             >
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <span className="font-medium text-gray-900">
-                  {item.name || `Bản ghi #${item.id}`}
-                </span>
-                <span className="text-sm text-gray-500">
-                  {item.date ? formatDateDisplay(item.date) : "Không ghi ngày"}
-                </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="min-w-0 break-words font-semibold text-slate-900">
+                    {item.name || `Bản ghi #${item.id}`}
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    {item.date ? formatDateDisplay(item.date) : "Không ghi ngày"}
+                  </span>
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {item.days} ngày · {formatNumber(item.distance_km)} km
+                  {cheapest && (
+                    <>
+                      {" · Rẻ nhất: "}
+                      <span className="font-tabular font-medium text-emerald-700">
+                        {cheapest.name} {formatCurrency(cheapest.total_cost)}
+                      </span>
+                    </>
+                  )}
+                  {item.saving_amount > 0 &&
+                    ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
+                  {item.total_shared_cost > 0 &&
+                    ` · Chi phí chung ${formatCurrency(item.total_shared_cost)}`}
+                </div>
               </div>
-              <div className="mt-1 text-sm text-gray-600">
-                {item.days} ngày · {formatNumber(item.distance_km)} km
-                {cheapest && (
-                  <>
-                    {" · Rẻ nhất: "}
-                    <span className="text-green-700 font-medium">
-                      {cheapest.name} {formatCurrency(cheapest.total_cost)}
-                    </span>
-                  </>
-                )}
-                {item.saving_amount > 0 &&
-                  ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
-                {item.total_shared_cost > 0 &&
-                  ` · Chi phí chung ${formatCurrency(item.total_shared_cost)}`}
-              </div>
+              <ChevronDown
+                className={`mt-1 h-5 w-5 flex-shrink-0 text-slate-400 transition-transform ${
+                  expanded ? "rotate-180" : ""
+                }`}
+              />
             </button>
 
             {expanded && (
-              <div className="px-4 pb-4 border-t border-slate-100">
+              <div className="border-t border-slate-100 px-4 pb-4">
                 <div className="mt-3">
                   <OptionBreakdown options={item.options ?? []} />
                 </div>
 
                 {item.total_shared_cost > 0 && (
                   <div className="mt-4">
-                    <h4 className="font-medium text-gray-900 mb-2">
+                    <h4 className="mb-2 font-semibold text-slate-900">
                       Tổng chi phí chuyến đi
                     </h4>
-                    <div className="text-sm text-gray-600 mb-2 space-y-0.5">
+                    <div className="mb-2 max-w-xs space-y-0.5 text-sm text-slate-600">
                       {(item.shared_costs ?? []).map((row) => (
                         <div
                           key={row.id}
-                          className="flex justify-between max-w-xs"
+                          className="flex justify-between gap-3"
                         >
-                          <span>{row.name}</span>
-                          <span>{formatCurrency(row.amount)}</span>
+                          <span className="min-w-0 break-words">{row.name}</span>
+                          <span className="font-tabular flex-shrink-0">{formatCurrency(row.amount)}</span>
                         </div>
                       ))}
-                      <div className="flex justify-between max-w-xs font-medium text-gray-900 pt-1 border-t border-slate-200">
+                      <div className="flex justify-between gap-3 border-t border-slate-200 pt-1 font-medium text-slate-900">
                         <span>Chi phí chung</span>
-                        <span>{formatCurrency(item.total_shared_cost)}</span>
+                        <span className="font-tabular">{formatCurrency(item.total_shared_cost)}</span>
                       </div>
                     </div>
                     <div className="space-y-1">
                       {(item.options ?? []).map((option) => (
                         <div
                           key={option.id}
-                          className={`flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 rounded-lg ${
-                            option.is_cheapest ? "bg-green-50" : ""
+                          className={`flex flex-wrap items-baseline justify-between gap-2 rounded-xl px-3 py-2 ${
+                            option.is_cheapest ? "bg-emerald-50" : ""
                           }`}
                         >
-                          <span className="font-medium text-gray-900">
+                          <span className="font-medium text-slate-900">
                             {option.name}
-                            {option.is_cheapest && " 🏆"}
+                            {option.is_cheapest && (
+                              <span className="badge badge-emerald ml-2">Rẻ nhất</span>
+                            )}
                           </span>
-                          <span className="text-gray-900">
-                            <span className="font-semibold">
+                          <span className="text-slate-900">
+                            <span className="font-tabular font-semibold">
                               {formatCurrency(option.trip_total_cost)}
                             </span>
                             {item.people_count > 0 && !item.party_bill && (
-                              <span className="text-gray-600">
+                              <span className="font-tabular text-slate-600">
                                 {" · "}
                                 {formatCurrency(option.per_person_cost)}/người
                               </span>
@@ -174,7 +184,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                   </div>
                 )}
 
-                <div className="mt-3 text-sm text-gray-600 space-y-1">
+                <div className="mt-3 space-y-1 text-sm text-slate-600">
                   {item.break_even_km !== null && (
                     <div>
                       Điểm hòa vốn: {formatNumber(item.break_even_km)} km
@@ -190,7 +200,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                       Gắn với bill tiệc:{" "}
                       <Link
                         to={`/party-bills/${item.party_bill.id}`}
-                        className="text-blue-600 underline"
+                        className="text-sky-700 underline"
                       >
                         {item.party_bill.name || `Bill #${item.party_bill.id}`}
                       </Link>
@@ -203,7 +213,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                     <button
                       type="button"
                       onClick={() => onEdit?.(item)}
-                      className="px-4 py-2 border border-slate-300 rounded-lg text-gray-700 hover:bg-slate-50"
+                      className="btn btn-secondary"
                     >
                       Nạp vào máy tính
                     </button>
@@ -213,7 +223,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                       type="button"
                       onClick={() => handleDelete(item)}
                       disabled={deletingId === item.id}
-                      className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50"
+                      className="btn btn-ghost !text-rose-600 hover:!bg-rose-50"
                     >
                       {deletingId === item.id ? "Đang xóa..." : "Xóa"}
                     </button>
