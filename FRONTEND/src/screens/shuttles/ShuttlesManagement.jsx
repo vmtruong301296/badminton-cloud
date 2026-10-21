@@ -3,6 +3,9 @@ import { shuttlesApi } from "../../services/api";
 import { formatCurrency, formatNumber } from "../../utils/formatters";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import { useAuth } from "../../contexts/AuthContext";
+import Modal from "../../components/ui/Modal";
+import EmptyState from "../../components/ui/EmptyState";
+import { Plus, Inbox, CircleAlert } from "../../components/ui/icons";
 
 const BALLS_PER_TUBE = 12;
 // Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống
@@ -208,10 +211,22 @@ export default function ShuttlesManagement() {
 
   const canEditStock = hasPermission("shuttles.update");
 
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingShuttle(null);
+  };
+
+  const totalStock = shuttles.reduce(
+    (sum, s) => sum + (Number(s.stock_quantity) || 0),
+    0,
+  );
+
   return (
-    <div className="px-2 sm:px-0">
-      <div className="flex flex-row justify-between items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
-        <h2 className="text-xl sm:text-2xl font-bold">Quản lý Loại quả cầu</h2>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">
+          Quản lý Loại quả cầu
+        </h2>
         {hasPermission("shuttles.create") && (
           <button
             onClick={() => {
@@ -219,350 +234,325 @@ export default function ShuttlesManagement() {
               setEditingShuttle(null);
               setFormData({ name: "", price: 0 });
             }}
-            className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base whitespace-nowrap"
+            className="btn btn-primary flex-shrink-0"
           >
-            + Thêm loại cầu
+            <Plus className="h-4 w-4" />
+            Thêm loại cầu
           </button>
         )}
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingShuttle ? "Sửa loại cầu" : "Thêm loại cầu"}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Tên *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Giá (VND) *
-                </label>
-                <CurrencyInput
-                  value={formData.price}
-                  onChange={(value) =>
-                    setFormData({ ...formData, price: value })
-                  }
-                  className="w-full"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingShuttle(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Lưu
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showForm}
+        onClose={closeForm}
+        title={editingShuttle ? "Sửa loại cầu" : "Thêm loại cầu"}
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={closeForm}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="shuttle-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Lưu
+            </button>
           </div>
-        </div>
-      )}
-
-      {stockModalShuttle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-1">
-              Nhập kho — {stockModalShuttle.name}
-            </h3>
-            <p className="text-sm text-gray-600 mb-4">
-              1 ống = {BALLS_PER_TUBE} quả
-            </p>
-            <form onSubmit={submitStock} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Số ống
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={stockForm.tubes}
-                    onChange={(e) =>
-                      setStockForm({
-                        ...stockForm,
-                        tubes: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Số quả (lẻ)
-                  </label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={stockForm.balls}
-                    onChange={(e) =>
-                      setStockForm({
-                        ...stockForm,
-                        balls: parseInt(e.target.value, 10) || 0,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">
-                  Ngày nhập
-                </label>
-                <input
-                  type="date"
-                  value={stockForm.entered_at}
-                  onChange={(e) =>
-                    setStockForm({ ...stockForm, entered_at: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="rounded-md bg-blue-50 px-3 py-2 text-sm text-blue-900">
-                Tổng nhập:{" "}
-                <strong>
-                  {formatNumber(
-                    stockPreviewTotal(stockForm.tubes, stockForm.balls),
-                  )}
-                </strong>{" "}
-                quả
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setStockModalShuttle(null)}
-                  className="px-4 py-2 border border-gray-300 rounded-md"
-                  disabled={stockSaving}
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  disabled={stockSaving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {stockSaving ? "Đang lưu..." : "Lưu nhập kho"}
-                </button>
-              </div>
-            </form>
+        }
+      >
+        <form id="shuttle-form" onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="shuttle-name" className="field-label">
+              Tên *
+            </label>
+            <input
+              id="shuttle-name"
+              type="text"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+              required
+              className="field-input"
+            />
           </div>
-        </div>
-      )}
+          <div>
+            <label htmlFor="shuttle-price" className="field-label">
+              Giá (VND) *
+            </label>
+            <CurrencyInput
+              id="shuttle-price"
+              value={formData.price}
+              onChange={(value) => setFormData({ ...formData, price: value })}
+              baseClassName="field-input"
+            />
+          </div>
+        </form>
+      </Modal>
 
-      {priceModalShuttle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-start mb-4 gap-2">
-              <h3 className="text-lg font-semibold">
-                Lên giá — {priceModalShuttle.name}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setPriceModalShuttle(null)}
-                className="text-gray-500 hover:text-gray-800 px-2"
-              >
-                ✕
-              </button>
+      <Modal
+        isOpen={Boolean(stockModalShuttle)}
+        onClose={() => setStockModalShuttle(null)}
+        title={`Nhập kho — ${stockModalShuttle?.name ?? ""}`}
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setStockModalShuttle(null)}
+              className="btn btn-secondary flex-1 sm:flex-none"
+              disabled={stockSaving}
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="stock-form"
+              disabled={stockSaving}
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              {stockSaving ? "Đang lưu..." : "Lưu nhập kho"}
+            </button>
+          </div>
+        }
+      >
+        <p className="mb-4 text-sm text-slate-500">1 ống = {BALLS_PER_TUBE} quả</p>
+        <form id="stock-form" onSubmit={submitStock} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="stock-tubes" className="field-label">
+                Số ống
+              </label>
+              <input
+                id="stock-tubes"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={stockForm.tubes}
+                onChange={(e) =>
+                  setStockForm({
+                    ...stockForm,
+                    tubes: parseInt(e.target.value, 10) || 0,
+                  })
+                }
+                className="field-input"
+              />
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Bill dùng <strong>ngày đánh</strong> để chọn mốc giá: áp dụng mốc
-              có ngày hiệu lực mới nhất không sau ngày đó.
-            </p>
-            {priceLoading ? (
-              <div className="py-6 text-center text-gray-500">Đang tải...</div>
-            ) : (
-              <>
-                <table className="min-w-full text-sm mb-4">
-                  <thead>
-                    <tr className="border-b bg-gray-50 text-left">
-                      <th className="py-2 pr-2">Áp dụng từ</th>
-                      <th className="py-2 pr-2">Giá</th>
+            <div>
+              <label htmlFor="stock-balls" className="field-label">
+                Số quả (lẻ)
+              </label>
+              <input
+                id="stock-balls"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={stockForm.balls}
+                onChange={(e) =>
+                  setStockForm({
+                    ...stockForm,
+                    balls: parseInt(e.target.value, 10) || 0,
+                  })
+                }
+                className="field-input"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="stock-date" className="field-label">
+              Ngày nhập
+            </label>
+            <input
+              id="stock-date"
+              type="date"
+              value={stockForm.entered_at}
+              onChange={(e) =>
+                setStockForm({ ...stockForm, entered_at: e.target.value })
+              }
+              className="field-input"
+            />
+          </div>
+          <div className="rounded-xl bg-sky-50 px-3 py-2.5 text-sm text-sky-900">
+            Tổng nhập:{" "}
+            <strong className="font-tabular">
+              {formatNumber(stockPreviewTotal(stockForm.tubes, stockForm.balls))}
+            </strong>{" "}
+            quả
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(priceModalShuttle)}
+        onClose={() => setPriceModalShuttle(null)}
+        title={`Lên giá — ${priceModalShuttle?.name ?? ""}`}
+        size="lg"
+      >
+        <p className="mb-4 text-sm text-slate-500">
+          Bill dùng <strong className="text-slate-700">ngày đánh</strong> để chọn mốc giá: áp dụng mốc
+          có ngày hiệu lực mới nhất không sau ngày đó.
+        </p>
+        {priceLoading ? (
+          <div className="py-6 text-center text-sm text-slate-500">Đang tải...</div>
+        ) : (
+          <>
+            <div className="mb-4 overflow-hidden rounded-xl border border-slate-200">
+              <table className="min-w-full text-sm">
+                <thead className="bg-slate-50">
+                  <tr className="text-left text-xs text-slate-500">
+                    <th className="px-2 py-2 sm:px-3 font-medium">Áp dụng từ</th>
+                    <th className="px-2 py-2 sm:px-3 text-right font-medium">Giá</th>
+                    {hasPermission("shuttles.update") && (
+                      <th className="w-16 px-2 py-2 sm:px-3" />
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {priceRows.map((row) => (
+                    <tr key={row.id} className="border-t border-slate-100">
+                      <td className="font-tabular whitespace-nowrap px-3 py-1.5 text-slate-700">
+                        {row.effective_from}
+                      </td>
+                      <td className="font-tabular px-3 py-1.5 text-right text-slate-900">
+                        {formatCurrency(row.price)}
+                      </td>
                       {hasPermission("shuttles.update") && (
-                        <th className="py-2 w-16" />
+                        <td className="px-2 py-1 text-right">
+                          <button
+                            type="button"
+                            onClick={() => deletePriceTier(row.id)}
+                            className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                          >
+                            Xóa
+                          </button>
+                        </td>
                       )}
                     </tr>
-                  </thead>
-                  <tbody>
-                    {priceRows.map((row) => (
-                      <tr key={row.id} className="border-b border-gray-100">
-                        <td className="py-2 pr-2 whitespace-nowrap">
-                          {row.effective_from}
-                        </td>
-                        <td className="py-2 pr-2">
-                          {formatCurrency(row.price)}
-                        </td>
-                        {hasPermission("shuttles.update") && (
-                          <td className="py-2">
-                            <button
-                              type="button"
-                              onClick={() => deletePriceTier(row.id)}
-                              className="text-red-600 text-xs hover:underline"
-                            >
-                              Xóa
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {hasPermission("shuttles.update") && (
-                  <form
-                    onSubmit={submitNewPrice}
-                    className="space-y-3 border-t pt-4"
-                  >
-                    <p className="text-sm font-medium text-gray-800">
-                      Thêm / cập nhật mốc giá
-                    </p>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Ngày hiệu lực *
-                      </label>
-                      <input
-                        type="date"
-                        value={newPriceForm.effective_from}
-                        onChange={(e) =>
-                          setNewPriceForm({
-                            ...newPriceForm,
-                            effective_from: e.target.value,
-                          })
-                        }
-                        required
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">
-                        Giá (VND) *
-                      </label>
-                      <CurrencyInput
-                        value={newPriceForm.price}
-                        onChange={(value) =>
-                          setNewPriceForm({ ...newPriceForm, price: value })
-                        }
-                        className="w-full"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={priceSaving}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {priceSaving ? "Đang lưu..." : "Lưu mốc giá"}
-                    </button>
-                  </form>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {historyModalShuttle && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex justify-between items-start mb-4 gap-2">
-              <h3 className="text-lg font-semibold">
-                Lịch sử nhập kho — {historyModalShuttle.name}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setHistoryModalShuttle(null)}
-                className="text-gray-500 hover:text-gray-800 px-2"
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {hasPermission("shuttles.update") && (
+              <form
+                onSubmit={submitNewPrice}
+                className="space-y-3 border-t border-slate-100 pt-4"
               >
-                ✕
-              </button>
-            </div>
-            <div className="overflow-y-auto flex-1">
-              {historyLoading ? (
-                <div className="py-8 text-center text-gray-500">
-                  Đang tải...
+                <p className="text-sm font-medium text-slate-900">
+                  Thêm / cập nhật mốc giá
+                </p>
+                <div>
+                  <label htmlFor="price-effective" className="field-label">
+                    Ngày hiệu lực *
+                  </label>
+                  <input
+                    id="price-effective"
+                    type="date"
+                    value={newPriceForm.effective_from}
+                    onChange={(e) =>
+                      setNewPriceForm({
+                        ...newPriceForm,
+                        effective_from: e.target.value,
+                      })
+                    }
+                    required
+                    className="field-input"
+                  />
                 </div>
-              ) : historyEntries.length === 0 ? (
-                <div className="py-8 text-center text-gray-500">
-                  Chưa có lịch sử nhập
+                <div>
+                  <label htmlFor="price-value" className="field-label">
+                    Giá (VND) *
+                  </label>
+                  <CurrencyInput
+                    id="price-value"
+                    value={newPriceForm.price}
+                    onChange={(value) =>
+                      setNewPriceForm({ ...newPriceForm, price: value })
+                    }
+                    baseClassName="field-input"
+                  />
                 </div>
-              ) : (
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-gray-50 text-left">
-                      <th className="py-2 pr-2">Ngày nhập</th>
-                      <th className="py-2 pr-2">Ống</th>
-                      <th className="py-2 pr-2">Quả lẻ</th>
-                      <th className="py-2 pr-2">Tổng quả</th>
-                      <th className="py-2">Người nhập</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historyEntries.map((row) => (
-                      <tr key={row.id} className="border-b border-gray-100">
-                        <td className="py-2 pr-2 whitespace-nowrap">
-                          {row.entered_at}
-                        </td>
-                        <td className="py-2 pr-2">{row.tubes}</td>
-                        <td className="py-2 pr-2">{row.balls}</td>
-                        <td className="py-2 pr-2 font-medium">
-                          {formatNumber(row.total_balls)}
-                        </td>
-                        <td className="py-2 text-gray-700">
-                          {row.creator?.name || "—"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+                <button
+                  type="submit"
+                  disabled={priceSaving}
+                  className="btn btn-primary w-full"
+                >
+                  {priceSaving ? "Đang lưu..." : "Lưu mốc giá"}
+                </button>
+              </form>
+            )}
+          </>
+        )}
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(historyModalShuttle)}
+        onClose={() => setHistoryModalShuttle(null)}
+        title={`Lịch sử nhập kho — ${historyModalShuttle?.name ?? ""}`}
+        size="xl"
+      >
+        {historyLoading ? (
+          <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>
+        ) : historyEntries.length === 0 ? (
+          <div className="py-8 text-center text-sm text-slate-500">
+            Chưa có lịch sử nhập
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-slate-200">
+            <table className="min-w-full text-sm">
+              <thead className="bg-slate-50">
+                <tr className="text-left text-xs text-slate-500">
+                  <th className="px-2 py-2 sm:px-3 font-medium">Ngày nhập</th>
+                  <th className="px-2 py-2 sm:px-3 text-right font-medium">Ống</th>
+                  <th className="px-2 py-2 sm:px-3 text-right font-medium">Quả lẻ</th>
+                  <th className="px-2 py-2 sm:px-3 text-right font-medium">Tổng quả</th>
+                  <th className="px-2 py-2 sm:px-3 font-medium">Người nhập</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyEntries.map((row) => (
+                  <tr key={row.id} className="border-t border-slate-100">
+                    <td className="font-tabular whitespace-nowrap px-2 py-2 sm:px-3 text-slate-700">
+                      {row.entered_at}
+                    </td>
+                    <td className="font-tabular px-2 py-2 sm:px-3 text-right">{row.tubes}</td>
+                    <td className="font-tabular px-2 py-2 sm:px-3 text-right">{row.balls}</td>
+                    <td className="font-tabular px-2 py-2 sm:px-3 text-right font-medium text-slate-900">
+                      {formatNumber(row.total_balls)}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2 sm:px-3 text-slate-700">
+                      {row.creator?.name || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Modal>
 
       {loading ? (
-        <div className="text-center py-8">Đang tải...</div>
+        <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>
       ) : (
         <>
-          {shuttles.reduce(
-            (sum, s) => sum + (Number(s.stock_quantity) || 0),
-            0,
-          ) < LOW_STOCK_BALLS && (
-            <div className="mb-4 rounded-lg border-2 border-red-500 bg-red-50 p-4 animate-pulse">
+          {totalStock < LOW_STOCK_BALLS && (
+            <div
+              role="alert"
+              className="mb-4 rounded-2xl border border-rose-300 bg-rose-50 p-4"
+            >
               <div className="flex items-start gap-3">
-                <span className="text-2xl leading-none">⚠️</span>
-                <div className="flex-1">
-                  <h3 className="font-bold text-red-700">
+                <CircleAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-rose-600" />
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-rose-700">
                     Cảnh báo: Sắp hết cầu — cần nhập thêm!
                   </h3>
-                  <p className="mt-1 text-sm text-red-700">
+                  <p className="mt-1 text-sm text-rose-700">
                     Tổng số lượng cầu còn lại{" "}
-                    <strong>
-                      {formatNumber(
-                        shuttles.reduce(
-                          (sum, s) => sum + (Number(s.stock_quantity) || 0),
-                          0,
-                        ),
-                      )}{" "}
-                      quả
+                    <strong className="font-tabular">
+                      {formatNumber(totalStock)} quả
                     </strong>{" "}
                     — dưới {LOW_STOCK_TUBES} ống. Vui lòng bấm{" "}
                     <strong>“Nhập kho”</strong> để bổ sung.
@@ -571,59 +561,129 @@ export default function ShuttlesManagement() {
               </div>
             </div>
           )}
-          <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Tên
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Giá
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Tồn kho (quả)
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Thao tác
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+          {shuttles.length === 0 ? (
+            <EmptyState icon={Inbox} title="Chưa có loại cầu" />
+          ) : (
+            <>
+              <div className="card hidden overflow-hidden !p-0 md:block">
+                <table className="min-w-full">
+                  <thead className="bg-slate-50">
+                    <tr className="text-xs text-slate-500">
+                      <th className="px-6 py-3 text-left font-medium">Tên</th>
+                      <th className="px-6 py-3 text-right font-medium">Giá</th>
+                      <th className="px-6 py-3 text-right font-medium">Tồn kho (quả)</th>
+                      <th className="px-6 py-3 text-left font-medium">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shuttles.map((shuttle) => (
+                      <tr
+                        key={shuttle.id}
+                        className="border-t border-slate-100 hover:bg-slate-50/60"
+                      >
+                        <td className="max-w-[16rem] px-6 py-3 text-sm font-medium text-slate-900">
+                          <div className="truncate" title={shuttle.name}>
+                            {shuttle.name}
+                          </div>
+                        </td>
+                        <td className="font-tabular whitespace-nowrap px-6 py-3 text-right text-sm text-slate-700">
+                          {formatCurrency(shuttle.price)}
+                        </td>
+                        <td className="font-tabular whitespace-nowrap px-6 py-3 text-right text-sm font-semibold text-slate-900">
+                          {formatNumber(shuttle.stock_quantity ?? 0)}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2">
+                          <div className="flex items-center gap-1">
+                            {canEditStock && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openStockModal(shuttle)}
+                                  className="btn btn-ghost btn-sm !text-emerald-700 hover:!bg-emerald-50"
+                                >
+                                  Nhập kho
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openHistoryModal(shuttle)}
+                                  className="btn btn-ghost btn-sm"
+                                >
+                                  Lịch sử
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openPriceModal(shuttle)}
+                                  className="btn btn-ghost btn-sm"
+                                >
+                                  Lên giá
+                                </button>
+                              </>
+                            )}
+                            {hasPermission("shuttles.update") && (
+                              <button
+                                type="button"
+                                onClick={() => handleEdit(shuttle)}
+                                className="btn btn-ghost btn-sm"
+                              >
+                                Sửa
+                              </button>
+                            )}
+                            {hasPermission("shuttles.delete") && (
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(shuttle.id)}
+                                className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                              >
+                                Xóa
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="space-y-3 md:hidden">
                 {shuttles.map((shuttle) => (
-                  <tr key={shuttle.id}>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">
-                      {shuttle.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {formatCurrency(shuttle.price)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="font-semibold text-gray-900">
-                        {formatNumber(shuttle.stock_quantity ?? 0)}
+                  <div key={shuttle.id} className="card !p-4">
+                    <div className="mb-2 flex items-start justify-between gap-3">
+                      <h3 className="min-w-0 break-words font-semibold text-slate-900">
+                        {shuttle.name}
+                      </h3>
+                      <span className="font-tabular flex-shrink-0 text-lg font-semibold text-slate-900">
+                        {formatCurrency(shuttle.price)}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    </div>
+                    <div className="mb-3 text-sm text-slate-600">
+                      Tồn kho:{" "}
+                      <strong className="font-tabular text-slate-900">
+                        {formatNumber(shuttle.stock_quantity ?? 0)}
+                      </strong>{" "}
+                      quả
+                    </div>
+                    <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
                       {canEditStock && (
                         <>
                           <button
                             type="button"
                             onClick={() => openStockModal(shuttle)}
-                            className="text-green-600 hover:text-green-900 mr-2"
+                            className="btn btn-primary btn-sm min-w-[100px] flex-1"
                           >
                             Nhập kho
                           </button>
                           <button
                             type="button"
                             onClick={() => openHistoryModal(shuttle)}
-                            className="text-gray-700 hover:text-gray-900 mr-2"
+                            className="btn btn-secondary btn-sm min-w-[100px] flex-1"
                           >
                             Lịch sử
                           </button>
                           <button
                             type="button"
                             onClick={() => openPriceModal(shuttle)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-2"
+                            className="btn btn-secondary btn-sm min-w-[100px] flex-1"
                           >
                             Lên giá
                           </button>
@@ -633,7 +693,7 @@ export default function ShuttlesManagement() {
                         <button
                           type="button"
                           onClick={() => handleEdit(shuttle)}
-                          className="text-blue-600 hover:text-blue-900 mr-2"
+                          className="btn btn-secondary btn-sm min-w-[100px] flex-1"
                         >
                           Sửa
                         </button>
@@ -642,82 +702,17 @@ export default function ShuttlesManagement() {
                         <button
                           type="button"
                           onClick={() => handleDelete(shuttle.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="btn btn-secondary btn-sm min-w-[100px] flex-1 !border-rose-200 !text-rose-600 hover:!bg-rose-50"
                         >
                           Xóa
                         </button>
                       )}
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="md:hidden space-y-3">
-            {shuttles.map((shuttle) => (
-              <div key={shuttle.id} className="bg-white shadow rounded-lg p-4">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="font-semibold text-gray-900">
-                    {shuttle.name}
-                  </h3>
-                  <span className="text-lg font-bold text-gray-900">
-                    {formatCurrency(shuttle.price)}
-                  </span>
-                </div>
-                <div className="text-sm text-gray-700 mb-3">
-                  Tồn kho:{" "}
-                  <strong>{formatNumber(shuttle.stock_quantity ?? 0)}</strong>{" "}
-                  quả
-                </div>
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200">
-                  {canEditStock && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => openStockModal(shuttle)}
-                        className="flex-1 min-w-[100px] px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
-                      >
-                        Nhập kho
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openHistoryModal(shuttle)}
-                        className="flex-1 min-w-[100px] px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 text-sm"
-                      >
-                        Lịch sử
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => openPriceModal(shuttle)}
-                        className="flex-1 min-w-[100px] px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm"
-                      >
-                        Lên giá
-                      </button>
-                    </>
-                  )}
-                  {hasPermission("shuttles.update") && (
-                    <button
-                      type="button"
-                      onClick={() => handleEdit(shuttle)}
-                      className="flex-1 min-w-[100px] px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                    >
-                      Sửa
-                    </button>
-                  )}
-                  {hasPermission("shuttles.delete") && (
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(shuttle.id)}
-                      className="flex-1 min-w-[100px] px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
-                    >
-                      Xóa
-                    </button>
-                  )}
-                </div>
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </>
       )}
     </div>
