@@ -35,6 +35,12 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Ảnh bill xuất ra (Arial) trước đây thừa hưởng bộ tính năng chữ của body; giữ nguyên
+   để ảnh gửi Telegram không đổi một điểm ảnh sau khi đổi phông giao diện. */
+#bill-export {
+  font-feature-settings: "ss01", "cv11";
+}
+
 /* Class dùng chung của hệ thống thiết kế mới
    (docs/superpowers/specs/2026-10-21-giao-dien-moi-design.md, mục 5.4) */
 @layer components {
