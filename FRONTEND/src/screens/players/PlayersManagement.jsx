@@ -3,6 +3,10 @@ import { playersApi, rolesApi } from '../../services/api';
 import { formatRatio } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 import NumberInput from '../../components/common/NumberInput';
+import PageHeader from '../../components/ui/PageHeader';
+import Modal from '../../components/ui/Modal';
+import EmptyState from '../../components/ui/EmptyState';
+import { Plus, Search, Users } from '../../components/ui/icons';
 
 export default function PlayersManagement() {
   const [players, setPlayers] = useState([]);
@@ -181,319 +185,353 @@ export default function PlayersManagement() {
     );
   };
 
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingPlayer(null);
+  };
+
+  const closeRoleModal = () => {
+    setShowRoleModal(false);
+    setSelectedPlayer(null);
+    setSelectedRoleIds([]);
+  };
+
+  const genderLabel = (gender) =>
+    gender === 'male' ? 'Nam' : gender === 'female' ? 'Nữ' : '-';
+
+  const renderRoles = (player, emptyClass) =>
+    player.roles && player.roles.length > 0 ? (
+      player.roles.map((role) => (
+        <span key={role.id} className="badge badge-sky">
+          {role.display_name}
+        </span>
+      ))
+    ) : (
+      <span className={emptyClass}>Chưa có quyền</span>
+    );
+
+  const hasFilter = Boolean(filters.search || filters.gender);
+
   return (
-    <div className="px-2 sm:px-0">
-      <div className="flex flex-row justify-between items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
-        <h2 className="text-xl sm:text-2xl font-bold">Quản lý Người chơi</h2>
-        <div className="flex space-x-2 sm:space-x-3">
-          <button
-            onClick={() => {
-              setShowQuickAdd(true);
-              setQuickAddData({
-                name: '',
-                gender: 'male',
-                default_ratio: 1,
-              });
-            }}
-            className="px-2 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-xs sm:text-sm whitespace-nowrap"
-          >
-            + Thêm nhanh
-          </button>
-          <button
-            onClick={() => {
-              setShowForm(true);
-              setEditingPlayer(null);
-              setFormData({
-                name: '',
-                email: '',
-                password: '',
-                gender: '',
-                default_ratio: '',
-                phone: '',
-              });
-            }}
-            className="px-2 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap"
-          >
-            + Thêm
-          </button>
-        </div>
-      </div>
+    <div className="px-4 sm:px-0">
+      <PageHeader
+        title="Quản lý Người chơi"
+        actions={
+          <>
+            <button
+              onClick={() => {
+                setShowQuickAdd(true);
+                setQuickAddData({
+                  name: '',
+                  gender: 'male',
+                  default_ratio: 1,
+                });
+              }}
+              className="btn btn-primary"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm nhanh
+            </button>
+            <button
+              onClick={() => {
+                setShowForm(true);
+                setEditingPlayer(null);
+                setFormData({
+                  name: '',
+                  email: '',
+                  password: '',
+                  gender: '',
+                  default_ratio: '',
+                  phone: '',
+                });
+              }}
+              className="btn btn-secondary"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm
+            </button>
+          </>
+        }
+      />
 
       {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Tìm kiếm tên..."
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            className="px-3 py-2 border border-gray-300 rounded-md"
-          />
-          <select
-            value={filters.gender}
-            onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-            className="px-3 py-2 border border-gray-300 rounded-md"
-          >
-            <option value="">Tất cả giới tính</option>
-            <option value="male">Nam</option>
-            <option value="female">Nữ</option>
-          </select>
+      <div className="card mb-5 !p-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+          <div className="relative">
+            <label htmlFor="player-search" className="sr-only">
+              Tìm kiếm tên
+            </label>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              id="player-search"
+              type="text"
+              placeholder="Tìm kiếm tên..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              className="field-input !pl-9"
+            />
+          </div>
+          <div>
+            <label htmlFor="player-gender-filter" className="sr-only">
+              Giới tính
+            </label>
+            <select
+              id="player-gender-filter"
+              value={filters.gender}
+              onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+              className="field-input"
+            >
+              <option value="">Tất cả giới tính</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Quick Add Modal */}
-      {showQuickAdd && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={() => setShowQuickAdd(false)}>
-          <div 
-            className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Thêm nhanh người chơi</h3>
-              <form onSubmit={handleQuickAdd} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Tên</label>
-                  <input
-                    type="text"
-                    value={quickAddData.name}
-                    onChange={(e) => setQuickAddData({ ...quickAddData, name: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleQuickAdd(e);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Nhập tên người chơi"
-                    autoFocus
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Giới tính</label>
-                  <select
-                    value={quickAddData.gender}
-                    onChange={(e) => setQuickAddData({ ...quickAddData, gender: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="male">Nam</option>
-                    <option value="female">Nữ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mức tính mặc định</label>
-                  <NumberInput
-                    value={quickAddData.default_ratio}
-                    onChange={(value) => setQuickAddData({ ...quickAddData, default_ratio: value })}
-                    min={0}
-                    step={0.1}
-                    className="w-full"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowQuickAdd(false)}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                  >
-                    Lưu
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Ghi chú: tài khoản tạo nhanh dùng mật khẩu mặc định "password".
-                </p>
-              </form>
-            </div>
+      <Modal
+        isOpen={showQuickAdd}
+        onClose={() => setShowQuickAdd(false)}
+        title="Thêm nhanh người chơi"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowQuickAdd(false)}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="quick-add-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Lưu
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="quick-add-form" onSubmit={handleQuickAdd} className="space-y-4">
+          <div>
+            <label htmlFor="quick-add-name" className="field-label">Tên</label>
+            <input
+              id="quick-add-name"
+              type="text"
+              value={quickAddData.name}
+              onChange={(e) => setQuickAddData({ ...quickAddData, name: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleQuickAdd(e);
+                }
+              }}
+              className="field-input"
+              placeholder="Nhập tên người chơi"
+              autoFocus
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="quick-add-gender" className="field-label">Giới tính</label>
+            <select
+              id="quick-add-gender"
+              value={quickAddData.gender}
+              onChange={(e) => setQuickAddData({ ...quickAddData, gender: e.target.value })}
+              className="field-input"
+            >
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="quick-add-ratio" className="field-label">Mức tính mặc định</label>
+            <NumberInput
+              id="quick-add-ratio"
+              value={quickAddData.default_ratio}
+              onChange={(value) => setQuickAddData({ ...quickAddData, default_ratio: value })}
+              min={0}
+              step={0.1}
+              className="field-input"
+            />
+          </div>
+          <p className="text-xs text-slate-500">
+            Ghi chú: tài khoản tạo nhanh dùng mật khẩu mặc định "password".
+          </p>
+        </form>
+      </Modal>
 
       {/* Form Modal */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingPlayer ? 'Sửa người chơi' : 'Thêm người chơi'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Tên *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              {editingPlayer && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Email *</label>
-                    <input
-                      type="email"
-                      value={formData.email || ''}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                      placeholder="Nhập email"
-                    />
-                    {editingPlayer.email && (
-                      <p className="text-xs text-gray-500 mt-1">Email hiện tại: {editingPlayer.email}</p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Mật khẩu mới (để trống nếu không đổi)</label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      placeholder="Nhập mật khẩu mới"
-                    />
-                  </div>
-                </>
-              )}
-              <div>
-                <label className="block text-sm font-medium mb-1">Giới tính</label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                >
-                  <option value="">Chọn giới tính</option>
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Mức tính mặc định</label>
-                <NumberInput
-                  value={formData.default_ratio}
-                  onChange={(value) => setFormData({ ...formData, default_ratio: value })}
-                  min={0}
-                  step={0.1}
-                  className="w-full"
-                />
-              </div>
-              {editingPlayer && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Số điện thoại</label>
-                  <input
-                    type="text"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-              )}
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingPlayer(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Lưu
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showForm}
+        onClose={closeForm}
+        title={editingPlayer ? 'Sửa người chơi' : 'Thêm người chơi'}
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={closeForm}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="player-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Lưu
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="player-form" onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="player-name" className="field-label">Tên *</label>
+            <input
+              id="player-name"
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="field-input"
+            />
+          </div>
+          {editingPlayer && (
+            <>
+              <div>
+                <label htmlFor="player-email" className="field-label">Email *</label>
+                <input
+                  id="player-email"
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                  className="field-input"
+                  placeholder="Nhập email"
+                />
+                {editingPlayer.email && (
+                  <p className="mt-1 break-all text-xs text-slate-500">Email hiện tại: {editingPlayer.email}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="player-password" className="field-label">Mật khẩu mới (để trống nếu không đổi)</label>
+                <input
+                  id="player-password"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="field-input"
+                  placeholder="Nhập mật khẩu mới"
+                />
+              </div>
+            </>
+          )}
+          <div>
+            <label htmlFor="player-gender" className="field-label">Giới tính</label>
+            <select
+              id="player-gender"
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              className="field-input"
+            >
+              <option value="">Chọn giới tính</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="player-ratio" className="field-label">Mức tính mặc định</label>
+            <NumberInput
+              id="player-ratio"
+              value={formData.default_ratio}
+              onChange={(value) => setFormData({ ...formData, default_ratio: value })}
+              min={0}
+              step={0.1}
+              className="field-input"
+            />
+          </div>
+          {editingPlayer && (
+            <div>
+              <label htmlFor="player-phone" className="field-label">Số điện thoại</label>
+              <input
+                id="player-phone"
+                type="text"
+                inputMode="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="field-input"
+              />
+            </div>
+          )}
+        </form>
+      </Modal>
 
       {/* Table */}
       {loading ? (
-        <div className="text-center py-8">Đang tải...</div>
+        <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>
+      ) : players.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title={hasFilter ? 'Không tìm thấy người chơi' : 'Chưa có người chơi'}
+        />
       ) : (
         <>
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Tên
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Giới tính
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Mức tính
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Quyền
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Thao tác
-                  </th>
+          <div className="card hidden overflow-hidden !p-0 md:block">
+            <table className="min-w-full">
+              <thead className="bg-slate-50">
+                <tr className="text-left text-xs text-slate-500">
+                  <th className="px-6 py-3 font-medium">Tên</th>
+                  <th className="px-6 py-3 font-medium">Email</th>
+                  <th className="px-6 py-3 font-medium">Giới tính</th>
+                  <th className="px-6 py-3 font-medium">Mức tính</th>
+                  <th className="px-6 py-3 font-medium">Quyền</th>
+                  <th className="px-6 py-3 font-medium">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {players.map((player) => (
-                  <tr key={player.id}>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{player.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {player.email || '-'}
+                  <tr key={player.id} className="border-t border-slate-100 hover:bg-slate-50/60">
+                    <td className="max-w-[16rem] px-6 py-3 text-sm font-medium text-slate-900">
+                      <div className="truncate" title={player.name}>{player.name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {player.gender === 'male' ? 'Nam' : player.gender === 'female' ? 'Nữ' : '-'}
+                    <td className="max-w-[16rem] px-6 py-3 text-sm text-slate-600">
+                      <div className="truncate" title={player.email || ''}>{player.email || '-'}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-6 py-3 text-sm text-slate-700">
+                      {genderLabel(player.gender)}
+                    </td>
+                    <td className="font-tabular whitespace-nowrap px-6 py-3 text-sm text-slate-700">
                       {player.default_ratio ? formatRatio(player.default_ratio) : 'Mặc định'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {player.roles && player.roles.length > 0 ? (
-                          player.roles.map((role) => (
-                            <span
-                              key={role.id}
-                              className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
-                            >
-                              {role.display_name}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-gray-400 text-sm">Chưa có quyền</span>
-                        )}
+                        {renderRoles(player, 'text-sm text-slate-400')}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(player)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleAssignRoles(player)}
-                        className="text-green-600 hover:text-green-900 mr-3"
-                      >
-                        Quyền
-                      </button>
-                      <button
-                        onClick={() => handleDelete(player.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Xóa
-                      </button>
+                    <td className="whitespace-nowrap px-6 py-3">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => handleEdit(player)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => handleAssignRoles(player)}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Quyền
+                        </button>
+                        <button
+                          onClick={() => handleDelete(player.id)}
+                          className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                        >
+                          Xóa
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -502,56 +540,45 @@ export default function PlayersManagement() {
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
+          <div className="space-y-3 md:hidden">
             {players.map((player) => (
-              <div key={player.id} className="bg-white shadow rounded-lg p-4">
+              <div key={player.id} className="card !p-4">
                 <div className="mb-3">
-                  <h3 className="font-semibold text-gray-900 text-base">{player.name}</h3>
+                  <h3 className="break-words text-base font-semibold text-slate-900">{player.name}</h3>
                   {player.email && (
-                    <p className="text-xs text-gray-600 mt-1">{player.email}</p>
+                    <p className="mt-0.5 break-all text-xs text-slate-500">{player.email}</p>
                   )}
                 </div>
-                <div className="space-y-2 mb-3">
-                  <div className="text-sm text-gray-700">
-                    Giới tính: <span className="font-medium">{player.gender === 'male' ? 'Nam' : player.gender === 'female' ? 'Nữ' : '-'}</span>
+                <div className="mb-3 space-y-2">
+                  <div className="text-sm text-slate-600">
+                    Giới tính: <span className="font-medium text-slate-900">{genderLabel(player.gender)}</span>
                   </div>
-                  <div className="text-sm text-gray-700">
-                    Mức tính: <span className="font-medium">{player.default_ratio ? formatRatio(player.default_ratio) : 'Mặc định'}</span>
+                  <div className="text-sm text-slate-600">
+                    Mức tính: <span className="font-tabular font-medium text-slate-900">{player.default_ratio ? formatRatio(player.default_ratio) : 'Mặc định'}</span>
                   </div>
-                  <div className="text-sm text-gray-700">
-                    Quyền: 
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {player.roles && player.roles.length > 0 ? (
-                        player.roles.map((role) => (
-                          <span
-                            key={role.id}
-                            className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800"
-                          >
-                            {role.display_name}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-gray-400 text-xs">Chưa có quyền</span>
-                      )}
+                  <div className="text-sm text-slate-600">
+                    Quyền:
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {renderRoles(player, 'text-xs text-slate-400')}
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 pt-3 border-t border-gray-200">
+                <div className="flex gap-2 border-t border-slate-100 pt-3">
                   <button
                     onClick={() => handleEdit(player)}
-                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                    className="btn btn-secondary btn-sm flex-1"
                   >
                     Sửa
                   </button>
                   <button
                     onClick={() => handleAssignRoles(player)}
-                    className="flex-1 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                    className="btn btn-secondary btn-sm flex-1"
                   >
                     Quyền
                   </button>
                   <button
                     onClick={() => handleDelete(player.id)}
-                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                    className="btn btn-secondary btn-sm flex-1 !border-rose-200 !text-rose-600 hover:!bg-rose-50"
                   >
                     Xóa
                   </button>
@@ -563,55 +590,55 @@ export default function PlayersManagement() {
       )}
 
       {/* Role Assignment Modal */}
-      {showRoleModal && selectedPlayer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4">
-              Gán quyền cho: {selectedPlayer.name}
-            </h3>
-            <form onSubmit={handleRoleSubmit}>
-              <div className="space-y-2 max-h-96 overflow-y-auto mb-4">
-                {roles.map((role) => (
-                  <label key={role.id} className="flex items-center p-2 hover:bg-gray-50 rounded">
-                    <input
-                      type="checkbox"
-                      checked={selectedRoleIds.includes(role.id)}
-                      onChange={() => toggleRole(role.id)}
-                      className="mr-3"
-                    />
-                    <div>
-                      <div className="font-medium text-gray-900">{role.display_name}</div>
-                      {role.description && (
-                        <div className="text-sm text-gray-500">{role.description}</div>
-                      )}
-                    </div>
-                  </label>
-                ))}
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowRoleModal(false);
-                    setSelectedPlayer(null);
-                    setSelectedRoleIds([]);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Lưu
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showRoleModal && Boolean(selectedPlayer)}
+        onClose={closeRoleModal}
+        title={`Gán quyền cho: ${selectedPlayer?.name ?? ''}`}
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={closeRoleModal}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="role-assign-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Lưu
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="role-assign-form" onSubmit={handleRoleSubmit}>
+          <div className="space-y-1">
+            {roles.map((role) => (
+              <label
+                key={role.id}
+                htmlFor={`assign-role-${role.id}`}
+                className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-slate-50"
+              >
+                <input
+                  id={`assign-role-${role.id}`}
+                  type="checkbox"
+                  checked={selectedRoleIds.includes(role.id)}
+                  onChange={() => toggleRole(role.id)}
+                  className="h-5 w-5 flex-shrink-0 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600/40"
+                />
+                <div className="min-w-0">
+                  <div className="font-medium text-slate-900">{role.display_name}</div>
+                  {role.description && (
+                    <div className="text-sm text-slate-500">{role.description}</div>
+                  )}
+                </div>
+              </label>
+            ))}
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
-
