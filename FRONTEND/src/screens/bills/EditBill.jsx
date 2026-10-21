@@ -561,7 +561,7 @@ export default function EditBill() {
                         })()}
                       </div>
                     </div>
-                    <div className="col-span-2 sm:col-span-1">
+                    <div>
                       <label htmlFor="bill-note" className="field-label">
                         Ghi chú
                       </label>
