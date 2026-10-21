@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { menusApi } from '../../services/api';
 import { formatCurrency } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
+import Modal from '../../components/ui/Modal';
+import EmptyState from '../../components/ui/EmptyState';
+import { Plus, Inbox } from '../../components/ui/icons';
 
 /** Nút gạt bật/tắt: món tắt không hiện trong ô "Chọn menu" khi tạo / sửa bill. */
 function ActiveToggle({ active, disabled, onToggle }) {
@@ -12,11 +15,11 @@ function ActiveToggle({ active, disabled, onToggle }) {
       aria-checked={active}
       onClick={onToggle}
       disabled={disabled}
-      className="inline-flex items-center gap-2 py-1 disabled:opacity-60"
+      className="inline-flex min-h-[44px] items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:opacity-60 sm:min-h-0 sm:py-1"
     >
       <span
         className={`relative inline-flex h-6 w-11 shrink-0 rounded-full transition-colors ${
-          active ? 'bg-green-600' : 'bg-gray-300'
+          active ? 'bg-emerald-700' : 'bg-slate-300'
         }`}
       >
         <span
@@ -25,7 +28,7 @@ function ActiveToggle({ active, disabled, onToggle }) {
           }`}
         />
       </span>
-      <span className={`text-sm ${active ? 'text-green-700' : 'text-gray-500'}`}>
+      <span className={`text-sm ${active ? 'text-emerald-700' : 'text-slate-500'}`}>
         {active ? 'Đang dùng' : 'Đã tắt'}
       </span>
     </button>
@@ -114,118 +117,117 @@ export default function MenusManagement() {
     }
   };
 
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingMenu(null);
+  };
+
   return (
-    <div className="px-2 sm:px-0">
-      <div className="flex flex-row justify-between items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
-        <h2 className="text-xl sm:text-2xl font-bold">Quản lý Menu nước</h2>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">Quản lý Menu nước</h2>
         <button
           onClick={() => {
             setShowForm(true);
             setEditingMenu(null);
             setFormData({ name: '', price: 0 });
           }}
-          className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base whitespace-nowrap"
+          className="btn btn-primary flex-shrink-0"
         >
-          + Thêm menu
+          <Plus className="h-4 w-4" />
+          Thêm menu
         </button>
       </div>
 
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingMenu ? 'Sửa menu' : 'Thêm menu'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Tên *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Giá (VND) *</label>
-                <CurrencyInput
-                  value={formData.price}
-                  onChange={(value) => setFormData({ ...formData, price: value })}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setEditingMenu(null);
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-md"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Lưu
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showForm}
+        onClose={closeForm}
+        title={editingMenu ? 'Sửa menu' : 'Thêm menu'}
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button type="button" onClick={closeForm} className="btn btn-secondary flex-1 sm:flex-none">
+              Hủy
+            </button>
+            <button type="submit" form="menu-form" className="btn btn-primary flex-1 sm:flex-none">
+              Lưu
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="menu-form" onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="menu-name" className="field-label">Tên *</label>
+            <input
+              id="menu-name"
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="menu-price" className="field-label">Giá (VND) *</label>
+            <CurrencyInput
+              id="menu-price"
+              value={formData.price}
+              onChange={(value) => setFormData({ ...formData, price: value })}
+              baseClassName="field-input"
+            />
+          </div>
+        </form>
+      </Modal>
 
       {loading ? (
-        <div className="text-center py-8">Đang tải...</div>
+        <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>
+      ) : menus.length === 0 ? (
+        <EmptyState icon={Inbox} title="Chưa có menu" />
       ) : (
         <>
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Tên
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Giá
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Trạng thái
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Thao tác
-                  </th>
+          <div className="card hidden overflow-hidden !p-0 md:block">
+            <table className="min-w-full">
+              <thead className="bg-slate-50">
+                <tr className="text-xs text-slate-500">
+                  <th className="px-6 py-3 text-left font-medium">Tên</th>
+                  <th className="px-6 py-3 text-right font-medium">Giá</th>
+                  <th className="px-6 py-3 text-left font-medium">Trạng thái</th>
+                  <th className="px-6 py-3 text-left font-medium">Thao tác</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody>
                 {menus.map((menu) => (
-                  <tr key={menu.id} className={menu.is_active === false ? 'text-gray-400' : ''}>
-                    <td className="px-6 py-4 whitespace-nowrap font-medium">{menu.name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{formatCurrency(menu.price)}</td>
-                    <td className="px-6 py-3 whitespace-nowrap">
+                  <tr
+                    key={menu.id}
+                    className={`border-t border-slate-100 hover:bg-slate-50/60 ${
+                      menu.is_active === false ? 'text-slate-400' : 'text-slate-900'
+                    }`}
+                  >
+                    <td className="max-w-[18rem] px-6 py-3 text-sm font-medium">
+                      <div className="truncate" title={menu.name}>{menu.name}</div>
+                    </td>
+                    <td className="font-tabular whitespace-nowrap px-6 py-3 text-right text-sm">
+                      {formatCurrency(menu.price)}
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-2">
                       <ActiveToggle
                         active={menu.is_active !== false}
                         disabled={togglingId === menu.id}
                         onToggle={() => handleToggleActive(menu)}
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleEdit(menu)}
-                        className="text-blue-600 hover:text-blue-900 mr-3"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDelete(menu.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Xóa
-                      </button>
+                    <td className="whitespace-nowrap px-6 py-3">
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleEdit(menu)} className="btn btn-ghost btn-sm">
+                          Sửa
+                        </button>
+                        <button
+                          onClick={() => handleDelete(menu.id)}
+                          className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                        >
+                          Xóa
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -234,16 +236,16 @@ export default function MenusManagement() {
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden space-y-3">
+          <div className="space-y-3 md:hidden">
             {menus.map((menu) => (
-              <div key={menu.id} className="bg-white shadow rounded-lg p-4">
+              <div key={menu.id} className="card !p-4">
                 <div
-                  className={`flex justify-between items-start mb-2 ${
-                    menu.is_active === false ? 'text-gray-400' : 'text-gray-900'
+                  className={`mb-2 flex items-start justify-between gap-3 ${
+                    menu.is_active === false ? 'text-slate-400' : 'text-slate-900'
                   }`}
                 >
-                  <h3 className="font-semibold">{menu.name}</h3>
-                  <span className="text-lg font-bold">{formatCurrency(menu.price)}</span>
+                  <h3 className="min-w-0 break-words font-semibold">{menu.name}</h3>
+                  <span className="font-tabular flex-shrink-0 text-lg font-semibold">{formatCurrency(menu.price)}</span>
                 </div>
                 <div className="mb-3">
                   <ActiveToggle
@@ -252,16 +254,13 @@ export default function MenusManagement() {
                     onToggle={() => handleToggleActive(menu)}
                   />
                 </div>
-                <div className="flex gap-2 pt-3 border-t border-gray-200">
-                  <button
-                    onClick={() => handleEdit(menu)}
-                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                  >
+                <div className="flex gap-2 border-t border-slate-100 pt-3">
+                  <button onClick={() => handleEdit(menu)} className="btn btn-secondary btn-sm flex-1">
                     Sửa
                   </button>
                   <button
                     onClick={() => handleDelete(menu.id)}
-                    className="flex-1 px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                    className="btn btn-secondary btn-sm flex-1 !border-rose-200 !text-rose-600 hover:!bg-rose-50"
                   >
                     Xóa
                   </button>
@@ -274,4 +273,3 @@ export default function MenusManagement() {
     </div>
   );
 }
-
