@@ -272,11 +272,6 @@ export default function TournamentBrackets() {
     );
   }
 
-  const tabClass = (isActive) =>
-    `h-11 flex-1 whitespace-nowrap rounded-lg px-4 text-sm font-medium transition sm:h-9 sm:flex-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
-      isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-    }`;
-
   return (
     <div className="px-4 pb-8 sm:px-0">
       {/* Header */}
@@ -325,14 +320,14 @@ export default function TournamentBrackets() {
       <div
         role="tablist"
         aria-label="Quản lý & Xếp bảng thi đấu"
-        className="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 sm:inline-flex sm:max-w-full"
+        className="tab-list"
       >
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'players'}
           onClick={() => setActiveTab('players')}
-          className={tabClass(activeTab === 'players')}
+          className="tab"
         >
           Danh sách VĐV ({players.length})
         </button>
@@ -341,7 +336,7 @@ export default function TournamentBrackets() {
           role="tab"
           aria-selected={activeTab === 'brackets'}
           onClick={() => setActiveTab('brackets')}
-          className={tabClass(activeTab === 'brackets')}
+          className="tab"
         >
           Bảng thi đấu ({brackets.length})
         </button>

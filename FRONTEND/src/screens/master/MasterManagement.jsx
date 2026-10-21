@@ -30,7 +30,7 @@ export default function MasterManagement() {
       <div
         role="tablist"
         aria-label="Quản lý Master"
-        className="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 sm:inline-flex sm:max-w-full"
+        className="tab-list"
       >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -43,14 +43,7 @@ export default function MasterManagement() {
               aria-selected={isActive}
               aria-controls="master-tabpanel"
               onClick={() => handleTabChange(tab.id)}
-              className={`
-                h-11 flex-1 whitespace-nowrap rounded-lg px-2 text-sm font-medium transition sm:h-9 sm:px-4 sm:flex-none
-                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40
-                ${isActive
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-600 hover:text-slate-900'
-                }
-              `}
+              className="tab"
             >
               {tab.label}
             </button>

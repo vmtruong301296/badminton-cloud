@@ -87,6 +87,18 @@ body {
     }
   }
 
+  /* Tab trong màn (spec 5.7): khung xám, tab đang chọn là viên trắng */
+  .tab-list {
+    @apply mb-5 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 sm:inline-flex sm:max-w-full;
+  }
+  .tab {
+    @apply h-11 flex-1 whitespace-nowrap rounded-lg px-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:h-9 sm:flex-none sm:px-4;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  .tab[aria-selected="true"] {
+    @apply bg-white text-slate-900 shadow-sm;
+  }
+
   .field-label {
     @apply mb-1.5 block text-sm font-medium text-slate-700;
   }

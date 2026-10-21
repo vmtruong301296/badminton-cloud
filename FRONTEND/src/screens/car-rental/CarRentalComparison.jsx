@@ -34,7 +34,7 @@ export default function CarRentalComparison() {
       <div
         role="tablist"
         aria-label="So sánh chi phí thuê xe"
-        className="mb-5 flex gap-1 rounded-xl bg-slate-100 p-1 sm:inline-flex"
+        className="tab-list"
       >
         {TABS.map((item) => (
           <button
@@ -43,11 +43,7 @@ export default function CarRentalComparison() {
             role="tab"
             aria-selected={tab === item.key}
             onClick={() => setTab(item.key)}
-            className={`h-11 flex-1 rounded-lg px-4 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:h-9 sm:flex-none ${
-              tab === item.key
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
+            className="tab"
           >
             {item.label}
           </button>
