@@ -244,3 +244,59 @@ dùng class Tailwind tại chỗ và ghi đề xuất vào báo cáo.
 Người triển khai bổ sung vào cuối file này: chỗ chệch so với thiết kế và
 lý do, chữ mới phát sinh, quyết định tự chọn (5.1 phông dự phòng, 5.7
 bảng trên điện thoại).
+
+### Đợt 1 — nền móng (triển khai 21/10/2026)
+
+**Chỗ chệch so với thiết kế (kèm lý do)**
+
+- **Phông: Inter, không phải Be Vietnam Pro** (quyết định theo 5.1). Đo trên trang thật bằng Chrome:
+  với Be Vietnam Pro, `tabular-nums` không đổi gì ("1.111.111" rộng 68,09 px, "0.000.000" rộng 107,84 px,
+  đều như nhau khi bật `tabular-nums`) vì phông không có tính năng `tnum`; với Inter bật `tabular-nums` thì
+  cả ba chuỗi đều 101,47 px. Số tiền thẳng cột quan trọng hơn dấu thanh, nên đổi sang Inter (có bộ tiếng Việt).
+  `fontFamily.sans` và `fontFamily.display` đều là Inter. Be Vietnam Pro chỉ tồn tại ở commit `style(ui): phông Be Vietnam Pro…`.
+- **`#bill-export` giữ `font-feature-settings: "ss01", "cv11"` trong `index.css`.** Bỏ tính năng này khỏi `body`
+  (5.1) làm chữ Arial đậm trong ảnh xuất khác đi (đo được 103 114 điểm ảnh khác ở ảnh bill cầu). Đặt lại
+  riêng cho `#bill-export` thì ảnh xuất bill cầu (390 và 1280) và bill tiệc (390 và 1280) giống bản `main`
+  từng điểm ảnh (0 điểm khác). Khi nào đợt 3 muốn bỏ hẳn thì phải chấp nhận ảnh xuất đổi nét chữ.
+- **Thanh trên desktop: biểu tượng của mục menu chỉ hiện từ `xl` (1280)**, không phải từ `sm`. Ở 1024 với tài khoản đủ 7
+  mục, biểu tượng + chữ tràn và đè lên nút tài khoản. Cách chốt: 640–1023 hiện 4 mục chính + "Thêm" chỉ có chữ;
+  ≥ 1024 (`lg`) hiện đủ 7 mục chỉ có chữ; ≥ 1280 thêm biểu tượng. Chữ "Sổ cầu lông" cạnh logo ẩn ở 640–767; tên người dùng
+  cạnh vòng tròn tài khoản chỉ hiện từ `xl` (spec ghi `lg`); mũi tên của nút tài khoản chỉ từ `lg`.
+- **Nhóm bị hạ thành link đơn lấy nhãn của nhóm** ("Bill cầu" / "Bill tiệc") thay vì nhãn của mục con ("Danh sách bill cầu"),
+  vì nhãn tab dưới đáy chỉ vừa vài chữ. Chỉ ảnh hưởng người chỉ có quyền xem (không có quyền tạo).
+- **Mục menu sáng cả ở trang chi tiết / sửa bill** (`/bills/:id`, `/party-bills/:id`): `isNavItemActive` có `activePrefixes`
+  (trước đây chỉ khớp đúng đường dẫn). Có test.
+- **Thêm ngoài danh sách file**: `components/ProtectedRoute.jsx` (màn "Đang tải…" và "Không có quyền truy cập" dùng
+  chung `StatusScreen` với `App.jsx`, giữ chữ), `components/ui/StatusScreen.jsx`, `components/ui/useDismiss.js` (đóng menu thả khi
+  bấm ngoài / Esc, dùng chung cho `NavDropdown` và menu tài khoản).
+- **`CurrencyInput`, `NumberInput`, `DatePicker`, `ThousandHint`**: ngoài việc nhận `field-input`, đổi bộ class mặc định sang
+  slate / emerald `rounded-xl` (để màn chưa chuyển không còn xanh dương cũ); `CurrencyInput` thêm `inputMode="numeric"` và nhận
+  `...props` (id, aria-label, onKeyDown), `NumberInput` thêm `inputMode="decimal"`; `ThousandHint` cao tối thiểu 36 px.
+  Logic không đổi.
+- **`.btn-sm`**: cao 36 px nhưng có vùng chạm mở rộng thêm 4 px mỗi phía trên điện thoại (≥ 44 px).
+- **Màn đăng nhập giữ câu cũ "Hệ thống quản lý thanh toán cầu lông"** dưới thẻ (spec không nói bỏ), thêm câu mô tả mới trong thẻ.
+- Thanh tab có tối đa 5 ô; với tài khoản đủ 7 mục thì "Thuê xe" nằm trong "Thêm" (thứ tự 5.6), nên ở `/car-rental` ô "Thêm" sáng.
+- Modal (quyết định tự chọn): render vào `document.body` bằng portal (không bị `backdrop-blur` của thanh trên làm lệch
+  `fixed`), giữ Tab quay vòng trong hộp, trả focus về chỗ cũ khi đóng, đếm số hộp đang mở để khóa / mở cuộn trang đúng khi mở chồng.
+  `prefers-reduced-motion` tắt hiệu ứng trượt.
+- Chữ cái trong vòng tròn tài khoản là chữ cái đầu của **tên gọi** (từ cuối: "Võ Trường" → T), không phải chữ đầu của họ.
+
+**Chữ mới (chờ chủ dự án gật; ghi ngày khi gật)**
+
+- Nhãn tab dưới đáy và tiêu đề sheet: "Thêm" (cũng là nút dropdown trên desktop 640–1023).
+- "Tài khoản": `aria-label` của nút vòng tròn tài khoản; tiêu đề sheet khi tài khoản ít hơn 6 mục (không có "Thêm").
+- "Đóng": `aria-label` nút X của `Modal`.
+- "Điều hướng chính": `aria-label` của hai thanh điều hướng.
+- Câu mô tả ở màn đăng nhập: "Chia tiền buổi chơi, bill tiệc và thuê xe cho nhóm cầu lông." (từ spec 5.8, chờ gật).
+- `EmptyState`/`PageHeader` chưa dùng chữ nào; nhãn nút quay lại (`back.label`) do từng màn truyền vào ở đợt sau.
+
+**Kiểm ở đợt 1**: `npm test` 43 passed (có 18 test mới cho `navItems`); `eslint` 6 lỗi + 8 cảnh báo, bằng `main`; build ok;
+ảnh xuất bill giống `main` từng điểm ảnh; ảnh chụp qua máy chủ giả ở 390 / 640 / 768 / 1024 / 1280 (khung trang), cả tài khoản đủ 7 mục
+và tài khoản 2 mục.
+
+**Ghi cho đợt 2 / 3**
+
+- `main` không có `px` trên điện thoại (như cũ); mọi màn tự có `px-4` / `p-3` nên không đệm đôi, nhưng màn nào bỏ đệm của mình đi thì mất lề.
+- `PageHeader` chưa được dùng ở đâu; màn mới nên dùng và bỏ nhãn trên tiêu đề viết hoa rải chữ (`QUẢN LÝ CHI TIÊU`, `BILL TIỆC #1`).
+- Còn nút `bg-blue-600` / `bg-green-600` / `bg-red-600` và FAB `emerald-600` ở các màn chưa chuyển; chúng khác sắc với nút `.btn-primary` (`emerald-700`).
+- `ConfirmDialog` luôn có nút "Xóa" (như cũ). Dùng cho việc khác "Xóa" thì cần thêm prop ở đợt sau.
