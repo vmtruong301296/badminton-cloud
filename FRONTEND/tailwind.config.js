@@ -5,14 +5,14 @@ export default {
     extend: {
       fontFamily: {
         display: [
-          '"Be Vietnam Pro"',
+          '"Inter"',
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
           "sans-serif",
         ],
         sans: [
-          '"Be Vietnam Pro"',
+          '"Inter"',
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
