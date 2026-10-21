@@ -5,6 +5,8 @@ import {
   useGenderDefaultRatios,
   ratioForGender,
 } from "../../utils/genderRatio";
+import Modal from "../ui/Modal";
+import { Plus, Search, X } from "../ui/icons";
 
 export default function PlayerSelector({
   selectedPlayers,
@@ -178,36 +180,48 @@ export default function PlayerSelector({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       {/* Cột trái: Danh sách người chơi để chọn */}
-      <div className="border rounded-lg p-4 bg-gray-50">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="font-semibold text-gray-700">Danh sách người chơi</h4>
+      <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Danh sách người chơi
+          </h3>
           <button
             type="button"
             onClick={openAddModal}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="btn btn-secondary btn-sm"
           >
-            + Thêm nhanh
+            <Plus className="h-4 w-4" />
+            Thêm nhanh
           </button>
         </div>
-        <input
-          type="text"
-          placeholder={
-            parentIdSet
-              ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
-              : "Tìm kiếm người chơi..."
-          }
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md mb-3 bg-white"
-        />
+        <label htmlFor="player-search" className="sr-only">
+          Tìm kiếm người chơi
+        </label>
+        <div className="relative mb-3">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            id="player-search"
+            type="text"
+            placeholder={
+              parentIdSet
+                ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
+                : "Tìm kiếm người chơi..."
+            }
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="field-input pl-9"
+          />
+        </div>
         {loading ? (
-          <div className="text-center py-4">Đang tải...</div>
+          <div className="py-4 text-center text-sm text-slate-500">
+            Đang tải...
+          </div>
         ) : (
           <div className="max-h-96 overflow-y-auto">
             {filteredPlayers.length === 0 ? (
-              <div className="text-center py-4 text-gray-500">
+              <div className="py-4 text-center text-sm text-slate-500">
                 {search
                   ? "Không tìm thấy"
                   : parentIdSet
@@ -215,27 +229,24 @@ export default function PlayerSelector({
                     : "Không còn người chơi nào"}
               </div>
             ) : (
-              <div className="space-y-1">
-                {filteredPlayers.map((player, index) => (
-                  <button
-                    key={player.id}
-                    type="button"
-                    onClick={() => handleSelect(player)}
-                    className={`w-full text-left px-3 py-2 hover:bg-blue-100 rounded border border-transparent hover:border-blue-300 transition-colors ${
-                      index % 2 === 0 ? "bg-white" : "bg-blue-50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-gray-900">
+              <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
+                {filteredPlayers.map((player) => (
+                  <li key={player.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelect(player)}
+                      className="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-left transition hover:bg-emerald-50 focus:outline-none focus-visible:bg-emerald-50"
+                    >
+                      <div className="min-w-0 break-words text-sm font-medium text-slate-900">
                         {player.name}
                         {player.bill_count !== undefined &&
                           player.bill_count > 0 && (
-                            <span className="text-gray-500 font-normal ml-1">
+                            <span className="ml-1 font-normal text-slate-500">
                               ({player.bill_count})
                             </span>
                           )}
                       </div>
-                      <div className="text-xs text-gray-500 flex items-center gap-3">
+                      <div className="flex flex-shrink-0 flex-col items-end gap-0.5 text-xs text-slate-500 sm:flex-row sm:items-center sm:gap-3">
                         <span>
                           {player.gender === "male"
                             ? "Nam"
@@ -243,54 +254,54 @@ export default function PlayerSelector({
                               ? "Nữ"
                               : "-"}{" "}
                           :{" "}
-                          <span className="font-semibold">
+                          <span className="font-tabular font-semibold">
                             {formatRatio(player.default_ratio_value || 1.0)}
                           </span>
                         </span>
                         {player.current_debt_amount > 0 && (
-                          <span className="text-red-600">
+                          <span className="font-tabular font-medium text-rose-600">
                             Nợ: {formatCurrency(player.current_debt_amount)}
                           </span>
                         )}
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
           </div>
         )}
       </div>
 
       {/* Cột phải: Danh sách đã chọn */}
-      <div className="border rounded-lg p-4 bg-blue-50">
-        <h4 className="font-semibold mb-3 text-gray-700">
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-3 sm:p-4">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900">
           Đã chọn ({selectedPlayers.length})
-        </h4>
+        </h3>
         {selectedPlayers.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
+          <div className="py-8 text-center text-sm text-slate-500">
             Chưa chọn người chơi nào
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto space-y-2">
+          <div className="max-h-96 space-y-2 overflow-y-auto">
             {selectedPlayers.map((player, index) => (
               <div
                 key={player.user_id || index}
-                className="bg-white rounded-lg p-3 border border-blue-200 shadow-sm"
+                className="rounded-xl border border-emerald-100 bg-white p-3 shadow-card"
               >
-                <div className="flex justify-between items-center">
-                  <div className="flex-1 flex items-center gap-3 flex-wrap">
-                    <div className="font-semibold text-gray-900">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+                    <div className="min-w-0 break-words text-sm font-semibold text-slate-900">
                       {player.name}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-slate-500">
                       {player.gender === "male"
                         ? "Nam"
                         : player.gender === "female"
                           ? "Nữ"
                           : "-"}{" "}
                       :{" "}
-                      <span className="font-semibold">
+                      <span className="font-tabular font-semibold">
                         {formatRatio(
                           player.ratio_value ??
                             player.default_ratio_value ??
@@ -299,12 +310,12 @@ export default function PlayerSelector({
                       </span>
                     </div>
                     {player.menus && player.menus.length > 0 && (
-                      <div className="text-xs text-green-600">
+                      <div className="text-xs text-emerald-700">
                         Menu: {player.menus.length} món
                       </div>
                     )}
                     {player.debt_amount > 0 && player.include_debt && (
-                      <div className="text-xs text-red-600">
+                      <div className="font-tabular text-xs text-rose-600">
                         Nợ: {formatCurrency(player.debt_amount)}
                       </div>
                     )}
@@ -312,10 +323,10 @@ export default function PlayerSelector({
                   <button
                     type="button"
                     onClick={() => onRemove(index)}
-                    className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1 transition-colors"
-                    title="Xóa"
+                    aria-label={`Xóa ${player.name}`}
+                    className="-m-1.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:-m-1 sm:h-9 sm:w-9"
                   >
-                    ✕
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
               </div>
@@ -325,103 +336,96 @@ export default function PlayerSelector({
       </div>
 
       {/* Modal thêm nhanh người chơi */}
-      {showAddModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={closeAddModal}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Thêm nhanh người chơi
-              </h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên
-                  </label>
-                  <input
-                    type="text"
-                    value={newPlayer.name}
-                    onChange={(e) =>
-                      setNewPlayer({ ...newPlayer, name: e.target.value })
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleCreatePlayer(e);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Nhập tên người chơi"
-                    autoFocus
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Giới tính
-                  </label>
-                  <select
-                    value={newPlayer.gender}
-                    onChange={(e) => handleGenderChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  >
-                    <option value="male">Nam</option>
-                    <option value="female">Nữ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Mức tính mặc định
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={newPlayer.default_ratio}
-                    onChange={(e) =>
-                      setNewPlayer({
-                        ...newPlayer,
-                        default_ratio: parseFloat(e.target.value) || 1,
-                      })
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleCreatePlayer(e);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                </div>
-                <div className="flex justify-end space-x-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={closeAddModal}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCreatePlayer}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    Lưu
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500">
-                  Ghi chú: tài khoản tạo nhanh dùng mật khẩu mặc định
-                  "password".
-                </p>
-              </div>
-            </div>
+      <Modal
+        isOpen={showAddModal}
+        onClose={closeAddModal}
+        title="Thêm nhanh người chơi"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={closeAddModal}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              onClick={handleCreatePlayer}
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Lưu
+            </button>
           </div>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="quick-player-name" className="field-label">
+              Tên
+            </label>
+            <input
+              id="quick-player-name"
+              type="text"
+              value={newPlayer.name}
+              onChange={(e) =>
+                setNewPlayer({ ...newPlayer, name: e.target.value })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCreatePlayer(e);
+                }
+              }}
+              className="field-input"
+              placeholder="Nhập tên người chơi"
+            />
+          </div>
+          <div>
+            <label htmlFor="quick-player-gender" className="field-label">
+              Giới tính
+            </label>
+            <select
+              id="quick-player-gender"
+              value={newPlayer.gender}
+              onChange={(e) => handleGenderChange(e.target.value)}
+              className="field-input"
+            >
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="quick-player-ratio" className="field-label">
+              Mức tính mặc định
+            </label>
+            <input
+              id="quick-player-ratio"
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="0"
+              value={newPlayer.default_ratio}
+              onChange={(e) =>
+                setNewPlayer({
+                  ...newPlayer,
+                  default_ratio: parseFloat(e.target.value) || 1,
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleCreatePlayer(e);
+                }
+              }}
+              className="field-input"
+            />
+          </div>
+          <p className="text-xs text-slate-500">
+            Ghi chú: tài khoản tạo nhanh dùng mật khẩu mặc định "password".
+          </p>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }
