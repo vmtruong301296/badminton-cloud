@@ -300,3 +300,64 @@ và tài khoản 2 mục.
 - `PageHeader` chưa được dùng ở đâu; màn mới nên dùng và bỏ nhãn trên tiêu đề viết hoa rải chữ (`QUẢN LÝ CHI TIÊU`, `BILL TIỆC #1`).
 - Còn nút `bg-blue-600` / `bg-green-600` / `bg-red-600` và FAB `emerald-600` ở các màn chưa chuyển; chúng khác sắc với nút `.btn-primary` (`emerald-700`).
 - `ConfirmDialog` luôn có nút "Xóa" (như cũ). Dùng cho việc khác "Xóa" thì cần thêm prop ở đợt sau.
+
+### Đợt 2 — màn quản lý (21/10/2026)
+
+**Chỗ chệch so với thiết kế (kèm lý do)**
+
+- Bảng dưới `md` giữ **dạng thẻ** (Người chơi, Mức tính, Menu, Loại cầu, Quyền): đã có sẵn bản thẻ cho điện thoại, làm lại kiểu
+  cho đồng bộ thay vì cho bảng cuộn ngang. Xếp bảng thêm danh sách thẻ VĐV. Bảng trong Modal lịch sử nhập kho **cuộn ngang
+  trong thẻ** (chưa có bản thẻ, không nên tràn cả trang).
+- Các tab con của Master (Mức tính, Menu nước, Loại cầu, TK nhận tiền) dùng `h2`, không dùng `PageHeader`, để một màn không có hai `h1`.
+- Bỏ `animate-pulse` ở cảnh báo "Sắp hết cầu". Biểu tượng 🏆 trong kết quả thuê xe đổi thành nhãn "Rẻ nhất". Emoji nằm trong văn bản
+  để sao chép giữ nguyên. Tournament bỏ `max-w-6xl` cho cùng bề ngang với các màn khác.
+
+**Chữ mới (chờ chủ dự án gật)**: câu trạng thái rỗng "Chưa có người chơi", "Không tìm thấy người chơi", "Chưa có mức tính",
+"Chưa có menu", "Chưa có loại cầu", "Chưa có quyền nào"; nhãn "Rẻ nhất" (thay 🏆); các `aria-label` / nhãn ẩn cho ô nhập và nút biểu tượng.
+
+### Đợt 3a — bill cầu (21/10/2026)
+
+- `BillContent` (không nằm trong ảnh xuất) làm lại thành **hàng thẻ cho mọi cỡ**: bảng 8 cột không vừa cột ~600 px (desktop 2 cột)
+  hay ~360 px (điện thoại). "Đã TT" thành nút có chữ, cao 44 px.
+- Bỏ các nhãn chữ hoa trên tiêu đề; "Bill chính / con" thành badge.
+- Dashboard gộp thành một bảng, thêm nhãn "Quá hạn"; xóa khối lọc cũ đã `hidden`. Hộp Thống kê xếp một cột.
+- Bỏ `animate-pulse` ở banner dưới 10 ống. Màu "đã trả" của bill con đổi từ xanh dương sang xanh ngọc (đúng nghĩa trạng thái).
+- Chữ mới: nhãn "Quá hạn"; còn lại chỉ có chữ cho trình đọc màn hình.
+
+### Đợt 3b — bill tiệc (21/10/2026)
+
+- Bỏ các nhãn chữ hoa trên tiêu đề; "Bill tiệc #N" chuyển xuống dòng mô tả. Nút chính màn sửa đổi từ amber sang emerald.
+- Bỏ 🎉 ở "Tất cả đã thanh toán". Nút chi tiết trên điện thoại xếp lưới 2×2.
+- Không thêm `ThousandHint` / Enter nhảy ô (form cũ không có). Chữ mới chỉ là `aria-label`.
+- Ảnh xuất bill cầu và bill tiệc: 0 điểm khác so với `main` ở mọi đợt.
+- Lỗi có sẵn, không sửa trong đợt này: `formatRatio` in `22.250000000000004` ở "Tóm tắt Bill".
+
+### Đợt 4 — gom phần chung và kiểm toàn bộ (22/10/2026)
+
+Mỗi mục một commit, giao diện chỉ đổi đúng ý mục đó (so ảnh trước / sau từng màn: chỉ khác ở nút Xóa và biểu tượng).
+
+1. **Biểu tượng**: mọi biểu tượng về `components/ui/icons.jsx` (thêm `Download`, `Upload`, `Send`, `CalendarDays`, `Check`, `Circle`,
+   `Clock`, `ChartLine`, `Target`). Xóa `party/partyIcons.jsx` và mọi SVG viết tại chỗ (BillDetail, Dashboard, BillContent, CreateBill,
+   EditBill); nơi nét dày 2 / 2,5 thì truyền `strokeWidth`. Trả biểu tượng cho nút Import (`Upload`), Xuất bảng (`Download`), Xếp bảng (`Target`).
+   Không thêm `ChevronRight` vì chưa có chỗ dùng.
+2. **Nút**: `.btn` có `whitespace-nowrap`; thêm `.btn-icon` (vuông, 44 px / 40 px từ `sm`), `.btn-danger-soft` (viền rose nhạt, nền trắng,
+   có kiểu disabled) và `.btn-danger-ghost` (chữ rose không viền; **thêm ngoài yêu cầu** vì có 11 chỗ lặp `!text-rose-600 hover:!bg-rose-50`).
+   Các nút xóa biểu tượng trước đây viền xám / chỉ hóa rose khi rê chuột nay luôn có viền rose nhạt (không còn gì chỉ có khi hover).
+3. **Tab**: `.tab-list` / `.tab` (đang chọn theo `aria-selected="true"`), thay 3 chỗ lặp (Master, Tournament, CarRentalComparison); đệm ngang
+   chuẩn `px-2 sm:px-4`.
+4. **Ô nhập**: `DatePicker`, `NumberInput` nhận `baseClassName`; 15 chỗ truyền `field-input` qua `className` đổi sang `baseClassName`.
+5. **`PageHeader`**: `description` nhận node, khung bọc là `div`.
+6. **`ConfirmDialog`**: thêm `confirmLabel` (mặc định "Xóa"), `confirmVariant` (`danger` / `primary`). Không chuyển `confirm()` / `alert()`.
+7. **FAB** ở Dashboard / PartyBills đã dùng `emerald-700` / `hover:emerald-800`; không cần sửa.
+
+**Lỗi tìm thấy khi kiểm và đã sửa**
+
+- `fix(bill)`: màn Tạo / Sửa bill cầu, ô "Ngày đánh" bị bóp còn ~15 px và đè nhãn "Tổng tiền sân" ở 390: ô "Ghi chú" còn `col-span-2`
+  trong lưới `grid-cols-1` (đợt 3a đổi lưới nhưng quên bỏ), làm sinh cột ẩn thứ hai.
+- `style(ui)`: tiêu đề màn Thuê xe ở desktop bị căn giữa (`mx-auto max-w-5xl`) lệch so với mọi màn khác; bỏ `mx-auto`, giữ độ rộng tối đa của form.
+
+**Kiểm**: `npm test` 43 passed; `eslint` 6 lỗi + 8 cảnh báo bằng mốc; build ok; không route nào tràn ngang ở 390 (admin, empty, limited, guest);
+lề trái `h1` đều 16 px; ảnh xuất bill cầu (có bill con) và bill tiệc ở 390 / 1280: 0 điểm khác `main`.
+
+**Còn lại, không sửa**: màn Tạo Bill ở desktop có thẻ "Loại cầu" kéo cao bằng thẻ "Thông tin cơ bản" (khoảng trống lớn khi chưa thêm cầu);
+chỉ thẩm mỹ, thuộc bố cục đợt 3a. `alert()` / `confirm()` (~100 chỗ) vẫn là việc tiếp theo.
