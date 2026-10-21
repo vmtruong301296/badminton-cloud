@@ -25,7 +25,7 @@ export default function CarRentalComparison() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 sm:px-0">
+    <div className="max-w-5xl px-4 sm:px-0">
       <PageHeader
         title="So sánh chi phí thuê xe"
         description="Nhập chuyến đi và các phương án thuê để xem phương án nào rẻ hơn."
