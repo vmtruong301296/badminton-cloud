@@ -4,7 +4,7 @@ export default function DatePicker({ value, onChange, className = '', ...props }
       type="date"
       value={value || ''}
       onChange={(e) => onChange?.(e.target.value)}
-      className={`px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      className={`px-3 py-2 border border-slate-300 rounded-xl focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 ${className}`}
       {...props}
     />
   );

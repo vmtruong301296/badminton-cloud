@@ -18,7 +18,7 @@ export default function ThousandHint({ value, onApply, exclude = [] }) {
     <button
       type="button"
       onClick={() => onApply(suggestion)}
-      className="mt-1.5 rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-500"
+      className="mt-1.5 inline-flex min-h-9 items-center rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-500"
     >
       → {suggestion.toLocaleString("vi-VN")}đ
     </button>
