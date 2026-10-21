@@ -176,3 +176,15 @@ export function isNavItemActive(item, pathname) {
     underPrefix(pathname, prefix),
   );
 }
+
+// Màn "đẩy vào" đã có thanh hành động riêng dưới đáy và nút quay lại, nên ẩn thanh tab điện thoại.
+const TAB_BAR_HIDDEN_PATHS = [
+  /^\/bills\/create$/,
+  /^\/bills\/[^/]+\/edit$/,
+  /^\/party-bills\/create$/,
+  /^\/party-bills\/[^/]+\/edit$/,
+];
+
+export function hidesTabBar(pathname) {
+  return TAB_BAR_HIDDEN_PATHS.some((pattern) => pattern.test(pathname));
+}

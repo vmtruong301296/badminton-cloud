@@ -1059,7 +1059,7 @@ export default function PartyBills() {
       <Link
         to="/party-bills/create"
         aria-label="Tạo Bill tiệc mới"
-        className="fab-enter fixed bottom-5 right-5 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-700 md:hidden"
+        className="fab-enter fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-30 sm:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-700 md:hidden"
       >
         <svg
           width="24"

@@ -1085,7 +1085,7 @@ export default function CarRentalCalculator({
       {/* Mobile: hai hành động chính dính đáy màn hình. Trang này dài (chuyến
           đi + từng phương án + chi phí chung + kết quả) nên không phải cuộn
           xuống tận cùng mới bấm được. */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 px-3 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:hidden">
         <div className="flex gap-2">
           <button
             type="button"

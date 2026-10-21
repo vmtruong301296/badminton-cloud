@@ -1,351 +1,373 @@
-import { useState } from "react";
+import { useRef, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import NavDropdown from "./NavDropdown";
+import Modal from "./ui/Modal";
+import useDismiss from "./ui/useDismiss";
+import {
+  Car,
+  ChevronDown,
+  Ellipsis,
+  LogOut,
+  Plus,
+  Receipt,
+  Settings,
+  ShieldCheck,
+  Trophy,
+  Users,
+  UtensilsCrossed,
+} from "./ui/icons";
+import {
+  NAV_ITEMS,
+  filterNavItems,
+  hidesTabBar,
+  isNavItemActive,
+  splitNavItems,
+  toTabItems,
+} from "../utils/navItems";
+
+const NAV_ICONS = {
+  receipt: Receipt,
+  utensils: UtensilsCrossed,
+  users: Users,
+  trophy: Trophy,
+  car: Car,
+  settings: Settings,
+  shield: ShieldCheck,
+  plus: Plus,
+};
+
+const iconOf = (item) => NAV_ICONS[item.icon];
+
+const roleText = (user) =>
+  user.roles?.map((r) => r.display_name).join(", ") || "Chưa có quyền";
+
+// Chữ cái đầu của tên gọi (từ cuối): "Võ Trường" -> "T"
+const initialOf = (name) => {
+  const words = (name || "").trim().split(/\s+/);
+  return (words[words.length - 1]?.[0] || "?").toUpperCase();
+};
+
+function Avatar({ name, className = "h-8 w-8" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-800 ${className}`}
+    >
+      {initialOf(name)}
+    </span>
+  );
+}
+
+const pillClass = (active) =>
+  `inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-lg px-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
+    active
+      ? "bg-slate-100 text-slate-900"
+      : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+  }`;
+
+function DesktopNavList({ items, pathname }) {
+  return items.map((item) => {
+    const active = isNavItemActive(item, pathname);
+    const IconComponent = NAV_ICONS[item.icon];
+
+    if (item.children) {
+      return (
+        <NavDropdown
+          key={item.key}
+          label={item.label}
+          icon={IconComponent}
+          items={item.children.map((child) => ({
+            ...child,
+            icon: iconOf(child),
+          }))}
+          isActive={active}
+          isItemActive={(child) => child.path === pathname}
+        />
+      );
+    }
+
+    return (
+      <Link
+        key={item.key}
+        to={item.path}
+        aria-current={active ? "page" : undefined}
+        className={pillClass(active)}
+      >
+        <IconComponent
+          className={`hidden h-4 w-4 xl:block ${active ? "text-emerald-700" : ""}`}
+        />
+        {item.label}
+      </Link>
+    );
+  });
+}
+
+function AccountMenu({ user, onLogout }) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef(null);
+  const close = useCallback(() => setOpen(false), []);
+
+  useDismiss(open, containerRef, close);
+
+  return (
+    <div ref={containerRef} className="relative hidden sm:block">
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label="Tài khoản"
+        className="flex h-10 items-center gap-2 rounded-xl pl-1 pr-2 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+      >
+        <Avatar name={user.name} />
+        <span className="hidden max-w-[10rem] truncate text-sm font-medium text-slate-700 xl:block">
+          {user.name}
+        </span>
+        <ChevronDown
+          className={`hidden h-4 w-4 text-slate-400 transition-transform lg:block ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-64 rounded-xl border border-slate-200 bg-white p-1 shadow-lg">
+          <div className="px-3 py-2">
+            <div className="break-words text-sm font-medium text-slate-900">
+              {user.name}
+            </div>
+            <div className="break-words text-xs text-slate-500">
+              {roleText(user)}
+            </div>
+          </div>
+          <div className="my-1 border-t border-slate-100" />
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+          >
+            <LogOut className="h-4 w-4" />
+            Đăng xuất
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TabLink({ item, active }) {
+  const IconComponent = NAV_ICONS[item.icon];
+
+  return (
+    <Link
+      to={item.path}
+      aria-current={active ? "page" : undefined}
+      className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 ${
+        active ? "text-emerald-700" : "text-slate-500"
+      }`}
+    >
+      <span
+        className={`flex h-7 w-14 items-center justify-center rounded-full ${active ? "bg-emerald-50" : ""}`}
+      >
+        <IconComponent className="h-[22px] w-[22px]" />
+      </span>
+      <span className="max-w-full truncate px-1 text-[11px] font-medium leading-tight">
+        {item.label}
+      </span>
+    </Link>
+  );
+}
 
 export default function Layout({ children }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [openGroups, setOpenGroups] = useState({});
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const isActive = (path) => {
-    if (path === "/master") {
-      // Active if current path starts with /master or is one of the old master paths
-      return (
-        location.pathname === "/master" ||
-        location.pathname === "/ratios" ||
-        location.pathname === "/menus" ||
-        location.pathname === "/shuttles" ||
-        location.pathname === "/payment-accounts"
-      );
-    }
-    return location.pathname === path;
-  };
+  const pathname = location.pathname;
 
   const handleLogout = async () => {
     await logout();
     navigate("/login");
   };
 
-  const handleNavClick = () => {
-    setIsDrawerOpen(false);
-  };
+  const navItems = filterNavItems(NAV_ITEMS, hasPermission);
 
-  const allNavItems = [
-    {
-      key: "bills",
-      label: "Bill cầu",
-      icon: "📊",
-      children: [
-        {
-          path: "/",
-          label: "Danh sách bill cầu",
-          icon: "📊",
-          permission: "bills.view",
-        },
-        {
-          path: "/bills/create",
-          label: "Tạo bill cầu mới",
-          icon: "➕",
-          permission: "bills.create",
-        },
-      ],
-    },
-    {
-      key: "party-bills",
-      label: "Bill tiệc",
-      icon: "🍽️",
-      children: [
-        {
-          path: "/party-bills",
-          label: "Danh sách bill tiệc",
-          icon: "🍽️",
-          permission: "party_bills.view",
-        },
-        {
-          path: "/party-bills/create",
-          label: "Tạo bill tiệc mới",
-          icon: "🎉",
-          permission: "party_bills.create",
-        },
-      ],
-    },
-    {
-      path: "/players",
-      label: "Người chơi",
-      icon: "👥",
-      permission: "users.view",
-    },
-    {
-      path: "/tournament-brackets",
-      label: "Xếp bảng",
-      icon: "🏆",
-      permission: "tournament_brackets.view",
-    },
-    {
-      path: "/car-rental",
-      label: "Thuê xe",
-      icon: "🚗",
-      permission: "car_rentals.view",
-    },
-    {
-      path: "/master",
-      label: "Master",
-      icon: "⚙️",
-      permission: null, // Will check if user has any of the master permissions
-      hasAnyPermission: [
-        "ratios.view",
-        "menus.view",
-        "shuttles.view",
-        "payment_accounts.view",
-      ],
-    },
-    { path: "/roles", label: "Quyền", icon: "🔐", permission: "roles.view" },
-  ];
+  // Desktop vừa (640–1023): 4 mục chính + "Thêm"; từ lg trở lên hiện đủ.
+  const desktopSplit = splitNavItems(navItems);
+  const desktopMore = desktopSplit.more.flatMap((item) =>
+    item.children
+      ? item.children.map((child) => ({ ...child, icon: iconOf(child) }))
+      : [{ ...item, icon: iconOf(item) }],
+  );
 
-  const canSee = (item) => {
-    if (item.hasAnyPermission) {
-      // Show if user has any of the required permissions
-      return item.hasAnyPermission.some((perm) => hasPermission(perm));
-    }
-    return !item.permission || hasPermission(item.permission);
-  };
+  // Điện thoại: thanh tab dưới đáy, nhóm trỏ thẳng vào trang danh sách.
+  const tabSplit = splitNavItems(toTabItems(navItems));
+  const moreActive = tabSplit.more.some((item) =>
+    isNavItemActive(item, pathname),
+  );
+  const showTabBar = !hidesTabBar(pathname);
 
-  // Lọc theo quyền. Với nhóm thì lọc từng mục con trước: không con nào được
-  // phép thì bỏ cả nhóm, còn đúng 1 con thì hạ cấp thành link đơn vì dropdown
-  // chỉ có một lựa chọn chỉ tổ thêm một cú bấm.
-  const navItems = allNavItems.flatMap((item) => {
-    if (!item.children) {
-      return canSee(item) ? [item] : [];
-    }
-
-    const children = item.children.filter(canSee);
-
-    if (children.length === 0) return [];
-    if (children.length === 1) return [children[0]];
-
-    return [{ ...item, children }];
-  });
-
-  const isGroupActive = (group) =>
-    group.children.some((child) => isActive(child.path));
-
-  // Chưa bấm lần nào thì nhóm đang active mở sẵn.
-  const isGroupOpen = (group) => openGroups[group.key] ?? isGroupActive(group);
-
-  const toggleGroup = (group) =>
-    setOpenGroups((prev) => ({ ...prev, [group.key]: !isGroupOpen(group) }));
+  const closeSheet = () => setSheetOpen(false);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="sticky top-0 z-30 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsDrawerOpen(true)}
-                className="sm:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
-              >
-                <svg
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-              {/* Desktop Navigation */}
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navItems.map((item) =>
-                  item.children ? (
-                    <NavDropdown
-                      key={item.key}
-                      group={item}
-                      isActive={isGroupActive(item)}
-                      isItemActive={isActive}
-                    />
-                  ) : (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                        isActive(item.path)
-                          ? "border-blue-500 text-gray-900"
-                          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="mr-2">{item.icon}</span>
-                      {item.label}
-                    </Link>
-                  )
-                )}
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {user && (
-                <>
-                  <div className="hidden sm:block text-sm text-gray-700">
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {user.roles?.map((r) => r.display_name).join(", ") ||
-                        "Chưa có quyền"}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    Đăng xuất
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
+          <Link
+            to="/"
+            className="-ml-1 flex flex-shrink-0 items-center gap-2 rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+          >
+            <img src="/favicon.svg" alt="" className="h-7 w-7" />
+            <span className="font-semibold tracking-tight text-slate-900 sm:hidden md:inline">
+              Sổ cầu lông
+            </span>
+          </Link>
 
-      {/* Mobile Drawer */}
-      {isDrawerOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 sm:hidden"
-            onClick={() => setIsDrawerOpen(false)}
-          />
-          {/* Drawer */}
-          <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-xl transform transition-transform duration-300 ease-in-out sm:hidden">
-            <div className="flex flex-col h-full">
-              {/* Drawer Header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Menu</h2>
-                <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                >
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-              {/* Drawer Content */}
-              <div className="flex-1 overflow-y-auto">
-                <nav className="p-4 space-y-1">
-                  {navItems.map((item) =>
-                    item.children ? (
-                      <div key={item.key}>
-                        <button
-                          type="button"
-                          onClick={() => toggleGroup(item)}
-                          aria-expanded={isGroupOpen(item)}
-                          className={`w-full flex items-center justify-between px-4 py-3 rounded-md text-base font-medium transition-colors ${
-                            isGroupActive(item)
-                              ? "bg-blue-50 text-blue-700"
-                              : "text-gray-700 hover:bg-gray-100"
-                          }`}
-                        >
-                          <span className="flex items-center">
-                            <span className="mr-3 text-xl">{item.icon}</span>
-                            {item.label}
-                          </span>
-                          <svg
-                            className={`h-4 w-4 transition-transform ${
-                              isGroupOpen(item) ? "rotate-180" : ""
-                            }`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 9l-7 7-7-7"
-                            />
-                          </svg>
-                        </button>
-
-                        {isGroupOpen(item) && (
-                          <div className="mt-1 ml-5 pl-2 space-y-1 border-l-2 border-slate-200">
-                            {item.children.map((child) => (
-                              <Link
-                                key={child.path}
-                                to={child.path}
-                                onClick={handleNavClick}
-                                className={`flex items-center px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                  isActive(child.path)
-                                    ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                                    : "text-gray-700 hover:bg-gray-100"
-                                }`}
-                              >
-                                <span className="mr-3 text-lg">{child.icon}</span>
-                                {child.label}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={handleNavClick}
-                        className={`flex items-center px-4 py-3 rounded-md text-base font-medium transition-colors ${
-                          isActive(item.path)
-                            ? "bg-blue-50 text-blue-700 border-l-4 border-blue-500"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                      >
-                        <span className="mr-3 text-xl">{item.icon}</span>
-                        {item.label}
-                      </Link>
-                    )
+          <nav
+            aria-label="Điều hướng chính"
+            className="ml-2 hidden min-w-0 flex-1 items-center gap-1 sm:flex"
+          >
+            <div className="hidden items-center gap-1 lg:flex">
+              <DesktopNavList items={navItems} pathname={pathname} />
+            </div>
+            <div className="flex items-center gap-1 lg:hidden">
+              <DesktopNavList items={desktopSplit.primary} pathname={pathname} />
+              {desktopMore.length > 0 && (
+                <NavDropdown
+                  label="Thêm"
+                  icon={Ellipsis}
+                  items={desktopMore}
+                  isActive={desktopSplit.more.some((item) =>
+                    isNavItemActive(item, pathname),
                   )}
-                </nav>
-              </div>
-              {/* Drawer Footer */}
-              {user && (
-                <div className="p-4 border-t border-gray-200">
-                  <div className="text-sm text-gray-700 mb-2">
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-gray-500">
-                      {user.roles?.map((r) => r.display_name).join(", ") ||
-                        "Chưa có quyền"}
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-sm text-gray-700 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
+                  isItemActive={(item) => item.path === pathname}
+                />
               )}
             </div>
+          </nav>
+
+          {user && (
+            <div className="ml-auto flex items-center sm:ml-0">
+              <AccountMenu user={user} onLogout={handleLogout} />
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                aria-label="Tài khoản"
+                className="-mr-1 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:hidden"
+              >
+                <Avatar name={user.name} className="h-9 w-9" />
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main
+        className={`mx-auto max-w-7xl sm:px-6 sm:py-6 lg:px-8 ${
+          showTabBar
+            ? "pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 sm:pb-6"
+            : "py-6"
+        }`}
+      >
+        {children}
+      </main>
+
+      {showTabBar && (
+        <nav
+          aria-label="Điều hướng chính"
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
+        >
+          <div className="flex h-16">
+            {tabSplit.primary.map((item) => (
+              <TabLink
+                key={item.key}
+                item={item}
+                active={isNavItemActive(item, pathname)}
+              />
+            ))}
+            {tabSplit.more.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setSheetOpen(true)}
+                aria-haspopup="dialog"
+                className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 ${
+                  moreActive ? "text-emerald-700" : "text-slate-500"
+                }`}
+              >
+                <span
+                  className={`flex h-7 w-14 items-center justify-center rounded-full ${moreActive ? "bg-emerald-50" : ""}`}
+                >
+                  <Ellipsis className="h-[22px] w-[22px]" />
+                </span>
+                <span className="text-[11px] font-medium leading-tight">
+                  Thêm
+                </span>
+              </button>
+            )}
           </div>
-        </>
+        </nav>
       )}
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">{children}</main>
+      <Modal
+        isOpen={sheetOpen}
+        onClose={closeSheet}
+        title={tabSplit.more.length > 0 ? "Thêm" : "Tài khoản"}
+        size="sm"
+      >
+        {tabSplit.more.length > 0 && (
+          <nav aria-label="Thêm" className="space-y-1">
+            {tabSplit.more.map((item) => {
+              const active = isNavItemActive(item, pathname);
+              const IconComponent = NAV_ICONS[item.icon];
+              return (
+                <Link
+                  key={item.key}
+                  to={item.path}
+                  onClick={closeSheet}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
+                    active
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  <IconComponent
+                    className={`h-5 w-5 ${active ? "text-emerald-700" : "text-slate-500"}`}
+                  />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+        {user && (
+          <div
+            className={
+              tabSplit.more.length > 0 ? "mt-3 border-t border-slate-100 pt-4" : ""
+            }
+          >
+            <div className="flex items-center gap-3">
+              <Avatar name={user.name} className="h-10 w-10" />
+              <div className="min-w-0">
+                <div className="break-words text-sm font-medium text-slate-900">
+                  {user.name}
+                </div>
+                <div className="break-words text-xs text-slate-500">
+                  {roleText(user)}
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="btn btn-secondary mb-1 mt-4 w-full"
+            >
+              <LogOut className="h-4 w-4" />
+              Đăng xuất
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

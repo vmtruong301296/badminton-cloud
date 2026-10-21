@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   NAV_ITEMS,
   filterNavItems,
+  hidesTabBar,
   isNavItemActive,
   splitNavItems,
   toTabItems,
@@ -161,5 +162,32 @@ describe("nhóm hạ cấp thành link đơn", () => {
       path: "/party-bills",
     });
     expect(isNavItemActive(item, "/party-bills/7")).toBe(true);
+  });
+});
+
+describe("hidesTabBar", () => {
+  it("ẩn ở các màn tạo / sửa bill (đã có thanh hành động riêng dưới đáy)", () => {
+    for (const path of [
+      "/bills/create",
+      "/bills/12/edit",
+      "/party-bills/create",
+      "/party-bills/7/edit",
+    ]) {
+      expect(hidesTabBar(path)).toBe(true);
+    }
+  });
+
+  it("hiện ở các màn còn lại, kể cả chi tiết bill và thuê xe", () => {
+    for (const path of [
+      "/",
+      "/bills/12",
+      "/party-bills",
+      "/party-bills/7",
+      "/car-rental",
+      "/players",
+      "/master",
+    ]) {
+      expect(hidesTabBar(path)).toBe(false);
+    }
   });
 });
