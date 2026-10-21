@@ -10,6 +10,23 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import PartyBillExport from "../../components/party/PartyBillExport";
+import PageHeader from "../../components/ui/PageHeader";
+import EmptyState from "../../components/ui/EmptyState";
+import {
+  Car,
+  Loader,
+  Pencil,
+  Trash2,
+  UtensilsCrossed,
+} from "../../components/ui/icons";
+import {
+  Calendar,
+  Check,
+  Circle,
+  Clock,
+  Download,
+  Send,
+} from "../../components/party/partyIcons";
 import {
   nodeToBlob,
   nodeToPng,
@@ -478,7 +495,7 @@ export default function PartyBillDetail() {
 
   if (loading) {
     return (
-      <div className="px-2 sm:px-0">
+      <div className="px-4 sm:px-0">
         <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-card">
           Đang tải bill tiệc…
         </div>
@@ -488,22 +505,21 @@ export default function PartyBillDetail() {
 
   if (!bill) {
     return (
-      <div className="px-2 sm:px-0">
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-card">
-          <h3 className="font-display text-xl font-semibold text-slate-900">
-            Không tìm thấy bill tiệc
-          </h3>
-          <p className="mt-1.5 text-sm text-slate-500">
-            Bill này có thể đã bị xóa hoặc không tồn tại.
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate("/party-bills")}
-            className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-card transition hover:bg-slate-50 hover:shadow-card-hover"
-          >
-            Quay lại danh sách
-          </button>
-        </div>
+      <div className="px-4 sm:px-0">
+        <EmptyState
+          icon={UtensilsCrossed}
+          title="Không tìm thấy bill tiệc"
+          description="Bill này có thể đã bị xóa hoặc không tồn tại."
+          action={
+            <button
+              type="button"
+              onClick={() => navigate("/party-bills")}
+              className="btn btn-secondary"
+            >
+              Quay lại danh sách
+            </button>
+          }
+        />
       </div>
     );
   }
@@ -541,232 +557,116 @@ export default function PartyBillDetail() {
   });
 
   return (
-    <div className="px-2 sm:px-0 pb-6 md:pb-0">
-      <header className="mb-5 sm:mb-7">
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={() => navigate("/party-bills")}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:h-10 sm:px-3 sm:text-sm"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            Danh sách
-          </button>
-          <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold sm:text-xs ${
-              allPaid
-                ? "bg-emerald-100 text-emerald-800"
-                : hasPaidParticipants
-                  ? "bg-amber-100 text-amber-800"
-                  : "bg-slate-100 text-slate-700"
-            }`}
-          >
+    <div className="px-4 pb-6 sm:px-0 md:pb-0">
+      <PageHeader
+        back={{ to: "/party-bills", label: "Danh sách" }}
+        title={bill.name || "Bill tiệc"}
+        description={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <span
-              className={`h-1.5 w-1.5 rounded-full ${
+              className={`badge gap-1.5 ${
                 allPaid
-                  ? "bg-emerald-500"
+                  ? "badge-emerald"
                   : hasPaidParticipants
-                    ? "bg-amber-500"
-                    : "bg-slate-400"
+                    ? "badge-amber"
+                    : "badge-slate"
               }`}
-              aria-hidden
-            />
-            {allPaid
-              ? "Đã thanh toán"
-              : hasPaidParticipants
-                ? "Thanh toán 1 phần"
-                : "Chưa thanh toán"}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  allPaid
+                    ? "bg-emerald-500"
+                    : hasPaidParticipants
+                      ? "bg-amber-500"
+                      : "bg-slate-400"
+                }`}
+                aria-hidden
+              />
+              {allPaid
+                ? "Đã thanh toán"
+                : hasPaidParticipants
+                  ? "Thanh toán 1 phần"
+                  : "Chưa thanh toán"}
+            </span>
+            <span>Bill tiệc #{bill.id}</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
+              {formatDate(bill.date)}
+            </span>
           </span>
-        </div>
-
-        <div className="flex items-end justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="hidden text-xs font-medium uppercase tracking-[0.18em] text-emerald-700/80 sm:block">
-              Bill tiệc #{bill.id}
-            </p>
-            <h1 className="font-display mt-0.5 truncate text-xl font-semibold leading-tight text-slate-900 sm:mt-1 sm:text-3xl">
-              {bill.name || "Bill tiệc"}
-            </h1>
-            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
-              <span className="inline-flex items-center gap-1.5">
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" />
-                  <path d="M16 2v4M8 2v4M3 10h18" />
-                </svg>
-                {formatDate(bill.date)}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleExportBill}
-            disabled={exporting}
-            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
-          >
-            {exporting ? (
-              <>
-                <svg
-                  className="animate-spin"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M21 12a9 9 0 11-6.219-8.56" />
-                </svg>
-                Đang xuất…
-              </>
-            ) : (
-              <>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                </svg>
-                Xuất Bill
-              </>
-            )}
-          </button>
-          <button
-            type="button"
-            onClick={handleSendTelegramClick}
-            disabled={sendingTelegram || exporting}
-            className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-sky-200 hover:bg-sky-50 hover:text-sky-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:h-11 sm:flex-none sm:px-4"
-          >
-            {sendingTelegram ? (
-              <>
-                <svg
-                  className="animate-spin"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M21 12a9 9 0 11-6.219-8.56" />
-                </svg>
-                Đang gửi…
-              </>
-            ) : (
-              <>
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                </svg>
-                Gửi Telegram
-              </>
-            )}
-          </button>
-          {!allPaid && (
+        }
+        actions={
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
             <button
               type="button"
-              onClick={() => navigate(`/party-bills/${id}/edit`)}
-              className="inline-flex h-10 flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-card transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-800 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2 sm:h-11 sm:flex-none sm:px-4"
+              onClick={handleExportBill}
+              disabled={exporting}
+              className="btn btn-primary flex-1 sm:flex-none"
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-              </svg>
-              Sửa bill
+              {exporting ? (
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                  Đang xuất…
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  Xuất Bill
+                </>
+              )}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setDeleteConfirm(true)}
-            aria-label="Xóa bill"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 focus-visible:ring-offset-2 sm:h-11 sm:w-11"
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
+            <button
+              type="button"
+              onClick={handleSendTelegramClick}
+              disabled={sendingTelegram || exporting}
+              className="btn btn-secondary flex-1 sm:flex-none"
             >
-              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-            </svg>
-          </button>
-        </div>
-      </header>
+              {sendingTelegram ? (
+                <>
+                  <Loader className="h-4 w-4 animate-spin" />
+                  Đang gửi…
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Gửi Telegram
+                </>
+              )}
+            </button>
+            {!allPaid && (
+              <button
+                type="button"
+                onClick={() => navigate(`/party-bills/${id}/edit`)}
+                className="btn btn-secondary flex-1 sm:flex-none"
+              >
+                <Pencil className="h-4 w-4" />
+                Sửa bill
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              aria-label="Xóa bill"
+              className="btn btn-secondary w-full shrink-0 !px-0 hover:!border-rose-200 hover:!bg-rose-50 hover:!text-rose-700 sm:w-10"
+            >
+              <Trash2 className="h-[18px] w-[18px]" />
+            </button>
+          </div>
+        }
+      />
 
       {/* Info & Extras */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:mb-6 sm:gap-4 lg:grid-cols-10">
         <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card lg:col-span-6">
           <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <p className="text-sm font-semibold text-slate-900">
               Thông tin Bill
             </p>
           </div>
           <div className="p-4 sm:p-5">
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4">
               <div>
-                <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <div className="text-xs font-medium text-slate-500">
                   Tiền tiệc
                 </div>
                 <div className="font-tabular mt-1 text-sm font-semibold text-slate-900 sm:text-lg">
@@ -774,7 +674,7 @@ export default function PartyBillDetail() {
                 </div>
               </div>
               <div>
-                <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <div className="text-xs font-medium text-slate-500">
                   Chi phí thêm
                 </div>
                 <div className="font-tabular mt-1 text-sm font-semibold text-slate-900 sm:text-lg">
@@ -782,7 +682,7 @@ export default function PartyBillDetail() {
                 </div>
               </div>
               <div className="sm:order-last">
-                <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
+                <div className="text-xs font-medium text-slate-500">
                   Đơn giá / mức
                 </div>
                 <div className="font-tabular mt-1 text-sm font-semibold text-slate-900 sm:text-lg">
@@ -790,7 +690,7 @@ export default function PartyBillDetail() {
                 </div>
               </div>
               <div className="col-span-3 rounded-xl bg-emerald-50/70 p-3 sm:col-span-1 sm:order-3">
-                <div className="text-[11px] font-medium uppercase tracking-wider text-emerald-700">
+                <div className="text-xs font-medium text-emerald-700">
                   Tổng tiệc
                 </div>
                 <div className="font-display font-tabular mt-1 text-2xl font-semibold text-emerald-700">
@@ -800,7 +700,7 @@ export default function PartyBillDetail() {
             </div>
             {bill.note && (
               <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3 text-sm">
-                <div className="mb-0.5 text-[11px] font-semibold uppercase tracking-wider text-amber-700">
+                <div className="mb-0.5 text-xs font-medium text-amber-700">
                   Ghi chú
                 </div>
                 <div className="text-slate-700">{bill.note}</div>
@@ -812,7 +712,7 @@ export default function PartyBillDetail() {
         {bill.extras && bill.extras.length > 0 && (
           <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card lg:col-span-4">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              <p className="text-sm font-semibold text-slate-900">
                 Chi phí thêm
               </p>
               <span className="font-tabular text-xs font-semibold text-slate-600">
@@ -826,18 +726,20 @@ export default function PartyBillDetail() {
                   className="flex items-center justify-between py-2.5 text-sm"
                 >
                   <span className="text-slate-700">
-                    {ex.car_rental_comparison_id ? "🚗 " : ""}
+                    {ex.car_rental_comparison_id && (
+                      <Car className="mr-1.5 inline-block h-4 w-4 align-[-3px] text-slate-500" />
+                    )}
                     {ex.name}
                     {ex.car_rental_comparison_id && (
                       <Link
                         to="/car-rental"
-                        className="ml-2 text-xs text-blue-600 underline"
+                        className="mt-0.5 block pl-[22px] text-xs text-blue-600 underline"
                       >
                         xem chuyến xe
                       </Link>
                     )}
                   </span>
-                  <span className="font-tabular font-semibold text-slate-900">
+                  <span className="font-tabular shrink-0 pl-3 font-semibold text-slate-900">
                     {formatCurrencyRounded(ex.amount)}
                   </span>
                 </div>
@@ -850,7 +752,7 @@ export default function PartyBillDetail() {
       {/* Participants */}
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+          <p className="text-sm font-semibold text-slate-900">
             Người tham gia
           </p>
           <span className="font-tabular text-xs text-slate-500">
@@ -862,7 +764,7 @@ export default function PartyBillDetail() {
         <div className="hidden md:block overflow-x-auto p-2 sm:p-3">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="border-b text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              <tr className="border-b text-xs font-medium text-slate-500">
                 <th className="px-2 py-2 text-left">STT</th>
                 <th className="px-2 py-2 text-left">Tên</th>
                 <th className="px-2 py-2 text-right">Mức tính</th>
@@ -895,7 +797,7 @@ export default function PartyBillDetail() {
                           {p.name}
                         </span>
                         {p.user?.gender === "female" && (
-                          <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-[10px] font-semibold text-pink-700">
+                          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-700">
                             Nữ
                           </span>
                         )}
@@ -917,15 +819,18 @@ export default function PartyBillDetail() {
                       {formatCurrencyRounded(totalAmount)}
                     </td>
                     <td className="px-2 py-3 text-center">
-                      <input
-                        type="checkbox"
-                        checked={p.is_paid || false}
-                        disabled={payingIds.has(p.id)}
-                        onChange={() => handleMarkPayment(p)}
-                        className="h-5 w-5 cursor-pointer accent-emerald-600"
-                      />
+                      <label className="inline-flex h-10 w-10 cursor-pointer items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={p.is_paid || false}
+                          disabled={payingIds.has(p.id)}
+                          onChange={() => handleMarkPayment(p)}
+                          aria-label={`Đánh dấu ${p.name} đã thanh toán`}
+                          className="h-5 w-5 cursor-pointer accent-emerald-700"
+                        />
+                      </label>
                       {p.paid_at && (
-                        <div className="mt-1 text-[10px] text-slate-500">
+                        <div className="mt-1 text-xs text-slate-500">
                           {new Date(p.paid_at).toLocaleString("vi-VN")}
                         </div>
                       )}
@@ -991,7 +896,7 @@ export default function PartyBillDetail() {
                           {p.name}
                         </h4>
                         {p.user?.gender === "female" && (
-                          <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-[10px] font-semibold text-pink-700">
+                          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-700">
                             Nữ
                           </span>
                         )}
@@ -1021,23 +926,11 @@ export default function PartyBillDetail() {
                           onChange={() => handleMarkPayment(p)}
                           className="sr-only"
                         />
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                        >
-                          {p.is_paid ? (
-                            <path d="M20 6L9 17l-5-5" />
-                          ) : (
-                            <circle cx="12" cy="12" r="9" />
-                          )}
-                        </svg>
+                        {p.is_paid ? (
+                          <Check className="h-4 w-4" />
+                        ) : (
+                          <Circle className="h-4 w-4" />
+                        )}
                         {p.is_paid ? "Đã thanh toán" : "Đánh dấu TT"}
                       </label>
                     </div>
@@ -1045,7 +938,7 @@ export default function PartyBillDetail() {
 
                   <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2.5 text-xs">
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                      <div className="text-xs text-slate-500">
                         Chia bill
                       </div>
                       <div className="font-tabular mt-0.5 font-semibold text-slate-900">
@@ -1053,7 +946,7 @@ export default function PartyBillDetail() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                      <div className="text-xs text-slate-500">
                         Đã chi
                       </div>
                       <div className="font-tabular mt-0.5 font-semibold text-slate-900">
@@ -1061,7 +954,7 @@ export default function PartyBillDetail() {
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                      <div className="text-xs text-slate-500">
                         Tiền thêm
                       </div>
                       <div className="font-tabular mt-0.5 font-semibold text-slate-900">
@@ -1072,7 +965,7 @@ export default function PartyBillDetail() {
 
                   {p.note && (
                     <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-600">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      <div className="text-xs font-medium text-slate-500">
                         Ghi chú
                       </div>
                       <div className="mt-0.5">{p.note}</div>
@@ -1080,21 +973,8 @@ export default function PartyBillDetail() {
                   )}
 
                   {p.paid_at && (
-                    <div className="mt-2 flex items-center gap-1 text-[11px] text-emerald-700">
-                      <svg
-                        width="12"
-                        height="12"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.5"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <circle cx="12" cy="12" r="10" />
-                        <polyline points="12 6 12 12 16 14" />
-                      </svg>
+                    <div className="mt-2 flex items-center gap-1 text-xs text-emerald-700">
+                      <Clock className="h-3.5 w-3.5" />
                       {new Date(p.paid_at).toLocaleString("vi-VN")}
                     </div>
                   )}
@@ -1112,7 +992,7 @@ export default function PartyBillDetail() {
           {participants.length > 0 && (
             <div className="mt-2 rounded-xl bg-emerald-50/70 px-3 py-2.5">
               <div className="flex items-baseline justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                <span className="text-sm font-medium text-emerald-700">
                   Tổng người tham gia
                 </span>
                 <span className="font-display font-tabular text-xl font-semibold text-emerald-700">
