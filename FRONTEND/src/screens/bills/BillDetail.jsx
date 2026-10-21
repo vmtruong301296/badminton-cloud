@@ -736,7 +736,7 @@ export default function BillDetail() {
               type="button"
               onClick={handleExportBill}
               disabled={exporting}
-              className="btn btn-primary flex-1 whitespace-nowrap sm:flex-none"
+              className="btn btn-primary flex-1 sm:flex-none"
             >
               {exporting ? (
                 <>
@@ -754,7 +754,7 @@ export default function BillDetail() {
               type="button"
               onClick={handleSendTelegramClick}
               disabled={sendingTelegram || exporting}
-              className="btn btn-secondary flex-1 whitespace-nowrap sm:flex-none"
+              className="btn btn-secondary flex-1 sm:flex-none"
             >
               {sendingTelegram ? (
                 <>
@@ -772,7 +772,7 @@ export default function BillDetail() {
               <button
                 type="button"
                 onClick={() => navigate(`/bills/${id}/edit`)}
-                className="btn btn-secondary flex-1 whitespace-nowrap sm:flex-none"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 <Pencil className="h-4 w-4" />
                 Sửa bill
@@ -782,7 +782,7 @@ export default function BillDetail() {
               <button
                 type="button"
                 onClick={() => navigate(`/bills/create?parent_id=${id}`)}
-                className="btn btn-secondary flex-1 whitespace-nowrap sm:flex-none"
+                className="btn btn-secondary flex-1 sm:flex-none"
               >
                 <Plus className="h-4 w-4" />
                 Bill con
@@ -792,7 +792,7 @@ export default function BillDetail() {
               type="button"
               onClick={handleDeleteClick}
               aria-label="Xóa bill"
-              className="btn btn-secondary w-11 shrink-0 !px-0 text-rose-600 sm:w-10"
+              className="btn btn-danger-soft btn-icon shrink-0"
             >
               <Trash2 className="h-[18px] w-[18px]" />
             </button>

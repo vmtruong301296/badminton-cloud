@@ -714,7 +714,7 @@ export default function CarRentalCalculator({
                       type="button"
                       onClick={() => removeOption(index)}
                       aria-label={`Xóa ${option.name || `Phương án ${index + 1}`}`}
-                      className="btn btn-ghost btn-sm flex-shrink-0 !text-rose-600 hover:!bg-rose-50"
+                      className="btn btn-danger-ghost btn-sm flex-shrink-0"
                     >
                       Xóa
                     </button>
@@ -950,7 +950,7 @@ export default function CarRentalCalculator({
                 type="button"
                 onClick={() => removeSharedCost(index)}
                 aria-label={`Xóa khoản chi ${row.name || index + 1}`}
-                className="btn btn-ghost !px-0 w-11 !text-rose-600 hover:!bg-rose-50 sm:w-auto sm:!px-3"
+                className="btn btn-danger-ghost btn-icon sm:w-auto sm:px-3"
               >
                 <X className="h-4 w-4 sm:hidden" />
                 <span className="hidden sm:inline">Xóa</span>

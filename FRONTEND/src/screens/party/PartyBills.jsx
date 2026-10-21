@@ -732,7 +732,7 @@ export default function PartyBills() {
                             <Link
                               to={`/party-bills/${bill.id}/edit`}
                               aria-label={`Sửa bill #${bill.id}`}
-                              className="btn btn-secondary w-11 !px-0"
+                              className="btn btn-secondary btn-icon"
                             >
                               <Pencil className="h-[18px] w-[18px]" />
                             </Link>
@@ -743,7 +743,7 @@ export default function PartyBills() {
                               setDeleteConfirm({ isOpen: true, id: bill.id })
                             }
                             aria-label={`Xóa bill #${bill.id}`}
-                            className="btn btn-secondary w-11 !px-0 hover:!border-rose-200 hover:!bg-rose-50 hover:!text-rose-700"
+                            className="btn btn-danger-soft btn-icon"
                           >
                             <Trash2 className="h-[18px] w-[18px]" />
                           </button>

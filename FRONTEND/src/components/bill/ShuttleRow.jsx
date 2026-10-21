@@ -123,7 +123,7 @@ export default function ShuttleRow({
             type="button"
             onClick={onRemove}
             aria-label="Xóa loại cầu"
-            className="btn btn-secondary w-11 !px-0 text-slate-500 hover:text-rose-600 sm:w-10"
+            className="btn btn-danger-soft btn-icon"
           >
             <X className="h-4 w-4" />
           </button>

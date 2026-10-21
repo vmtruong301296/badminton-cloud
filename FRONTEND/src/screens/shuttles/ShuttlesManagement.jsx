@@ -425,7 +425,7 @@ export default function ShuttlesManagement() {
                           <button
                             type="button"
                             onClick={() => deletePriceTier(row.id)}
-                            className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                            className="btn btn-danger-ghost btn-sm"
                           >
                             Xóa
                           </button>
@@ -632,7 +632,7 @@ export default function ShuttlesManagement() {
                               <button
                                 type="button"
                                 onClick={() => handleDelete(shuttle.id)}
-                                className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                                className="btn btn-danger-ghost btn-sm"
                               >
                                 Xóa
                               </button>
@@ -702,7 +702,7 @@ export default function ShuttlesManagement() {
                         <button
                           type="button"
                           onClick={() => handleDelete(shuttle.id)}
-                          className="btn btn-secondary btn-sm min-w-[100px] flex-1 !border-rose-200 !text-rose-600 hover:!bg-rose-50"
+                          className="btn btn-danger-soft btn-sm min-w-[100px] flex-1"
                         >
                           Xóa
                         </button>

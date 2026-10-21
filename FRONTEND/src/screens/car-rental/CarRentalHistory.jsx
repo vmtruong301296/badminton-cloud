@@ -223,7 +223,7 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                       type="button"
                       onClick={() => handleDelete(item)}
                       disabled={deletingId === item.id}
-                      className="btn btn-ghost !text-rose-600 hover:!bg-rose-50"
+                      className="btn btn-danger-ghost"
                     >
                       {deletingId === item.id ? "Đang xóa..." : "Xóa"}
                     </button>

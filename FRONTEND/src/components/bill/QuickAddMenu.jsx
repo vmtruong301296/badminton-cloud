@@ -73,7 +73,7 @@ export default function QuickAddMenu({ menus = [], onCreated }) {
       <button
         type="button"
         onClick={openModal}
-        className="btn btn-secondary btn-sm whitespace-nowrap"
+        className="btn btn-secondary btn-sm"
       >
         <Plus className="h-4 w-4" />
         Thêm nhanh menu

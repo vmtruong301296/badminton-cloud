@@ -645,7 +645,7 @@ export default function PartyBillDetail() {
               type="button"
               onClick={() => setDeleteConfirm(true)}
               aria-label="Xóa bill"
-              className="btn btn-secondary w-full shrink-0 !px-0 hover:!border-rose-200 hover:!bg-rose-50 hover:!text-rose-700 sm:w-10"
+              className="btn btn-danger-soft btn-icon w-full shrink-0 sm:w-10"
             >
               <Trash2 className="h-[18px] w-[18px]" />
             </button>

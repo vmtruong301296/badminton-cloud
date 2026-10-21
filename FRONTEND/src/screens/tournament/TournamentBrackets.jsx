@@ -437,7 +437,7 @@ export default function TournamentBrackets() {
                           <button
                             onClick={() => handleDeletePlayer(player.id)}
                             disabled={player.brackets && player.brackets.length > 0}
-                            className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50 disabled:!text-slate-300 disabled:hover:!bg-transparent"
+                            className="btn btn-danger-ghost btn-sm"
                           >
                             Xóa
                           </button>
@@ -478,7 +478,7 @@ export default function TournamentBrackets() {
                       <button
                         onClick={() => handleDeletePlayer(player.id)}
                         disabled={player.brackets && player.brackets.length > 0}
-                        className="btn btn-secondary btn-sm w-full !border-rose-200 !text-rose-600 hover:!bg-rose-50 disabled:!border-slate-200 disabled:!text-slate-300 disabled:hover:!bg-white"
+                        className="btn btn-danger-soft btn-sm w-full"
                       >
                         Xóa
                       </button>

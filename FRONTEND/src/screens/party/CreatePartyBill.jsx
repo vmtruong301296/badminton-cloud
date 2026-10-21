@@ -364,7 +364,7 @@ export default function CreatePartyBill() {
                       type="button"
                       onClick={() => removeExtra(idx)}
                       aria-label="Xóa chi phí"
-                      className="btn btn-secondary col-span-2 w-full !px-0 hover:!border-rose-200 hover:!bg-rose-50 hover:!text-rose-700 sm:col-span-1 sm:order-3"
+                      className="btn btn-danger-soft btn-icon col-span-2 w-full sm:col-span-1 sm:order-3"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

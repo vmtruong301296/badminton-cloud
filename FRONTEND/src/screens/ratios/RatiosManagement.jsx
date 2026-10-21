@@ -211,7 +211,7 @@ export default function RatiosManagement() {
                         </button>
                         <button
                           onClick={() => handleDelete(ratio.id)}
-                          className="btn btn-ghost btn-sm !text-rose-600 hover:!bg-rose-50"
+                          className="btn btn-danger-ghost btn-sm"
                         >
                           Xóa
                         </button>
@@ -245,7 +245,7 @@ export default function RatiosManagement() {
                   </button>
                   <button
                     onClick={() => handleDelete(ratio.id)}
-                    className="btn btn-secondary btn-sm flex-1 !border-rose-200 !text-rose-600 hover:!bg-rose-50"
+                    className="btn btn-danger-soft btn-sm flex-1"
                   >
                     Xóa
                   </button>

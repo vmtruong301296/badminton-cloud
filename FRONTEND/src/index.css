@@ -45,7 +45,7 @@ body {
    (docs/superpowers/specs/2026-10-21-giao-dien-moi-design.md, mục 5.4) */
 @layer components {
   .btn {
-    @apply inline-flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition sm:h-10;
+    @apply inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition sm:h-10;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1;
     @apply disabled:cursor-not-allowed disabled:opacity-50;
   }
@@ -61,8 +61,22 @@ body {
   .btn-danger {
     @apply bg-rose-600 text-white hover:bg-rose-700;
   }
+  /* Xóa nhẹ: viền và chữ rose, nền trắng; dùng cho nút Xóa trên thẻ / hàng */
+  .btn-danger-soft {
+    @apply border border-rose-200 bg-white text-rose-600 hover:bg-rose-50;
+    @apply disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white;
+  }
+  /* Xóa không viền (nút chữ trong bảng / hàng) */
+  .btn-danger-ghost {
+    @apply text-rose-600 hover:bg-rose-50;
+    @apply disabled:text-slate-300 disabled:hover:bg-transparent;
+  }
   .btn-sm {
     @apply relative h-9 px-3 sm:h-9;
+  }
+  /* Nút vuông chỉ có biểu tượng: 44 px trên điện thoại, 40 px từ sm. Nhớ aria-label. */
+  .btn-icon {
+    @apply w-11 px-0 sm:w-10;
   }
   /* Nút nhỏ vẫn có vùng chạm >= 44 px trên điện thoại */
   @media (max-width: 639px) {

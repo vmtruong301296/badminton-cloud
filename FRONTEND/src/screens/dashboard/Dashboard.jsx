@@ -948,7 +948,7 @@ export default function Dashboard() {
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteClick(mainBill.id)}
-                                  className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                  className="btn btn-danger-ghost btn-sm"
                                 >
                                   Xóa
                                 </button>
@@ -1019,7 +1019,7 @@ export default function Dashboard() {
                                       onClick={() =>
                                         handleDeleteClick(subBill.id)
                                       }
-                                      className="btn btn-ghost btn-sm text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                      className="btn btn-danger-ghost btn-sm"
                                     >
                                       Xóa
                                     </button>
@@ -1127,7 +1127,7 @@ export default function Dashboard() {
                               type="button"
                               onClick={() => handleDeleteClick(mainBill.id)}
                               aria-label={`Xóa bill #${mainBill.id}`}
-                              className="btn btn-secondary w-11 !px-0 text-rose-600"
+                              className="btn btn-danger-soft btn-icon"
                             >
                               <Trash2 className="h-5 w-5" />
                             </button>
@@ -1210,7 +1210,7 @@ export default function Dashboard() {
                                   type="button"
                                   onClick={() => handleDeleteClick(subBill.id)}
                                   aria-label={`Xóa bill con #${subBill.id}`}
-                                  className="btn btn-secondary w-11 !px-0 text-rose-600"
+                                  className="btn btn-danger-soft btn-icon"
                                 >
                                   <Trash2 className="h-5 w-5" />
                                 </button>
