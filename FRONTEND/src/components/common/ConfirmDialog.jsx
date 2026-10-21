@@ -1,6 +1,18 @@
 import Modal from "../ui/Modal";
 
-export default function ConfirmDialog({ isOpen, onClose, onConfirm, title, message }) {
+/**
+ * Hộp xác nhận. Mặc định là xác nhận xóa (nút "Xóa" màu rose); việc khác thì truyền
+ * confirmLabel và confirmVariant="primary".
+ */
+export default function ConfirmDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  message,
+  confirmLabel = "Xóa",
+  confirmVariant = "danger",
+}) {
   return (
     <Modal
       isOpen={isOpen}
@@ -19,9 +31,9 @@ export default function ConfirmDialog({ isOpen, onClose, onConfirm, title, messa
           <button
             type="button"
             onClick={onConfirm}
-            className="btn btn-danger flex-1 sm:flex-none"
+            className={`btn ${confirmVariant === "primary" ? "btn-primary" : "btn-danger"} flex-1 sm:flex-none`}
           >
-            Xóa
+            {confirmLabel}
           </button>
         </div>
       }
