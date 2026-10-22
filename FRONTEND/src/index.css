@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --color-surface: #fafaf7;
+  --color-surface: #f8fafc;
   --color-ink: #0f172a;
 }
 
@@ -12,24 +12,122 @@ body {
   background: var(--color-surface);
   color: var(--color-ink);
   font-family:
-    "DM Sans",
+    "Inter",
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: "ss01", "cv11";
 }
 
 .font-display {
-  font-family: "Fraunces", Georgia, serif;
-  font-optical-sizing: auto;
-  letter-spacing: -0.01em;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .font-tabular {
   font-variant-numeric: tabular-nums;
+}
+
+/* Ảnh bill xuất ra (Arial) trước đây thừa hưởng bộ tính năng chữ của body; giữ nguyên
+   để ảnh gửi Telegram không đổi một điểm ảnh sau khi đổi phông giao diện. */
+#bill-export {
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* Class dùng chung của hệ thống thiết kế mới
+   (docs/superpowers/specs/2026-10-21-giao-dien-moi-design.md, mục 5.4) */
+@layer components {
+  .btn {
+    @apply inline-flex h-11 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-semibold transition sm:h-10;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1;
+    @apply disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-emerald-700 text-white hover:bg-emerald-800 active:bg-emerald-900;
+  }
+  .btn-secondary {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50;
+  }
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-slate-100;
+  }
+  .btn-danger {
+    @apply bg-rose-600 text-white hover:bg-rose-700;
+  }
+  /* Xóa nhẹ: viền và chữ rose, nền trắng; dùng cho nút Xóa trên thẻ / hàng */
+  .btn-danger-soft {
+    @apply border border-rose-200 bg-white text-rose-600 hover:bg-rose-50;
+    @apply disabled:border-slate-200 disabled:text-slate-300 disabled:hover:bg-white;
+  }
+  /* Xóa không viền (nút chữ trong bảng / hàng) */
+  .btn-danger-ghost {
+    @apply text-rose-600 hover:bg-rose-50;
+    @apply disabled:text-slate-300 disabled:hover:bg-transparent;
+  }
+  .btn-sm {
+    @apply relative h-9 px-3 sm:h-9;
+  }
+  /* Nút vuông chỉ có biểu tượng: 44 px trên điện thoại, 40 px từ sm. Nhớ aria-label. */
+  .btn-icon {
+    @apply w-11 px-0 sm:w-10;
+  }
+  /* Nút nhỏ vẫn có vùng chạm >= 44 px trên điện thoại */
+  @media (max-width: 639px) {
+    .btn-sm::after {
+      content: "";
+      position: absolute;
+      inset: -4px 0;
+    }
+  }
+
+  /* Tab trong màn (spec 5.7): khung xám, tab đang chọn là viên trắng */
+  .tab-list {
+    @apply mb-5 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1 sm:inline-flex sm:max-w-full;
+  }
+  .tab {
+    @apply h-11 flex-1 whitespace-nowrap rounded-lg px-2 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:h-9 sm:flex-none sm:px-4;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  .tab[aria-selected="true"] {
+    @apply bg-white text-slate-900 shadow-sm;
+  }
+
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-slate-700;
+  }
+  .field-input {
+    @apply block h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 sm:h-10 sm:text-sm;
+  }
+
+  .card {
+    @apply rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:p-6;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-emerald {
+    @apply bg-emerald-50 text-emerald-800;
+  }
+  .badge-amber {
+    @apply bg-amber-50 text-amber-800;
+  }
+  .badge-rose {
+    @apply bg-rose-50 text-rose-700;
+  }
+  .badge-sky {
+    @apply bg-sky-50 text-sky-800;
+  }
+  .badge-slate {
+    @apply bg-slate-100 text-slate-700;
+  }
 }
 
 @keyframes shimmer {
@@ -66,4 +164,44 @@ body {
 
 .fab-enter {
   animation: fab-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Hộp thoại: bottom sheet trượt lên (điện thoại), hộp giữa màn hiện dần (desktop) */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-backdrop {
+  animation: modal-fade 0.15s ease-out both;
+}
+
+.modal-panel {
+  animation: sheet-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 640px) {
+  .modal-panel {
+    animation: modal-fade 0.15s ease-out both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-panel {
+    animation: none;
+  }
 }

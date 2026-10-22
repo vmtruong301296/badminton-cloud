@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CarRentalCalculator from "./CarRentalCalculator";
 import CarRentalHistory from "./CarRentalHistory";
+import PageHeader from "../../components/ui/PageHeader";
 
 const TABS = [
   { key: "calculator", label: "Tính toán" },
@@ -24,27 +25,25 @@ export default function CarRentalComparison() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-3 sm:p-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          🚗 So sánh chi phí thuê xe
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Nhập chuyến đi và các phương án thuê để xem phương án nào rẻ hơn.
-        </p>
-      </div>
+    <div className="max-w-5xl px-4 sm:px-0">
+      <PageHeader
+        title="So sánh chi phí thuê xe"
+        description="Nhập chuyến đi và các phương án thuê để xem phương án nào rẻ hơn."
+      />
 
-      <div className="flex gap-1 border-b border-slate-200 mb-4">
+      <div
+        role="tablist"
+        aria-label="So sánh chi phí thuê xe"
+        className="tab-list"
+      >
         {TABS.map((item) => (
           <button
             key={item.key}
             type="button"
+            role="tab"
+            aria-selected={tab === item.key}
             onClick={() => setTab(item.key)}
-            className={`px-4 py-2 -mb-px border-b-2 font-medium transition-colors ${
-              tab === item.key
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
+            className="tab"
           >
             {item.label}
           </button>

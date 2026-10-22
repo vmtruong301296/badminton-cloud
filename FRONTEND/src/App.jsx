@@ -21,6 +21,9 @@ import EditPartyBill from "./screens/party/EditPartyBill";
 import PartyBillDetail from "./screens/party/PartyBillDetail";
 import TournamentBrackets from "./screens/tournament/TournamentBrackets";
 import CarRentalComparison from "./screens/car-rental/CarRentalComparison";
+import EmptyState from "./components/ui/EmptyState";
+import StatusScreen from "./components/ui/StatusScreen";
+import { Lock, Loader, WifiOff } from "./components/ui/icons";
 
 function HomeRedirect() {
   const { hasPermission } = useAuth();
@@ -39,8 +42,11 @@ function HomeRedirect() {
 
   // Fallback: no relevant permission
   return (
-    <div className="p-6 text-center text-gray-600">
-      Bạn chưa được cấp quyền truy cập bất kỳ chức năng nào.
+    <div className="px-4 sm:px-0">
+      <EmptyState
+        icon={Lock}
+        title="Bạn chưa được cấp quyền truy cập bất kỳ chức năng nào."
+      />
     </div>
   );
 }
@@ -50,9 +56,11 @@ function LoginRoute() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Đang tải...</div>
-      </div>
+      <StatusScreen
+        icon={Loader}
+        spin
+        title="Đang tải..."
+      />
     );
   }
 
@@ -81,22 +89,17 @@ function MasterRouteGuard({ children }) {
 
 function ConnectionError({ onRetry }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="text-center max-w-sm">
-        <div className="text-red-600 text-xl font-semibold mb-2">
-          Không kết nối được máy chủ
-        </div>
-        <div className="text-gray-600 mb-4">
-          Máy chủ phản hồi chậm hoặc không truy cập được. Vui lòng thử lại.
-        </div>
-        <button
-          onClick={onRetry}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
+    <StatusScreen
+      icon={WifiOff}
+      tone="rose"
+      title="Không kết nối được máy chủ"
+      description="Máy chủ phản hồi chậm hoặc không truy cập được. Vui lòng thử lại."
+      action={
+        <button onClick={onRetry} className="btn btn-primary w-full">
           Thử lại
         </button>
-      </div>
-    </div>
+      }
+    />
   );
 }
 

@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { playerListsApi, tournamentPlayersApi, bracketsApi } from '../../services/api';
+import PageHeader from '../../components/ui/PageHeader';
+import Modal from '../../components/ui/Modal';
+import EmptyState from '../../components/ui/EmptyState';
+import { Download, Plus, Target, Upload, Users, Trophy } from '../../components/ui/icons';
 
 export default function TournamentBrackets() {
   const [playerLists, setPlayerLists] = useState([]);
@@ -262,178 +266,223 @@ export default function TournamentBrackets() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">Đang tải...</div>
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-sm text-slate-500">Đang tải...</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-8 px-3 sm:px-4">
+    <div className="px-4 pb-8 sm:px-0">
       {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-white shadow-sm border border-gray-100 rounded-2xl p-4 sm:p-5">
-        <div className="space-y-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Quản lý & Xếp bảng thi đấu</h1>
-        </div>
-        <div className="flex gap-2 flex-col sm:flex-row sm:items-center">
-          <select
-            value={selectedListId || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSelectedListId(value ? Number(value) : null);
-            }}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-sm"
-          >
-            {playerLists.length === 0 ? (
-              <option value="">Chưa có danh sách</option>
-            ) : (
-              playerLists.map(list => (
-                <option key={list.id} value={list.id}>
-                  {list.name} {list.is_default && '(Mặc định)'}
-                </option>
-              ))
+      <PageHeader
+        title="Quản lý & Xếp bảng thi đấu"
+        actions={
+          <>
+            <div className="w-full sm:w-auto">
+              <label htmlFor="tournament-list" className="sr-only">
+                Danh sách VĐV
+              </label>
+              <select
+                id="tournament-list"
+                value={selectedListId || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setSelectedListId(value ? Number(value) : null);
+                }}
+                className="field-input sm:w-auto sm:min-w-[12rem]"
+              >
+                {playerLists.length === 0 ? (
+                  <option value="">Chưa có danh sách</option>
+                ) : (
+                  playerLists.map(list => (
+                    <option key={list.id} value={list.id}>
+                      {list.name} {list.is_default && '(Mặc định)'}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            {canCreateList && (
+              <button
+                onClick={handleCreateList}
+                className="btn btn-secondary w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4" />
+                Tạo danh sách VĐV
+              </button>
             )}
-          </select>
-          {canCreateList && (
-            <button
-              onClick={handleCreateList}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 text-sm font-medium w-full sm:w-auto text-center"
-            >
-              + Tạo danh sách VĐV
-            </button>
-          )}
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Tabs */}
-      <div className="border-b border-gray-100 bg-white shadow-sm rounded-2xl px-4">
-        <nav className="-mb-px flex space-x-6">
-          <button
-            onClick={() => setActiveTab('players')}
-            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-              activeTab === 'players'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'
-            }`}
-          >
-            Danh sách VĐV ({players.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('brackets')}
-            className={`py-4 px-1 border-b-2 font-semibold text-sm transition-colors ${
-              activeTab === 'brackets'
-                ? 'border-blue-600 text-blue-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-200'
-            }`}
-          >
-            Bảng thi đấu ({brackets.length})
-          </button>
-        </nav>
+      <div
+        role="tablist"
+        aria-label="Quản lý & Xếp bảng thi đấu"
+        className="tab-list"
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'players'}
+          onClick={() => setActiveTab('players')}
+          className="tab"
+        >
+          Danh sách VĐV ({players.length})
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'brackets'}
+          onClick={() => setActiveTab('brackets')}
+          className="tab"
+        >
+          Bảng thi đấu ({brackets.length})
+        </button>
       </div>
 
       {/* Players Tab */}
       {activeTab === 'players' && (
         <div className="space-y-4">
           {/* Actions */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               onClick={() => setShowAddPlayerForm(true)}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-sm hover:bg-green-700 text-sm font-semibold w-full sm:w-auto text-center"
+              className="btn btn-primary w-full sm:w-auto"
             >
-              + Thêm VĐV thủ công
+              <Plus className="h-4 w-4" />
+              Thêm VĐV thủ công
             </button>
             <button
               onClick={() => setShowImportModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg shadow-sm hover:bg-purple-700 text-sm font-semibold w-full sm:w-auto text-center"
+              className="btn btn-secondary w-full sm:w-auto"
             >
-              📥 Import Excel/CSV
+              <Upload className="h-4 w-4" />
+              Import Excel/CSV
             </button>
           </div>
 
           {/* Stats - wrap on small screens, hide descriptions on mobile */}
-          <div className="flex flex-wrap gap-3">
-            <div className="min-w-[120px] bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-100 flex-1">
-              <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-gray-500">Tổng VĐV</div>
-              <div className="text-xl sm:text-3xl font-bold text-gray-900 mt-1">{players.length}</div>
-              <p className="text-xs text-gray-500 mt-1 hidden sm:block">Tất cả VĐV trong danh sách</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="card !p-3 sm:!p-4">
+              <div className="text-xs font-medium text-slate-500">Tổng VĐV</div>
+              <div className="font-tabular mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">{players.length}</div>
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block">Tất cả VĐV trong danh sách</p>
             </div>
-            <div className="min-w-[120px] bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-100 flex-1">
-              <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-gray-500">Chưa xếp bảng</div>
-              <div className="text-xl sm:text-3xl font-bold text-amber-600 mt-1">{availablePlayers.length}</div>
-              <p className="text-xs text-gray-500 mt-1 hidden sm:block">Sẵn sàng để xếp</p>
+            <div className="card !p-3 sm:!p-4">
+              <div className="text-xs font-medium text-slate-500">Chưa xếp bảng</div>
+              <div className="font-tabular mt-1 text-2xl font-semibold text-amber-600 sm:text-3xl">{availablePlayers.length}</div>
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block">Sẵn sàng để xếp</p>
             </div>
-            <div className="min-w-[120px] bg-white p-3 sm:p-4 rounded-2xl shadow-sm border border-gray-100 flex-1">
-              <div className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-gray-500">Đã xếp bảng</div>
-              <div className="text-xl sm:text-3xl font-bold text-emerald-600 mt-1">{assignedPlayers.length}</div>
-              <p className="text-xs text-gray-500 mt-1 hidden sm:block">Đang nằm trong bảng thi đấu</p>
+            <div className="card !p-3 sm:!p-4">
+              <div className="text-xs font-medium text-slate-500">Đã xếp bảng</div>
+              <div className="font-tabular mt-1 text-2xl font-semibold text-emerald-700 sm:text-3xl">{assignedPlayers.length}</div>
+              <p className="mt-1 hidden text-xs text-slate-500 sm:block">Đang nằm trong bảng thi đấu</p>
             </div>
           </div>
 
-          {/* Players Table */}
-          <div className="bg-white shadow-sm border border-gray-100 rounded-2xl overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">STT</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Họ Tên</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Giới tính</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Level</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Trạng thái</th>
-                  <th className="px-6 py-3 text-right text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Thao tác</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-50">
+          {players.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="Chưa có VĐV nào"
+              description="Hãy thêm VĐV để bắt đầu."
+            />
+          ) : (
+            <>
+              {/* Players Table (desktop) */}
+              <div className="card hidden overflow-hidden !p-0 md:block">
+                <table className="min-w-full">
+                  <thead className="bg-slate-50">
+                    <tr className="text-left text-xs text-slate-500">
+                      <th className="px-4 py-3 font-medium">STT</th>
+                      <th className="px-6 py-3 font-medium">Họ Tên</th>
+                      <th className="px-6 py-3 font-medium">Giới tính</th>
+                      <th className="px-6 py-3 font-medium">Level</th>
+                      <th className="px-6 py-3 font-medium">Trạng thái</th>
+                      <th className="px-6 py-3 text-right font-medium">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {players.map((player, idx) => (
+                      <tr
+                        key={player.id}
+                        className={`border-t border-slate-100 ${player.gender === 'male' ? 'bg-sky-50/50' : 'bg-rose-50/40'}`}
+                      >
+                        <td className="font-tabular whitespace-nowrap px-4 py-3 text-sm font-semibold text-slate-700">
+                          {idx + 1}
+                        </td>
+                        <td className="max-w-[18rem] px-6 py-3 text-sm font-medium text-slate-900">
+                          <div className="truncate" title={player.name}>{player.name}</div>
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-3 text-sm text-slate-600">
+                          {player.gender === 'male' ? 'Nam' : 'Nữ'}
+                        </td>
+                        <td className="font-tabular whitespace-nowrap px-6 py-3 text-sm text-slate-600">
+                          {player.level || '-'}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-3 text-sm">
+                          {player.brackets && player.brackets.length > 0 ? (
+                            <span className="badge badge-emerald">Đã xếp bảng</span>
+                          ) : (
+                            <span className="badge badge-amber">Chưa xếp</span>
+                          )}
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2 text-right">
+                          <button
+                            onClick={() => handleDeletePlayer(player.id)}
+                            disabled={player.brackets && player.brackets.length > 0}
+                            className="btn btn-danger-ghost btn-sm"
+                          >
+                            Xóa
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Players cards (mobile) */}
+              <div className="space-y-3 md:hidden">
                 {players.map((player, idx) => (
-                  <tr
+                  <div
                     key={player.id}
-                    className={`${player.gender === 'male' ? 'bg-blue-50/40' : 'bg-rose-50/40'}`}
+                    className={`card !p-4 ${player.gender === 'male' ? '!bg-sky-50/50' : '!bg-rose-50/40'}`}
                   >
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-semibold text-gray-700">
-                      {idx + 1}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {player.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {player.gender === 'male' ? 'Nam' : 'Nữ'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {player.level || '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <span className="font-tabular mt-0.5 w-6 flex-shrink-0 text-sm font-semibold text-slate-500">
+                          {idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <h3 className="break-words text-base font-semibold text-slate-900">{player.name}</h3>
+                          <p className="mt-0.5 text-sm text-slate-600">
+                            {player.gender === 'male' ? 'Nam' : 'Nữ'} · Level{' '}
+                            <span className="font-tabular">{player.level || '-'}</span>
+                          </p>
+                        </div>
+                      </div>
                       {player.brackets && player.brackets.length > 0 ? (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-700 border border-green-100">
-                          Đã xếp bảng
-                        </span>
+                        <span className="badge badge-emerald flex-shrink-0">Đã xếp bảng</span>
                       ) : (
-                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                          Chưa xếp
-                        </span>
+                        <span className="badge badge-amber flex-shrink-0">Chưa xếp</span>
                       )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    </div>
+                    <div className="mt-3 border-t border-slate-100 pt-3">
                       <button
                         onClick={() => handleDeletePlayer(player.id)}
                         disabled={player.brackets && player.brackets.length > 0}
-                        className={`font-semibold ${player.brackets && player.brackets.length > 0
-                          ? 'text-gray-300 cursor-not-allowed'
-                          : 'text-red-600 hover:text-red-700'}`}
+                        className="btn btn-danger-soft btn-sm w-full"
                       >
                         Xóa
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-                {players.length === 0 && (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                      Chưa có VĐV nào. Hãy thêm VĐV để bắt đầu.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -441,26 +490,19 @@ export default function TournamentBrackets() {
       {activeTab === 'brackets' && (
         <div className="space-y-4">
           {/* Actions */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
               onClick={() => setShowOrganizeModal(true)}
-              className={`px-4 py-2 rounded-lg shadow-sm text-sm font-semibold ${
-                canOrganize && availablePlayers.length > 0
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
+              className="btn btn-primary w-full sm:w-auto"
               disabled={!canOrganize || availablePlayers.length === 0}
             >
-              🎯 Xếp bảng
+              <Target className="h-4 w-4" />
+              Xếp bảng
             </button>
             {brackets.length > 0 && (
               <button
                 onClick={handleDeleteBrackets}
-                className={`px-4 py-2 rounded-lg shadow-sm text-sm font-semibold ${
-                  canDeleteBrackets
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
+                className="btn btn-danger w-full sm:w-auto"
                 disabled={!canDeleteBrackets}
               >
                 Xóa tất cả
@@ -469,16 +511,17 @@ export default function TournamentBrackets() {
             {brackets.length > 0 && (
               <button
                 onClick={handleExportBrackets}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-sm hover:bg-emerald-700 text-sm font-semibold"
+                className="btn btn-secondary w-full sm:w-auto"
               >
-                📸 Xuất bảng
+                <Download className="h-4 w-4" />
+                Xuất bảng
               </button>
             )}
           </div>
 
           {/* Brackets Grid */}
           {brackets.length > 0 ? (
-            <div ref={bracketsContainerRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <div ref={bracketsContainerRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {([...brackets].sort((a, b) => {
                 const order = { male_only: 0, female_only: 1, mixed: 2 };
                 return (order[a.gender_distribution] ?? 3) - (order[b.gender_distribution] ?? 3);
@@ -490,31 +533,31 @@ export default function TournamentBrackets() {
                 }, {});
 
                 return (
-                  <div key={bracket.id} className="bg-white shadow-sm border border-gray-100 rounded-2xl p-4 flex flex-col gap-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900">{bracket.name}</h3>
+                  <div key={bracket.id} className="card flex flex-col gap-3 !p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="break-words text-lg font-semibold text-slate-900">{bracket.name}</h3>
                         {/* <p className="text-xs text-gray-500">Seed: {bracket.random_seed?.slice(-6) || 'N/A'}</p> */}
                       </div>
-                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                      <span className="badge badge-sky flex-shrink-0">
                         {bracket.players.length} VĐV
                       </span>
                     </div>
                     <div className="space-y-3">
                       {playersByGender.male && playersByGender.male.length > 0 && (
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-sm font-semibold text-gray-800">
-                            Nam ({playersByGender.male.length})
-                          </div>
-                            <span className="text-xs text-gray-400">Level</span>
+                          <div className="mb-1 flex items-center justify-between">
+                            <div className="text-sm font-semibold text-slate-800">
+                              Nam ({playersByGender.male.length})
+                            </div>
+                            <span className="text-xs text-slate-400">Level</span>
                           </div>
                           <div className="space-y-1">
                             {playersByGender.male.map((player) => (
-                              <div key={player.id} className="flex items-center text-sm text-gray-700 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-                                <span className="mr-2 text-gray-400">•</span>
-                                <span className="font-medium">{player.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">{player.level ? `Level ${player.level}` : 'No level'}</span>
+                              <div key={player.id} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                <span className="text-slate-400">•</span>
+                                <span className="min-w-0 break-words font-medium">{player.name}</span>
+                                <span className="ml-auto flex-shrink-0 text-xs text-slate-500">{player.level ? `Level ${player.level}` : 'No level'}</span>
                               </div>
                             ))}
                           </div>
@@ -522,18 +565,18 @@ export default function TournamentBrackets() {
                       )}
                       {playersByGender.female && playersByGender.female.length > 0 && (
                         <div>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-sm font-semibold text-gray-800">
-                            Nữ ({playersByGender.female.length})
-                          </div>
-                            <span className="text-xs text-gray-400">Level</span>
+                          <div className="mb-1 flex items-center justify-between">
+                            <div className="text-sm font-semibold text-slate-800">
+                              Nữ ({playersByGender.female.length})
+                            </div>
+                            <span className="text-xs text-slate-400">Level</span>
                           </div>
                           <div className="space-y-1">
                             {playersByGender.female.map((player) => (
-                              <div key={player.id} className="flex items-center text-sm text-gray-700 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-                                <span className="mr-2 text-gray-400">•</span>
-                                <span className="font-medium">{player.name}</span>
-                                <span className="ml-auto text-xs text-gray-500">{player.level ? `Level ${player.level}` : 'No level'}</span>
+                              <div key={player.id} className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                                <span className="text-slate-400">•</span>
+                                <span className="min-w-0 break-words font-medium">{player.name}</span>
+                                <span className="ml-auto flex-shrink-0 text-xs text-slate-500">{player.level ? `Level ${player.level}` : 'No level'}</span>
                               </div>
                             ))}
                           </div>
@@ -545,191 +588,209 @@ export default function TournamentBrackets() {
               })}
             </div>
           ) : (
-            <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-8 text-center text-gray-600">
-              <p className="text-base font-semibold">Chưa có bảng nào</p>
-              <p className="text-sm text-gray-500 mt-1">Hãy bấm "Xếp bảng" để tạo bảng thi đấu.</p>
-            </div>
+            <EmptyState
+              icon={Trophy}
+              title="Chưa có bảng nào"
+              description={'Hãy bấm "Xếp bảng" để tạo bảng thi đấu.'}
+            />
           )}
         </div>
       )}
 
       {/* Add Player Form Modal */}
-      {showAddPlayerForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Thêm VĐV</h2>
-            <form onSubmit={handleAddPlayer} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Họ Tên *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={playerFormData.name}
-                  onChange={(e) => setPlayerFormData({ ...playerFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Giới tính *
-                </label>
-                <select
-                  required
-                  value={playerFormData.gender}
-                  onChange={(e) => setPlayerFormData({ ...playerFormData, gender: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="male">Nam</option>
-                  <option value="female">Nữ</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Level *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min={1}
-                  step={1}
-                  value={playerFormData.level}
-                  onChange={(e) => setPlayerFormData({ ...playerFormData, level: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Nhập level (1, 2, 3...)"
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowAddPlayerForm(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Thêm
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showAddPlayerForm}
+        onClose={() => setShowAddPlayerForm(false)}
+        title="Thêm VĐV"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowAddPlayerForm(false)}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="add-tournament-player-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Thêm
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="add-tournament-player-form" onSubmit={handleAddPlayer} className="space-y-4">
+          <div>
+            <label htmlFor="tp-name" className="field-label">
+              Họ Tên *
+            </label>
+            <input
+              id="tp-name"
+              type="text"
+              required
+              value={playerFormData.name}
+              onChange={(e) => setPlayerFormData({ ...playerFormData, name: e.target.value })}
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="tp-gender" className="field-label">
+              Giới tính *
+            </label>
+            <select
+              id="tp-gender"
+              required
+              value={playerFormData.gender}
+              onChange={(e) => setPlayerFormData({ ...playerFormData, gender: e.target.value })}
+              className="field-input"
+            >
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="tp-level" className="field-label">
+              Level *
+            </label>
+            <input
+              id="tp-level"
+              type="number"
+              inputMode="numeric"
+              required
+              min={1}
+              step={1}
+              value={playerFormData.level}
+              onChange={(e) => setPlayerFormData({ ...playerFormData, level: e.target.value })}
+              className="field-input"
+              placeholder="Nhập level (1, 2, 3...)"
+            />
+          </div>
+        </form>
+      </Modal>
 
       {/* Import Modal */}
-      {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Import VĐV từ file</h2>
-            <div className="space-y-4">
-              <div className="text-sm text-gray-600">
-                <p className="mb-2 font-semibold">Định dạng file hỗ trợ: Excel (.xlsx, .xls) hoặc CSV</p>
-                <p className="mb-2">Cấu trúc file (dòng đầu tiên là tiêu đề, có thể bỏ qua):</p>
-                <div className="bg-gray-100 p-3 rounded text-xs space-y-2">
-                  <div>
-                    <p className="font-semibold mb-1">Cột 1: Họ Tên (bắt buộc)</p>
-                    <p className="font-semibold mb-1">Cột 2: Giới tính (bắt buộc)</p>
-                    <p className="font-semibold mb-1">Cột 3: Level (bắt buộc, chỉ nhập số 1,2,3,...)</p>
-                  </div>
-                  <div className="border-t pt-2">
-                    <p className="font-semibold mb-1">Ví dụ:</p>
-                    <pre className="whitespace-pre-wrap">
+      <Modal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        title="Import VĐV từ file"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowImportModal(false)}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Đóng
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="text-sm text-slate-600">
+            <p className="mb-2 font-semibold text-slate-800">Định dạng file hỗ trợ: Excel (.xlsx, .xls) hoặc CSV</p>
+            <p className="mb-2">Cấu trúc file (dòng đầu tiên là tiêu đề, có thể bỏ qua):</p>
+            <div className="space-y-2 rounded-xl bg-slate-100 p-3 text-xs">
+              <div>
+                <p className="mb-1 font-semibold">Cột 1: Họ Tên (bắt buộc)</p>
+                <p className="mb-1 font-semibold">Cột 2: Giới tính (bắt buộc)</p>
+                <p className="mb-1 font-semibold">Cột 3: Level (bắt buộc, chỉ nhập số 1,2,3,...)</p>
+              </div>
+              <div className="border-t border-slate-200 pt-2">
+                <p className="mb-1 font-semibold">Ví dụ:</p>
+                <pre className="overflow-x-auto whitespace-pre-wrap">
 Họ Tên,Giới tính,Level{'\n'}
 Nguyễn Văn A,male,1{'\n'}
 Trần Thị B,female,2{'\n'}
 Lê Văn C,nam,1{'\n'}
 Phạm Thị D,nữ,3
-                    </pre>
-                  </div>
-                </div>
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                  <p className="font-semibold text-blue-800 mb-1">Lưu ý về Giới tính:</p>
-                  <p className="text-blue-700">Chấp nhận: "male" hoặc "nam" (Nam), "female" hoặc "nữ" (Nữ)</p>
-                </div>
-              </div>
-              <div>
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls"
-                  onChange={handleImportFile}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowImportModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Đóng
-                </button>
+                </pre>
               </div>
             </div>
+            <div className="mt-2 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs">
+              <p className="mb-1 font-semibold text-sky-900">Lưu ý về Giới tính:</p>
+              <p className="text-sky-800">Chấp nhận: "male" hoặc "nam" (Nam), "female" hoặc "nữ" (Nữ)</p>
+            </div>
+          </div>
+          <div>
+            <label htmlFor="tp-import-file" className="sr-only">
+              Import VĐV từ file
+            </label>
+            <input
+              id="tp-import-file"
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              onChange={handleImportFile}
+              className="block w-full rounded-xl border border-slate-300 bg-white text-sm text-slate-600 file:mr-3 file:h-11 file:cursor-pointer file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200 sm:file:h-10"
+            />
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Organize Brackets Modal */}
-      {showOrganizeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Xếp bảng thi đấu</h2>
-            <form onSubmit={handleOrganizeBrackets} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Số bảng *
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  max="50"
-                  value={organizeFormData.number_of_brackets}
-                  onChange={(e) => setOrganizeFormData({ ...organizeFormData, number_of_brackets: Number(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phân bổ giới tính *
-                </label>
-                <select
-                  required
-                  value={organizeFormData.gender_distribution}
-                  onChange={(e) => setOrganizeFormData({ ...organizeFormData, gender_distribution: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="mixed">Chia đều giới tính</option>
-                  <option value="male_only">Chỉ nam</option>
-                  <option value="female_only">Chỉ nữ</option>
-                </select>
-              </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800">
-                <p>Lưu ý: Chỉ các VĐV chưa được xếp bảng mới được xếp vào bảng mới.</p>
-                <p className="mt-1">Hiện có {availablePlayers.length} VĐV chưa xếp bảng.</p>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowOrganizeModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Xếp bảng
-                </button>
-              </div>
-            </form>
+      <Modal
+        isOpen={showOrganizeModal}
+        onClose={() => setShowOrganizeModal(false)}
+        title="Xếp bảng thi đấu"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={() => setShowOrganizeModal(false)}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="organize-brackets-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              Xếp bảng
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="organize-brackets-form" onSubmit={handleOrganizeBrackets} className="space-y-4">
+          <div>
+            <label htmlFor="org-count" className="field-label">
+              Số bảng *
+            </label>
+            <input
+              id="org-count"
+              type="number"
+              inputMode="numeric"
+              required
+              min="1"
+              max="50"
+              value={organizeFormData.number_of_brackets}
+              onChange={(e) => setOrganizeFormData({ ...organizeFormData, number_of_brackets: Number(e.target.value) })}
+              className="field-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="org-gender" className="field-label">
+              Phân bổ giới tính *
+            </label>
+            <select
+              id="org-gender"
+              required
+              value={organizeFormData.gender_distribution}
+              onChange={(e) => setOrganizeFormData({ ...organizeFormData, gender_distribution: e.target.value })}
+              className="field-input"
+            >
+              <option value="mixed">Chia đều giới tính</option>
+              <option value="male_only">Chỉ nam</option>
+              <option value="female_only">Chỉ nữ</option>
+            </select>
+          </div>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <p>Lưu ý: Chỉ các VĐV chưa được xếp bảng mới được xếp vào bảng mới.</p>
+            <p className="mt-1">Hiện có {availablePlayers.length} VĐV chưa xếp bảng.</p>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

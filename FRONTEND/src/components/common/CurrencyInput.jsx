@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
  *  đừng dồn vào className: hai bộ viền/bo góc chọi nhau thì Tailwind quyết theo thứ tự
  *  trong stylesheet chứ không theo thứ tự viết, kết quả không đoán trước được. */
 const DEFAULT_BASE_CLASS =
-  "px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+  "px-3 py-2 border border-slate-300 rounded-xl focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20";
 
 export default function CurrencyInput({
   value,
@@ -12,6 +12,7 @@ export default function CurrencyInput({
   placeholder = "0",
   className = "",
   baseClassName = DEFAULT_BASE_CLASS,
+  ...props
 }) {
   const [displayValue, setDisplayValue] = useState("");
 
@@ -66,10 +67,12 @@ export default function CurrencyInput({
   return (
     <input
       type="text"
+      inputMode="numeric"
       value={displayValue}
       onChange={handleChange}
       placeholder={placeholder}
       className={`${baseClassName} ${className}`}
+      {...props}
     />
   );
 }

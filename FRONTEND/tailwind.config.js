@@ -4,9 +4,15 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Fraunces", "Georgia", "serif"],
+        display: [
+          '"Inter"',
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
         sans: [
-          '"DM Sans"',
+          '"Inter"',
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",

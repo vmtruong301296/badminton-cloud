@@ -7,6 +7,15 @@ import {
   roundToNearestThousand,
 } from "../../utils/formatters";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
+import PageHeader from "../../components/ui/PageHeader";
+import EmptyState from "../../components/ui/EmptyState";
+import {
+  ChevronLeft,
+  Pencil,
+  Plus,
+  Trash2,
+  UtensilsCrossed,
+} from "../../components/ui/icons";
 
 function normalize(str) {
   return (str || "")
@@ -79,18 +88,18 @@ export default function PartyBills() {
     if (status === "paid")
       return {
         text: "Đã thanh toán",
-        cls: "bg-emerald-100 text-emerald-800",
+        cls: "badge-emerald",
         dot: "bg-emerald-500",
       };
     if (status === "partial")
       return {
         text: "Thanh toán 1 phần",
-        cls: "bg-amber-100 text-amber-800",
+        cls: "badge-amber",
         dot: "bg-amber-500",
       };
     return {
       text: "Chưa thanh toán",
-      cls: "bg-slate-100 text-slate-700",
+      cls: "badge-slate",
       dot: "bg-slate-400",
     };
   };
@@ -277,108 +286,93 @@ export default function PartyBills() {
   };
 
   return (
-    <div className="px-2 sm:px-0 pb-24 md:pb-0">
-      {/* Header */}
-      <header className="mb-5 sm:mb-8">
-        <div className="flex items-center justify-between gap-3 sm:items-end sm:gap-4">
-          <div className="min-w-0 flex-1">
-            <p className="hidden text-xs font-medium uppercase tracking-[0.18em] text-emerald-700/80 sm:block">
-              Quản lý chia tiệc
-            </p>
-            <h1 className="font-display text-xl font-semibold leading-tight text-slate-900 sm:mt-1 sm:text-4xl">
-              Danh sách Bills tiệc
-            </h1>
-            <p className="mt-0.5 text-xs text-slate-500 sm:mt-1.5 sm:text-sm">
-              {loading ? (
-                <span className="skeleton inline-block h-3.5 w-24 align-middle" />
-              ) : (
-                <>
-                  <span className="font-tabular font-semibold text-slate-700">
-                    {totalBillsCount}
-                  </span>{" "}
-                  bill hiển thị
-                  {filters.date_from || filters.date_to ? " theo bộ lọc" : ""}
-                </>
-              )}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <Link
-              to="/party-bills/create"
-              className="hidden h-11 items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover sm:inline-flex"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Tạo Bill tiệc
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="px-4 pb-24 sm:px-0 md:pb-0">
+      <PageHeader
+        title="Danh sách Bills tiệc"
+        description={
+          loading ? (
+            <span className="skeleton inline-block h-3.5 w-24 align-middle" />
+          ) : (
+            <>
+              <span className="font-tabular font-semibold text-slate-700">
+                {totalBillsCount}
+              </span>{" "}
+              bill hiển thị
+              {filters.date_from || filters.date_to ? " theo bộ lọc" : ""}
+            </>
+          )
+        }
+        actions={
+          <Link
+            to="/party-bills/create"
+            className="btn btn-primary hidden sm:inline-flex"
+          >
+            <Plus className="h-4 w-4" />
+            Tạo Bill tiệc
+          </Link>
+        }
+      />
 
       {/* Filters — toolbar gọn 1 hàng trên desktop */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-card">
+      <section className="card mb-6 !p-0">
         <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
           {/* Dates */}
           <div className="grid grid-cols-2 gap-3 lg:flex lg:gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label htmlFor="pb-date-from" className="field-label">
                 Từ ngày
               </label>
               <input
+                id="pb-date-from"
                 type="date"
                 value={filters.date_from}
                 onChange={(e) =>
                   setFilters({ ...filters, date_from: e.target.value })
                 }
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-40"
+                className="field-input lg:w-40"
               />
             </div>
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label htmlFor="pb-date-to" className="field-label">
                 Đến ngày
               </label>
               <input
+                id="pb-date-to"
                 type="date"
                 value={filters.date_to}
                 onChange={(e) =>
                   setFilters({ ...filters, date_to: e.target.value })
                 }
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-40"
+                className="field-input lg:w-40"
               />
             </div>
           </div>
 
           {/* Tên tiệc */}
           <div className="lg:min-w-[200px] lg:flex-1">
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <label htmlFor="pb-name" className="field-label">
               Tên tiệc
             </label>
             <input
+              id="pb-name"
               type="text"
               value={filters.name}
               onChange={(e) => setFilters({ ...filters, name: e.target.value })}
               placeholder="Tìm theo tên/nội dung tiệc..."
-              className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10"
+              className="field-input"
             />
           </div>
 
           {/* Status chips */}
           <div>
-            <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <span id="pb-status-label" className="field-label">
               Trạng thái
-            </label>
-            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
+            </span>
+            <div
+              role="group"
+              aria-labelledby="pb-status-label"
+              className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2"
+            >
               {[
                 {
                   value: "paid",
@@ -417,7 +411,7 @@ export default function PartyBills() {
                         : [...filters.status, opt.value];
                       setFilters({ ...filters, status: next });
                     }}
-                    className={`inline-flex h-10 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:gap-2 sm:px-3.5 sm:text-sm ${
+                    className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
                       isActive
                         ? opt.activeCls
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -438,15 +432,16 @@ export default function PartyBills() {
           {/* Limit + Clear — đẩy sang phải trên desktop */}
           <div className="grid grid-cols-2 gap-3 lg:ml-auto lg:flex lg:items-end lg:gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <label htmlFor="pb-limit" className="field-label">
                 Số bill / trang
               </label>
               <select
+                id="pb-limit"
                 value={filters.limit}
                 onChange={(e) =>
                   setFilters({ ...filters, limit: parseInt(e.target.value) })
                 }
-                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/60 px-3 text-sm font-medium text-slate-900 transition focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-emerald-500/10 lg:w-24"
+                className="field-input lg:w-24"
               >
                 {[10, 20, 30, 50].map((n) => (
                   <option key={n} value={n}>
@@ -467,21 +462,9 @@ export default function PartyBills() {
                     name: "",
                   })
                 }
-                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 lg:w-auto"
+                className="btn btn-secondary w-full lg:w-auto"
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                </svg>
+                <Trash2 className="h-4 w-4" />
                 <span className="sm:hidden">Xóa lọc</span>
                 <span className="hidden sm:inline">Xóa bộ lọc</span>
               </button>
@@ -532,49 +515,17 @@ export default function PartyBills() {
               </div>
             </div>
           ) : paginatedBills.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center shadow-card">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
-                <svg
-                  width="28"
-                  height="28"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M9 11l3 3L22 4" />
-                  <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-                </svg>
-              </div>
-              <h3 className="font-display text-xl font-semibold text-slate-900">
-                Chưa có bill tiệc nào
-              </h3>
-              <p className="mt-1.5 text-sm text-slate-500">
-                Thử xóa bộ lọc hoặc tạo bill tiệc mới để bắt đầu.
-              </p>
-              <Link
-                to="/party-bills/create"
-                className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                Tạo bill đầu tiên
-              </Link>
-            </div>
+            <EmptyState
+              icon={UtensilsCrossed}
+              title="Chưa có bill tiệc nào"
+              description="Thử xóa bộ lọc hoặc tạo bill tiệc mới để bắt đầu."
+              action={
+                <Link to="/party-bills/create" className="btn btn-primary">
+                  <Plus className="h-4 w-4" />
+                  Tạo bill đầu tiên
+                </Link>
+              }
+            />
           ) : (
             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
               {/* Desktop Table */}
@@ -582,22 +533,22 @@ export default function PartyBills() {
                 <table className="min-w-full divide-y divide-slate-200">
                   <thead className="bg-slate-50">
                     <tr>
-                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-3 text-left text-xs font-medium text-slate-500">
                         Ngày
                       </th>
-                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-3 text-left text-xs font-medium text-slate-500">
                         Tên/Nội dung
                       </th>
-                      <th className="px-5 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-3 text-right text-xs font-medium text-slate-500">
                         Tổng tiền
                       </th>
-                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-3 text-left text-xs font-medium text-slate-500">
                         Trạng thái
                       </th>
-                      <th className="px-5 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-3 text-center text-xs font-medium text-slate-500">
                         Chưa TT
                       </th>
-                      <th className="px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <th className="px-5 py-3 text-left text-xs font-medium text-slate-500">
                         Thao tác
                       </th>
                     </tr>
@@ -625,7 +576,7 @@ export default function PartyBills() {
                                 : "hover:bg-slate-50"
                           }`}
                         >
-                          <td className="px-5 py-4 text-sm text-slate-700">
+                          <td className="px-5 py-4 text-sm whitespace-nowrap text-slate-700">
                             {bill.date ? bill.date.slice(0, 10) : "-"}
                           </td>
                           <td className="px-5 py-4">
@@ -642,9 +593,7 @@ export default function PartyBills() {
                             {formatCurrencyRounded(totalWithFood)}
                           </td>
                           <td className="px-5 py-4">
-                            <span
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.cls}`}
-                            >
+                            <span className={`badge gap-1.5 whitespace-nowrap ${meta.cls}`}>
                               <span
                                 className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}
                               />
@@ -658,14 +607,14 @@ export default function PartyBills() {
                             <div className="flex items-center gap-3">
                               <Link
                                 to={`/party-bills/${bill.id}`}
-                                className="text-sm font-medium text-emerald-700 hover:text-emerald-900"
+                                className="whitespace-nowrap text-sm font-medium text-emerald-700 hover:text-emerald-900"
                               >
                                 Chi tiết
                               </Link>
                               {status !== "paid" && (
                                 <Link
                                   to={`/party-bills/${bill.id}/edit`}
-                                  className="text-sm font-medium text-amber-700 hover:text-amber-900"
+                                  className="whitespace-nowrap text-sm font-medium text-slate-600 hover:text-slate-900"
                                 >
                                   Sửa
                                 </Link>
@@ -678,7 +627,7 @@ export default function PartyBills() {
                                     id: bill.id,
                                   })
                                 }
-                                className="text-sm font-medium text-rose-600 hover:text-rose-800"
+                                className="whitespace-nowrap text-sm font-medium text-rose-600 hover:text-rose-800"
                               >
                                 Xóa
                               </button>
@@ -725,7 +674,7 @@ export default function PartyBills() {
                       >
                         <div className="mb-3 flex items-start justify-between gap-3">
                           <div className="min-w-0 flex-1">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            <div className="text-xs font-medium text-slate-500">
                               {formatDate(bill.date)}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2">
@@ -733,7 +682,7 @@ export default function PartyBills() {
                                 {bill.name || "—"}
                               </h3>
                               {overdue && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                                <span className="badge badge-rose gap-1">
                                   <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500" />
                                   Quá hạn
                                 </span>
@@ -745,9 +694,7 @@ export default function PartyBills() {
                               </div>
                             )}
                           </div>
-                          <span
-                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.cls}`}
-                          >
+                          <span className={`badge gap-1.5 whitespace-nowrap ${meta.cls}`}>
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}
                             />
@@ -776,43 +723,18 @@ export default function PartyBills() {
                         <div className="mt-4 flex gap-2 border-t border-slate-200/70 pt-3">
                           <Link
                             to={`/party-bills/${bill.id}`}
-                            className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-card transition active:scale-[0.98] hover:bg-emerald-700"
+                            className="btn btn-primary flex-1"
                           >
                             Chi tiết
-                            <svg
-                              width="14"
-                              height="14"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden
-                            >
-                              <path d="M5 12h14M13 5l7 7-7 7" />
-                            </svg>
+                            <ChevronLeft className="h-4 w-4 rotate-180" />
                           </Link>
                           {status !== "paid" && (
                             <Link
                               to={`/party-bills/${bill.id}/edit`}
                               aria-label={`Sửa bill #${bill.id}`}
-                              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-amber-700 transition active:scale-[0.96] hover:border-amber-200 hover:bg-amber-50"
+                              className="btn btn-secondary btn-icon"
                             >
-                              <svg
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                aria-hidden
-                              >
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                              </svg>
+                              <Pencil className="h-[18px] w-[18px]" />
                             </Link>
                           )}
                           <button
@@ -821,21 +743,9 @@ export default function PartyBills() {
                               setDeleteConfirm({ isOpen: true, id: bill.id })
                             }
                             aria-label={`Xóa bill #${bill.id}`}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition active:scale-[0.96] hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+                            className="btn btn-danger-soft btn-icon"
                           >
-                            <svg
-                              width="18"
-                              height="18"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              aria-hidden
-                            >
-                              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-                            </svg>
+                            <Trash2 className="h-[18px] w-[18px]" />
                           </button>
                         </div>
                       </div>
@@ -865,21 +775,9 @@ export default function PartyBills() {
                         }
                         disabled={currentPage === 1}
                         aria-label="Trang trước"
-                        className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                        className="btn btn-secondary gap-1 !px-3"
                       >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                        >
-                          <path d="M15 18l-6-6 6-6" />
-                        </svg>
+                        <ChevronLeft className="h-4 w-4" />
                         <span className="hidden sm:inline">Trước</span>
                       </button>
                       <div className="flex items-center gap-1">
@@ -899,10 +797,10 @@ export default function PartyBills() {
                                 aria-current={
                                   currentPage === page ? "page" : undefined
                                 }
-                                className={`inline-flex h-10 min-w-10 items-center justify-center rounded-xl border px-2 text-sm font-medium font-tabular transition ${
+                                className={`btn font-tabular min-w-11 !px-2 sm:min-w-10 ${
                                   currentPage === page
-                                    ? "border-emerald-600 bg-emerald-600 text-white shadow-card"
-                                    : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
+                                    ? "btn-primary"
+                                    : "btn-secondary"
                                 }`}
                               >
                                 {page}
@@ -933,22 +831,10 @@ export default function PartyBills() {
                         }
                         disabled={currentPage === totalPages}
                         aria-label="Trang sau"
-                        className="inline-flex h-10 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:opacity-40"
+                        className="btn btn-secondary gap-1 !px-3"
                       >
                         <span className="hidden sm:inline">Sau</span>
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                        >
-                          <path d="M9 18l6-6-6-6" />
-                        </svg>
+                        <ChevronLeft className="h-4 w-4 rotate-180" />
                       </button>
                     </div>
                   </div>
@@ -962,7 +848,7 @@ export default function PartyBills() {
         <div className="lg:col-span-1">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card lg:sticky lg:top-20">
             <div className="border-b border-slate-100 bg-slate-50/60 px-4 py-3 sm:px-5 sm:py-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              <p className="text-xs font-medium text-slate-500">
                 Chưa thanh toán
               </p>
               <h3 className="font-display mt-0.5 text-lg font-semibold text-slate-900">
@@ -982,7 +868,7 @@ export default function PartyBills() {
                 </div>
               ) : unpaidParticipants.length === 0 ? (
                 <div className="px-4 sm:px-5 py-8 text-center text-sm text-slate-500">
-                  Tất cả đã thanh toán 🎉
+                  Tất cả đã thanh toán
                 </div>
               ) : (
                 unpaidParticipants.map((p) => {
@@ -1018,7 +904,7 @@ export default function PartyBills() {
                           ))}
                         </div>
                       </div>
-                      <div className="absolute right-4 top-3">
+                      <label className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center sm:right-2">
                         <input
                           type="checkbox"
                           checked={false}
@@ -1026,10 +912,11 @@ export default function PartyBills() {
                             handleMarkParticipantPayment(p.userId)
                           }
                           disabled={isMarking}
-                          className="h-6 w-6 cursor-pointer accent-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Đánh dấu ${p.name} đã thanh toán tất cả bills`}
+                          className="h-6 w-6 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                           title="Đánh dấu thanh toán tất cả bills"
                         />
-                      </div>
+                      </label>
                       {isMarking && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/75 text-xs text-slate-600">
                           Đang xử lý...
@@ -1059,21 +946,9 @@ export default function PartyBills() {
       <Link
         to="/party-bills/create"
         aria-label="Tạo Bill tiệc mới"
-        className="fab-enter fixed bottom-5 right-5 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-700 md:hidden"
+        className="fab-enter fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-30 sm:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
       >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <Plus className="h-6 w-6" strokeWidth={2.25} />
       </Link>
     </div>
   );

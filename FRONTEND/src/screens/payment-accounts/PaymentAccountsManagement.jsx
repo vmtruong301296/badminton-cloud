@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { paymentAccountsApi } from '../../services/api';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import Modal from '../../components/ui/Modal';
+import EmptyState from '../../components/ui/EmptyState';
+import { Plus, Inbox } from '../../components/ui/icons';
 
 export default function PaymentAccountsManagement() {
   const [accounts, setAccounts] = useState([]);
@@ -138,42 +141,41 @@ export default function PaymentAccountsManagement() {
   // No longer needed - images are now base64 strings directly from database
 
   return (
-    <div className="px-2 sm:px-0">
-      <div className="flex flex-row justify-between items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Quản lý Tài khoản Nhận tiền</h2>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">Quản lý Tài khoản Nhận tiền</h2>
         <button
           type="button"
           onClick={() => handleOpenModal()}
-          className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md hover:bg-blue-700 text-sm sm:text-base whitespace-nowrap"
+          className="btn btn-primary flex-shrink-0"
         >
-          ➕ Thêm tài khoản
+          <Plus className="h-4 w-4" />
+          Thêm tài khoản
         </button>
       </div>
 
       {loading ? (
-        <div className="text-center py-8">Đang tải...</div>
+        <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>
       ) : accounts.length === 0 ? (
-        <div className="text-center py-8 text-gray-500">Chưa có tài khoản nào</div>
+        <EmptyState icon={Inbox} title="Chưa có tài khoản nào" />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {accounts.map((account) => (
             <div
               key={account.id}
-              className={`bg-white rounded-lg shadow p-4 sm:p-6 border-2 ${
-                account.is_active ? 'border-green-200' : 'border-gray-200 opacity-60'
+              className={`card flex flex-col !p-4 ${
+                account.is_active ? '!border-emerald-200' : 'opacity-70'
               }`}
             >
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{account.bank_name}</h3>
-                  <p className="text-sm text-gray-600">{account.account_holder_name}</p>
-                  <p className="text-sm font-mono text-gray-700">{account.account_number}</p>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="break-words text-base font-semibold text-slate-900">{account.bank_name}</h3>
+                  <p className="break-words text-sm text-slate-600">{account.account_holder_name}</p>
+                  <p className="font-tabular break-all text-sm text-slate-700">{account.account_number}</p>
                 </div>
                 <span
-                  className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                    account.is_active
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
+                  className={`badge flex-shrink-0 ${
+                    account.is_active ? 'badge-emerald' : 'badge-slate'
                   }`}
                 >
                   {account.is_active ? 'Đang dùng' : 'Tạm khóa'}
@@ -185,7 +187,7 @@ export default function PaymentAccountsManagement() {
                   <img
                     src={account.qr_code_image}
                     alt="QR Code"
-                    className="w-full h-auto border rounded-lg"
+                    className="mx-auto h-auto w-full max-w-[16rem] rounded-xl border border-slate-200"
                     onError={(e) => {
                       console.error('Error loading image');
                       e.target.style.display = 'none';
@@ -195,21 +197,21 @@ export default function PaymentAccountsManagement() {
               )}
 
               {account.note && (
-                <p className="text-sm text-gray-600 mb-4 italic">{account.note}</p>
+                <p className="mb-4 break-words text-sm italic text-slate-600">{account.note}</p>
               )}
 
-              <div className="flex space-x-2">
+              <div className="mt-auto flex gap-2 border-t border-slate-100 pt-3">
                 <button
                   type="button"
                   onClick={() => handleOpenModal(account)}
-                  className="flex-1 px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 text-sm"
+                  className="btn btn-secondary btn-sm flex-1"
                 >
                   Sửa
                 </button>
                 <button
                   type="button"
                   onClick={() => handleDeleteClick(account.id)}
-                  className="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 text-sm"
+                  className="btn btn-danger-soft btn-sm flex-1"
                 >
                   Xóa
                 </button>
@@ -220,125 +222,131 @@ export default function PaymentAccountsManagement() {
       )}
 
       {/* Modal Create/Edit */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {editingAccount ? 'Sửa tài khoản' : 'Thêm tài khoản mới'}
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên ngân hàng *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.bank_name}
-                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Số tài khoản *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.account_number}
-                    onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Tên chủ tài khoản *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.account_holder_name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, account_holder_name: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Ảnh QR Code
-                  </label>
-                  <input
-                    key={editingAccount ? `file-${editingAccount.id}-${editingAccount.updated_at || Date.now()}` : 'file-new'}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  />
-                  {previewImage && (
-                    <div className="mt-2">
-                      <img
-                        key={previewImage}
-                        src={previewImage}
-                        alt="QR Code Preview"
-                        className="w-48 h-48 object-contain border rounded-lg"
-                        onError={() => {
-                          console.error('Error loading preview image:', previewImage);
-                        }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={formData.is_active}
-                      onChange={(e) =>
-                        setFormData({ ...formData, is_active: e.target.checked })
-                      }
-                      className="w-4 h-4"
-                    />
-                    <span className="text-sm text-gray-700">Đang sử dụng</span>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                  <textarea
-                    value={formData.note}
-                    onChange={(e) => setFormData({ ...formData, note: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                  >
-                    {editingAccount ? 'Cập nhật' : 'Tạo mới'}
-                  </button>
-                </div>
-              </form>
-            </div>
+      <Modal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        title={editingAccount ? 'Sửa tài khoản' : 'Thêm tài khoản mới'}
+        size="lg"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              form="payment-account-form"
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              {editingAccount ? 'Cập nhật' : 'Tạo mới'}
+            </button>
           </div>
-        </div>
-      )}
+        }
+      >
+        <form id="payment-account-form" onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="pa-bank" className="field-label">
+              Tên ngân hàng *
+            </label>
+            <input
+              id="pa-bank"
+              type="text"
+              value={formData.bank_name}
+              onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+              className="field-input"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="pa-number" className="field-label">
+              Số tài khoản *
+            </label>
+            <input
+              id="pa-number"
+              type="text"
+              inputMode="numeric"
+              value={formData.account_number}
+              onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+              className="field-input"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="pa-holder" className="field-label">
+              Tên chủ tài khoản *
+            </label>
+            <input
+              id="pa-holder"
+              type="text"
+              value={formData.account_holder_name}
+              onChange={(e) =>
+                setFormData({ ...formData, account_holder_name: e.target.value })
+              }
+              className="field-input"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="pa-qr" className="field-label">
+              Ảnh QR Code
+            </label>
+            <input
+              id="pa-qr"
+              key={editingAccount ? `file-${editingAccount.id}-${editingAccount.updated_at || Date.now()}` : 'file-new'}
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="block w-full rounded-xl border border-slate-300 bg-white text-sm text-slate-600 file:mr-3 file:h-11 file:cursor-pointer file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200 sm:file:h-10"
+            />
+            {previewImage && (
+              <div className="mt-2">
+                <img
+                  key={previewImage}
+                  src={previewImage}
+                  alt="QR Code Preview"
+                  className="h-48 w-48 rounded-xl border border-slate-200 object-contain"
+                  onError={() => {
+                    console.error('Error loading preview image:', previewImage);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <label
+            htmlFor="pa-active"
+            className="flex min-h-[44px] cursor-pointer items-center gap-3 text-sm text-slate-700"
+          >
+            <input
+              id="pa-active"
+              type="checkbox"
+              checked={formData.is_active}
+              onChange={(e) =>
+                setFormData({ ...formData, is_active: e.target.checked })
+              }
+              className="h-5 w-5 flex-shrink-0 rounded border-slate-300 text-emerald-700 focus:ring-emerald-600/40"
+            />
+            <span>Đang sử dụng</span>
+          </label>
+
+          <div>
+            <label htmlFor="pa-note" className="field-label">Ghi chú</label>
+            <textarea
+              id="pa-note"
+              value={formData.note}
+              onChange={(e) => setFormData({ ...formData, note: e.target.value })}
+              className="field-input !h-auto py-2"
+              rows={3}
+            />
+          </div>
+        </form>
+      </Modal>
 
       <ConfirmDialog
         isOpen={deleteConfirm.isOpen}
@@ -350,4 +358,3 @@ export default function PaymentAccountsManagement() {
     </div>
   );
 }
-

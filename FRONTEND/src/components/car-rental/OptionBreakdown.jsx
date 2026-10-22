@@ -27,24 +27,24 @@ export default function OptionBreakdown({ options }) {
         {options.map((option, index) => (
           <div
             key={option.id ?? index}
-            className={`rounded-lg border p-3 ${
+            className={`rounded-xl border p-3 ${
               option.is_cheapest
-                ? "border-green-300 bg-green-50"
+                ? "border-emerald-300 bg-emerald-50"
                 : "border-slate-200"
             }`}
           >
             <div className="flex items-start justify-between gap-2">
-              <span className="font-medium text-gray-900">
+              <span className="min-w-0 break-words font-medium text-slate-900">
                 {optionName(option, index)}
               </span>
               {option.is_cheapest && (
-                <span className="shrink-0 rounded-full bg-green-600 px-2 py-0.5 text-xs text-white">
+                <span className="badge shrink-0 bg-emerald-700 text-white">
                   Rẻ nhất
                 </span>
               )}
             </div>
 
-            <div className="mt-1 text-xl font-semibold text-gray-900">
+            <div className="font-tabular mt-1 text-xl font-semibold text-slate-900">
               {formatCurrency(option.total_cost)}
             </div>
 
@@ -53,15 +53,15 @@ export default function OptionBreakdown({ options }) {
                 (column) => !column.hideWhenZero || option[column.key] > 0,
               ).map((column) => (
                 <div key={column.key} className="flex justify-between gap-2">
-                  <dt className="text-gray-500">{column.label}</dt>
-                  <dd className="text-gray-900">
+                  <dt className="text-slate-500">{column.label}</dt>
+                  <dd className="font-tabular text-slate-900">
                     {formatCurrency(option[column.key])}
                   </dd>
                 </div>
               ))}
               <div className="flex justify-between gap-2">
-                <dt className="text-gray-500">đ/km</dt>
-                <dd className="text-gray-900">
+                <dt className="text-slate-500">đ/km</dt>
+                <dd className="font-tabular text-slate-900">
                   {formatCurrency(option.cost_per_km)}
                 </dd>
               </div>
@@ -74,40 +74,40 @@ export default function OptionBreakdown({ options }) {
       <div className="hidden overflow-x-auto sm:block">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-500 border-b border-slate-200">
-              <th className="py-2 pr-3">Phương án</th>
+            <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
+              <th className="py-2 pr-3 font-medium">Phương án</th>
               {COLUMNS.map((column) => (
-                <th key={column.key} className="py-2 px-3 text-right">
+                <th key={column.key} className="px-3 py-2 text-right font-medium">
                   {column.label}
                 </th>
               ))}
-              <th className="py-2 px-3 text-right">Tổng</th>
-              <th className="py-2 pl-3 text-right">đ/km</th>
+              <th className="px-3 py-2 text-right font-medium">Tổng</th>
+              <th className="py-2 pl-3 text-right font-medium">đ/km</th>
             </tr>
           </thead>
           <tbody>
             {options.map((option, index) => (
               <tr
                 key={option.id ?? index}
-                className={`border-b border-slate-100 ${option.is_cheapest ? "bg-green-50" : ""}`}
+                className={`border-b border-slate-100 ${option.is_cheapest ? "bg-emerald-50" : ""}`}
               >
-                <td className="py-2 pr-3 font-medium text-gray-900">
+                <td className="py-2 pr-3 font-medium text-slate-900">
                   {optionName(option, index)}
                   {option.is_cheapest && (
-                    <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-green-600 text-white">
+                    <span className="badge ml-2 bg-emerald-700 text-white">
                       Rẻ nhất
                     </span>
                   )}
                 </td>
                 {COLUMNS.map((column) => (
-                  <td key={column.key} className="py-2 px-3 text-right">
+                  <td key={column.key} className="font-tabular px-3 py-2 text-right">
                     {formatCurrency(option[column.key])}
                   </td>
                 ))}
-                <td className="py-2 px-3 text-right font-semibold text-gray-900">
+                <td className="font-tabular px-3 py-2 text-right font-semibold text-slate-900">
                   {formatCurrency(option.total_cost)}
                 </td>
-                <td className="py-2 pl-3 text-right">
+                <td className="font-tabular py-2 pl-3 text-right">
                   {formatCurrency(option.cost_per_km)}
                 </td>
               </tr>

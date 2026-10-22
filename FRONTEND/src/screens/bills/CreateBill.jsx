@@ -17,6 +17,8 @@ import ShuttleRow from "../../components/bill/ShuttleRow";
 import MenuItemPicker from "../../components/bill/MenuItemPicker";
 import QuickAddMenu from "../../components/bill/QuickAddMenu";
 import BillSummary from "../../components/bill/BillSummary";
+import PageHeader from "../../components/ui/PageHeader";
+import { CalendarDays, Check, Loader, Plus } from "../../components/ui/icons";
 
 export default function CreateBill() {
   const navigate = useNavigate();
@@ -270,76 +272,37 @@ export default function CreateBill() {
   };
 
   return (
-    <div className="px-2 sm:px-0 pb-24 md:pb-0">
-      <header className="mb-5 sm:mb-7">
-        {/* Mobile: back + title same row. Desktop: back above, full title block below. */}
-        <div className="flex items-center justify-between gap-2 sm:block">
-          <button
-            type="button"
-            onClick={() =>
-              navigate(parentBill ? `/bills/${parentBill.id}` : "/")
-            }
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 sm:h-10 sm:px-3 sm:text-sm"
-          >
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
-            {parentBill ? "Về Bill chính" : "Danh sách"}
-          </button>
-          {/* Mobile-only inline title (right side) */}
-          <h1 className="font-display min-w-0 truncate text-right text-base font-semibold leading-tight text-slate-900 sm:hidden">
-            {parentBill ? `Bill con cho #${parentBill.id}` : "Tạo Bill mới"}
-          </h1>
-        </div>
-        {/* Desktop title block */}
-        <div className="mt-2 hidden min-w-0 sm:block">
-          <p className="text-xs font-medium uppercase tracking-[0.18em] text-emerald-700/80">
-            {parentBill ? "TẠO BILL CON" : "TẠO BILL MỚI"}
-          </p>
-          <h1 className="font-display mt-1 text-3xl font-semibold leading-tight text-slate-900">
-            {parentBill
-              ? `Tạo Bill con cho Bill #${parentBill.id}`
-              : "Tạo Bill mới"}
-          </h1>
-        </div>
-      </header>
+    <div className="px-4 sm:px-0 pb-24 md:pb-0">
+      <PageHeader
+        back={{
+          to: parentBill ? `/bills/${parentBill.id}` : "/",
+          label: parentBill ? "Về Bill chính" : "Danh sách",
+        }}
+        title={
+          <>
+            <span className="sm:hidden">
+              {parentBill ? `Bill con cho #${parentBill.id}` : "Tạo Bill mới"}
+            </span>
+            <span className="hidden sm:inline">
+              {parentBill
+                ? `Tạo Bill con cho Bill #${parentBill.id}`
+                : "Tạo Bill mới"}
+            </span>
+          </>
+        }
+      />
 
       {parentBill && (
         <section className="mb-4 overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-card ring-1 ring-sky-50 sm:mb-6">
           <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-700">
-                Bill chính
-              </p>
-              <h3 className="font-display mt-0.5 text-base font-semibold text-slate-900 sm:text-lg">
+              <p className="text-sm font-medium text-sky-700">Bill chính</p>
+              <h2 className="mt-0.5 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
                 #{parentBill.id}
-              </h3>
+              </h2>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 sm:text-sm">
                 <span className="inline-flex items-center gap-1.5">
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                    <path d="M16 2v4M8 2v4M3 10h18" />
-                  </svg>
+                  <CalendarDays className="h-3.5 w-3.5" strokeWidth={2} />
                   {formatDate(parentBill.date)}
                 </span>
                 <span className="font-tabular font-semibold text-slate-700">
@@ -363,34 +326,36 @@ export default function CreateBill() {
               {/* Basic Info */}
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-1">
                 <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  <h2 className="text-base font-semibold text-slate-900">
                     Thông tin cơ bản
-                  </p>
+                  </h2>
                 </div>
                 <div className="p-4 sm:p-5">
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-1 sm:gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                      <label htmlFor="bill-date" className="field-label">
                         Ngày đánh *
                       </label>
                       <DatePicker
+                        id="bill-date"
                         value={formData.date}
                         onChange={(value) =>
                           setFormData({ ...formData, date: value })
                         }
-                        className="w-full"
+                        baseClassName="field-input"
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                      <label htmlFor="bill-court-total" className="field-label">
                         Tổng tiền sân (VND) *
                       </label>
                       <CurrencyInput
+                        id="bill-court-total"
                         value={formData.court_total}
                         onChange={(value) =>
                           setFormData({ ...formData, court_total: value })
                         }
-                        className="w-full"
+                        baseClassName="field-input"
                       />
                       <div className="mt-2 flex flex-wrap gap-2">
                         {[140000, 280000, 420000].map((amount) => (
@@ -400,10 +365,10 @@ export default function CreateBill() {
                             onClick={() =>
                               setFormData({ ...formData, court_total: amount })
                             }
-                            className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
+                            className={`inline-flex h-11 items-center rounded-lg border px-3 text-sm font-semibold transition sm:h-9 ${
                               Number(formData.court_total) === amount
-                                ? "border-emerald-500 bg-emerald-50 text-emerald-700"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-600"
+                                ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
                             }`}
                           >
                             {amount.toLocaleString("vi-VN")}đ
@@ -427,7 +392,7 @@ export default function CreateBill() {
                                   court_total: suggestion,
                                 })
                               }
-                              className="rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-500"
+                              className="inline-flex h-11 items-center rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500 sm:h-9"
                             >
                               → {suggestion.toLocaleString("vi-VN")}đ
                             </button>
@@ -435,16 +400,17 @@ export default function CreateBill() {
                         })()}
                       </div>
                     </div>
-                    <div className="col-span-2 sm:col-span-1">
-                      <label className="mb-1 block text-xs font-medium text-slate-700 sm:text-sm">
+                    <div>
+                      <label htmlFor="bill-note" className="field-label">
                         Ghi chú
                       </label>
                       <textarea
+                        id="bill-note"
                         value={formData.note}
                         onChange={(e) =>
                           setFormData({ ...formData, note: e.target.value })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                        className="field-input !h-auto py-2"
                         rows={1}
                       />
                     </div>
@@ -455,27 +421,15 @@ export default function CreateBill() {
               {/* Shuttles */}
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-2">
                 <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  <h2 className="text-base font-semibold text-slate-900">
                     Loại cầu
-                  </p>
+                  </h2>
                   <button
                     type="button"
                     onClick={handleAddShuttle}
-                    className="inline-flex h-9 items-center gap-1 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 sm:h-10 sm:text-sm"
+                    className="btn btn-primary btn-sm"
                   >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
+                    <Plus className="h-4 w-4" />
                     Thêm cầu
                   </button>
                 </div>
@@ -499,9 +453,9 @@ export default function CreateBill() {
             {/* Players */}
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
               <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <h2 className="text-base font-semibold text-slate-900">
                   Người chơi
-                </p>
+                </h2>
                 {formData.players.length > 0 && (
                   <span className="font-tabular text-xs text-slate-500">
                     {formData.players.length} người
@@ -524,9 +478,9 @@ export default function CreateBill() {
                 {formData.players.length > 0 && (
                   <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-6 sm:pt-6">
                     <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      <h2 className="text-base font-semibold text-slate-900">
                         Chi tiết người chơi
-                      </p>
+                      </h2>
                       <QuickAddMenu menus={menus} onCreated={handleMenuAdded} />
                     </div>
                     <div className="space-y-3 sm:space-y-4">
@@ -538,17 +492,17 @@ export default function CreateBill() {
                           <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-3 md:gap-6">
                             {/* Player info & ratio */}
                             <div className="md:col-span-1">
-                              <div className="mb-3 flex items-center gap-2">
-                                <h4 className="truncate font-display text-base font-semibold text-slate-900 sm:text-lg">
+                              <div className="mb-3 flex items-start gap-2">
+                                <h4 className="min-w-0 break-words text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
                                   {player.name}
                                 </h4>
                                 {player.gender === "female" && (
-                                  <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-[10px] font-semibold text-pink-700">
+                                  <span className="flex-shrink-0 rounded-full bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-700">
                                     Nữ
                                   </span>
                                 )}
                                 {player.gender === "male" && (
-                                  <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
+                                  <span className="flex-shrink-0 rounded-full bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
                                     Nam
                                   </span>
                                 )}
@@ -556,11 +510,15 @@ export default function CreateBill() {
                               <div>
                                 {/* Mobile: label + input on one row. Desktop: stacked. */}
                                 <div className="flex items-center justify-between gap-3 sm:block">
-                                  <label className="text-xs font-medium text-slate-700 sm:mb-1 sm:block sm:text-sm">
+                                  <label
+                                    htmlFor={`player-ratio-${index}`}
+                                    className="text-sm font-medium text-slate-700 sm:mb-1.5 sm:block"
+                                  >
                                     Mức tính (override)
                                   </label>
                                   <div className="w-32 sm:w-full">
                                     <NumberInput
+                                      id={`player-ratio-${index}`}
                                       value={
                                         player.ratio_value ??
                                         player.default_ratio_value ??
@@ -574,11 +532,11 @@ export default function CreateBill() {
                                       }
                                       min={0}
                                       step={0.1}
-                                      className="w-full"
+                                      baseClassName="field-input"
                                     />
                                   </div>
                                 </div>
-                                <div className="mt-1 text-[11px] text-slate-500">
+                                <div className="mt-1 text-xs text-slate-500">
                                   Mặc định:{" "}
                                   <span className="font-tabular font-medium text-slate-600">
                                     {formatRatio(
@@ -591,9 +549,7 @@ export default function CreateBill() {
 
                             {/* Menu picker */}
                             <div className="md:col-span-2">
-                              <label className="mb-2 block text-xs font-medium text-slate-700 sm:text-sm">
-                                Menu nước
-                              </label>
+                              <span className="field-label">Menu nước</span>
                               <MenuItemPicker
                                 player={player}
                                 onUpdate={(updated) =>
@@ -616,48 +572,23 @@ export default function CreateBill() {
               <button
                 type="button"
                 onClick={() => navigate("/")}
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 shadow-card transition hover:bg-slate-50 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2"
+                className="btn btn-secondary"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-6 text-sm font-semibold text-white shadow-card transition hover:bg-emerald-700 hover:shadow-card-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="btn btn-primary px-6"
               >
                 {loading ? (
                   <>
-                    <svg
-                      className="animate-spin"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M21 12a9 9 0 11-6.219-8.56" />
-                    </svg>
+                    <Loader className="h-4 w-4 animate-spin" />
                     Đang tạo…
                   </>
                 ) : (
                   <>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
+                    <Check className="h-4 w-4" strokeWidth={2.5} />
                     Tạo Bill
                   </>
                 )}
@@ -674,53 +605,28 @@ export default function CreateBill() {
         </div>
 
         {/* Mobile-only fixed footer */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-3 py-2.5 backdrop-blur sm:hidden">
+        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
           <div className="mx-auto flex max-w-7xl gap-2">
             <button
               type="button"
               onClick={() => navigate("/")}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition active:bg-slate-50"
+              className="btn btn-secondary flex-1"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-sm font-semibold text-white shadow-card transition active:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn btn-primary flex-1"
             >
               {loading ? (
                 <>
-                  <svg
-                    className="animate-spin"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M21 12a9 9 0 11-6.219-8.56" />
-                  </svg>
+                  <Loader className="h-4 w-4 animate-spin" />
                   Đang tạo…
                 </>
               ) : (
                 <>
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
+                  <Check className="h-4 w-4" strokeWidth={2.5} />
                   Tạo Bill
                 </>
               )}

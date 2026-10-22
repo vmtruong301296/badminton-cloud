@@ -1,6 +1,7 @@
 import { useState } from "react";
 import NumberInput from "../common/NumberInput";
 import { formatCurrency } from "../../utils/formatters";
+import { X } from "../ui/icons";
 
 /**
  * MenuItemPicker
@@ -50,14 +51,15 @@ export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
   );
 
   return (
-    <div className="border rounded-lg p-4">
+    <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
       <div className="mb-3">
         <div className="grid grid-cols-12 gap-2">
-          <div className="col-span-6">
+          <div className="col-span-12 sm:col-span-6">
             <select
               value={selectedMenuId}
               onChange={(e) => setSelectedMenuId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              aria-label="Chọn menu"
+              className="field-input"
             >
               <option value="">Chọn menu</option>
               {menus.map((menu) => (
@@ -67,19 +69,20 @@ export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
               ))}
             </select>
           </div>
-          <div className="col-span-3">
+          <div className="col-span-5 sm:col-span-3">
             <NumberInput
               value={quantity}
               onChange={setQuantity}
               min={1}
-              className="w-full"
+              aria-label="Số lượng"
+              baseClassName="field-input"
             />
           </div>
-          <div className="col-span-3">
+          <div className="col-span-7 sm:col-span-3">
             <button
               type="button"
               onClick={handleAdd}
-              className="w-full px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              className="btn btn-secondary w-full"
             >
               Thêm
             </button>
@@ -89,28 +92,33 @@ export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
 
       {player.menus && player.menus.length > 0 && (
         <div className="mt-3">
-          <div className="text-sm font-medium mb-2">Menu đã chọn:</div>
+          <div className="mb-2 text-sm font-medium text-slate-700">
+            Menu đã chọn:
+          </div>
           <div className="space-y-1">
             {player.menus.map((menu, index) => (
               <div
                 key={index}
-                className="flex justify-between items-center bg-gray-50 p-2 rounded"
+                className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 py-1 pl-3 pr-1"
               >
-                <span className="text-sm">
+                <span className="min-w-0 break-words text-sm text-slate-700">
                   {menu.name} x {menu.quantity} ={" "}
-                  {formatCurrency(menu.subtotal)}
+                  <span className="font-tabular">
+                    {formatCurrency(menu.subtotal)}
+                  </span>
                 </span>
                 <button
                   type="button"
                   onClick={() => handleRemove(index)}
-                  className="text-red-500 hover:text-red-700"
+                  aria-label={`Xóa ${menu.name}`}
+                  className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:h-9 sm:w-9"
                 >
-                  ✕
+                  <X className="h-4 w-4" />
                 </button>
               </div>
             ))}
           </div>
-          <div className="mt-2 text-sm font-medium">
+          <div className="font-tabular mt-2 text-sm font-medium text-slate-900">
             Tổng menu: {formatCurrency(menuTotal)}
           </div>
         </div>
