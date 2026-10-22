@@ -1,7 +1,7 @@
 # Thiết kế: làm mới giao diện toàn app theo phong cách web app hiện đại
 
 Ngày: 2026-10-21
-Trạng thái: chủ dự án giao "làm luôn" (21/10/2026), triển khai trên nhánh `feature/giao-dien-moi`; duyệt bằng ảnh chụp trước khi merge
+Trạng thái: chủ dự án giao "làm luôn" (21/10/2026), triển khai trên nhánh `feature/giao-dien-moi`; chủ dự án chạy thử và duyệt giao diện cùng chữ mới ở mục 8 (22/10/2026), merge `main` và deploy
 Phạm vi: chỉ `FRONTEND/`, không đụng backend
 
 ## 1. Mục tiêu
