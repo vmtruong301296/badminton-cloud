@@ -86,7 +86,7 @@ async function waitForImageReady(img, timeoutMs) {
   if (typeof img.decode === "function") {
     try {
       await img.decode();
-    } catch (e) {
+    } catch {
       // decode() can reject for broken images. We've already done our best
       // effort with the load wait above — fall through and let the snapshot
       // render whatever it can.
