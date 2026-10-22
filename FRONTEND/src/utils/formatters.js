@@ -66,8 +66,9 @@ export const formatRatio = (value) => {
   if (value === null || value === undefined) return '';
   const num = parseFloat(value);
   if (isNaN(num)) return '';
-  // Remove trailing zeros by converting to number and back to string
-  return num.toString();
+  // Mức tính lưu 3 chữ số thập phân: làm tròn để bỏ sai số khi cộng (22.250000000000004),
+  // đổi về number để bỏ số 0 thừa
+  return Number(num.toFixed(3)).toString();
 };
 
 /** Đơn giá cầu cho bill: API trả price_for_bill khi gọi kèm as_of, không thì dùng price. */
