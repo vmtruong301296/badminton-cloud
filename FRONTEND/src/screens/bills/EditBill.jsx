@@ -483,7 +483,7 @@ export default function EditBill() {
           {/* Main Form */}
           <div className="space-y-4 sm:space-y-6 lg:col-span-2">
             {/* Basic Info and Shuttles */}
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 md:items-start">
               {/* Basic Info */}
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-1">
                 <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
