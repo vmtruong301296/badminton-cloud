@@ -361,3 +361,18 @@ lề trái `h1` đều 16 px; ảnh xuất bill cầu (có bill con) và bill ti
 
 **Còn lại, không sửa**: màn Tạo Bill ở desktop có thẻ "Loại cầu" kéo cao bằng thẻ "Thông tin cơ bản" (khoảng trống lớn khi chưa thêm cầu);
 chỉ thẩm mỹ, thuộc bố cục đợt 3a. `alert()` / `confirm()` (~100 chỗ) vẫn là việc tiếp theo.
+
+### Dọn sau khi merge (22/10/2026, nhánh `fix/don-sau-giao-dien-moi`)
+
+- `fix(bill)`: `formatRatio` làm tròn 3 chữ số (mức tính lưu `decimal(5,3)`), "Tổng mức tính" ở Tóm tắt Bill hết in `22.250000000000004`.
+  Có `utils/formatters.test.js`. Hàm này cũng chạy trong ảnh xuất, nhưng ảnh xuất bill cầu / bill tiệc ở 390 / 1280 vẫn 0 điểm khác `main`.
+- `style(bill)`: lưới hai thẻ đầu màn Tạo / Sửa bill thêm `md:items-start`, thẻ "Loại cầu" không còn kéo cao theo thẻ "Thông tin cơ bản".
+  Chưa có cầu nào thì thẻ còn dải trống ~40 px dưới tiêu đề (phần đệm của thân thẻ rỗng).
+- `chore(lint)`: bỏ biến không dùng (Login, exportImage, TournamentBrackets), `formatNumber` của `CurrencyInput` ra ngoài component.
+  ESLint còn **3 lỗi + 8 cảnh báo** (mốc mới): `SelectPaymentAccountDialog` gọi `setState` trong effect, `AuthContext` xuất cả hook lẫn
+  component (chỉ ảnh hưởng fast refresh khi dev), 8 cảnh báo `exhaustive-deps`. Chưa sửa vì đổi hành vi hoặc phải sửa import ở 10 file.
+
+**Kiểm**: `npm test` 46 passed; build ok; ảnh 390 của Tạo / Sửa bill 0 điểm khác `main`.
+
+**Còn lại**: `alert()` / `confirm()` (93 chỗ); 3 lỗi + 8 cảnh báo ESLint ở trên. Thấy khi chụp, có từ trước: ở 1280 nút xóa (×) của hàng cầu
+lấn ra ngoài phần đệm của thẻ "Loại cầu", tên cầu trong ô chọn bị cắt ("Yonex AS-50 — 36.00").
