@@ -260,7 +260,6 @@ export default function TournamentBrackets() {
     }
   };
 
-  const selectedList = playerLists.find(list => list.id === selectedListId);
   const availablePlayers = players.filter(p => !p.brackets || p.brackets.length === 0);
   const assignedPlayers = players.filter(p => p.brackets && p.brackets.length > 0);
 

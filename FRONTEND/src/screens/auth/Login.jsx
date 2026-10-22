@@ -23,7 +23,7 @@ export default function Login() {
 			} else {
 				setError(result.message || 'Đăng nhập thất bại');
 			}
-		} catch (err) {
+		} catch {
 			setError('Có lỗi xảy ra khi đăng nhập');
 		} finally {
 			setLoading(false);
