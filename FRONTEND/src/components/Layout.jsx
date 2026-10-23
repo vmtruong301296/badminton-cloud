@@ -212,10 +212,10 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4 sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-12 max-w-7xl items-center gap-2 px-3 sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
           <Link
             to="/"
-            className="-ml-1 flex flex-shrink-0 items-center gap-2 rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+            className="-ml-1 flex min-h-11 flex-shrink-0 items-center gap-2 rounded-lg p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
           >
             <img src="/favicon.svg" alt="" className="h-7 w-7" />
             <span className="font-semibold tracking-tight text-slate-900 sm:hidden md:inline">
@@ -255,7 +255,7 @@ export default function Layout({ children }) {
                 aria-label="Tài khoản"
                 className="-mr-1 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:hidden"
               >
-                <Avatar name={user.name} className="h-9 w-9" />
+                <Avatar name={user.name} className="h-8 w-8" />
               </button>
             </div>
           )}
@@ -265,8 +265,8 @@ export default function Layout({ children }) {
       <main
         className={`mx-auto max-w-7xl sm:px-6 sm:py-6 lg:px-8 ${
           showTabBar
-            ? "pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 sm:pb-6"
-            : "py-6"
+            ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-3 sm:pb-6"
+            : "py-3 sm:py-6"
         }`}
       >
         {children}
@@ -277,7 +277,7 @@ export default function Layout({ children }) {
           aria-label="Điều hướng chính"
           className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
         >
-          <div className="flex h-16">
+          <div className="flex h-14">
             {tabSplit.primary.map((item) => (
               <TabLink
                 key={item.key}

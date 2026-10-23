@@ -13,6 +13,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
 import {
   ChartLine,
+  ChevronDown,
   ChevronLeft,
   CircleAlert,
   Plus,
@@ -51,6 +52,7 @@ export default function Dashboard() {
   const [bills, setBills] = useState([]);
   const [allBills, setAllBills] = useState([]); // Store all bills for unpaid players calculation
   const [loading, setLoading] = useState(true);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
     date_from: "",
     date_to: "",
@@ -627,8 +629,9 @@ export default function Dashboard() {
   }, [allBills, statsMode, statsMonth, statsYear]);
 
   return (
-    <div className="px-4 sm:px-0 pb-24 md:pb-0">
+    <div className="px-3 sm:px-0 pb-16 md:pb-0">
       <PageHeader
+        compactActions
         title="Danh sách Bills"
         description={
           loading ? (
@@ -648,7 +651,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={openStatsModal}
-              className="btn btn-secondary"
+              className="btn btn-secondary px-3 sm:px-4"
             >
               <ChartLine className="h-[18px] w-[18px]" />
               Thống kê
@@ -667,11 +670,11 @@ export default function Dashboard() {
       />
 
       {/* Filters — toolbar gọn 1 hàng trên desktop */}
-      <section className="card mb-6 !p-3 sm:!p-4">
+      <section aria-label="Lọc danh sách bills" className="card mb-3 !p-2 sm:mb-6 sm:!p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-3 lg:flex lg:gap-3">
-            <div>
+          <div id="bill-filter-dates" className={`${mobileFiltersOpen ? "grid" : "hidden"} min-w-0 grid-cols-2 gap-2 sm:grid sm:gap-3 lg:flex`}>
+            <div className="min-w-0">
               <label htmlFor="filter-date-from" className="field-label">
                 Từ ngày
               </label>
@@ -682,10 +685,10 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setFilters({ ...filters, date_from: e.target.value })
                 }
-                className="field-input lg:w-40"
+                className="field-input min-w-0 lg:w-40"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label htmlFor="filter-date-to" className="field-label">
                 Đến ngày
               </label>
@@ -696,17 +699,17 @@ export default function Dashboard() {
                 onChange={(e) =>
                   setFilters({ ...filters, date_to: e.target.value })
                 }
-                className="field-input lg:w-40"
+                className="field-input min-w-0 lg:w-40"
               />
             </div>
           </div>
 
           {/* Status chips */}
-          <div role="group" aria-labelledby="filter-status-label">
-            <span id="filter-status-label" className="field-label">
+          <div role="group" aria-labelledby="filter-status-label" className="order-first sm:order-none">
+            <span id="filter-status-label" className="sr-only sm:not-sr-only sm:field-label">
               Trạng thái
             </span>
-            <div className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2">
+            <div className="grid grid-cols-[repeat(3,minmax(0,1fr))_auto] gap-1 sm:flex sm:flex-wrap sm:gap-2">
               {[
                 {
                   value: "paid",
@@ -736,6 +739,7 @@ export default function Dashboard() {
                   <button
                     key={opt.value}
                     type="button"
+                    aria-label={opt.label}
                     aria-pressed={isActive}
                     onClick={() => {
                       const next = isActive
@@ -743,7 +747,7 @@ export default function Dashboard() {
                         : [...filters.status, opt.value];
                       setFilters({ ...filters, status: next });
                     }}
-                    className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
+                    className={`inline-flex h-11 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:rounded-full sm:px-3.5 sm:text-sm ${
                       isActive
                         ? opt.activeCls
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -758,11 +762,25 @@ export default function Dashboard() {
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((open) => !open)}
+                aria-expanded={mobileFiltersOpen}
+                aria-controls="bill-filter-dates bill-filter-options"
+                aria-label="Bộ lọc nâng cao"
+                className="btn btn-ghost gap-1 px-2 text-xs sm:hidden"
+              >
+                Lọc
+                {(filters.date_from || filters.date_to || filters.limit !== 10) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-label="Có bộ lọc nâng cao đang áp dụng" />
+                )}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} />
+              </button>
             </div>
           </div>
 
           {/* Limit + Clear — đẩy sang phải trên desktop */}
-          <div className="grid grid-cols-2 gap-3 lg:ml-auto lg:flex lg:items-end lg:gap-3">
+          <div id="bill-filter-options" className={`${mobileFiltersOpen ? "grid" : "hidden"} grid-cols-2 gap-2 sm:grid sm:gap-3 lg:ml-auto lg:flex lg:items-end`}>
             <div>
               <label htmlFor="filter-limit" className="field-label">
                 Số bill / trang
@@ -803,6 +821,11 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        {!mobileFiltersOpen && (filters.date_from || filters.date_to) && (
+          <p className="px-1 pt-2 text-xs text-slate-600 sm:hidden">
+            {filters.date_from ? formatDate(filters.date_from) : "Từ đầu"} – {filters.date_to ? formatDate(filters.date_to) : "hiện tại"}
+          </p>
+        )}
       </section>
 
       {/* Main Content: Bills Table and Unpaid Players */}
@@ -832,16 +855,15 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              <div className="md:hidden space-y-3 p-3">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-slate-100 p-4"
-                  >
-                    <div className="skeleton h-3 w-20 mb-3" />
-                    <div className="skeleton h-6 w-32 mb-2" />
-                    <div className="skeleton h-4 w-24 mb-4" />
-                    <div className="skeleton h-11 w-full" />
+              <div className="divide-y divide-slate-100 md:hidden">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="space-y-2 px-3 py-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="skeleton h-4 w-24" />
+                      <div className="skeleton h-5 w-28" />
+                    </div>
+                    <div className="skeleton h-3 w-32" />
+                    <div className="skeleton h-3 w-40" />
                   </div>
                 ))}
               </div>
@@ -1035,199 +1057,78 @@ export default function Dashboard() {
                 </table>
               </div>
 
-              <div className="md:hidden space-y-3 p-3">
-                {billGroups.map((group) => {
-                  const mainBill = group.mainBill;
-                  const subBills = group.subBills;
-                  const mainBillWarning = isOverdueWarning(mainBill);
-                  const mainBillAllPaid =
-                    mainBill.bill_players?.every((p) => p.is_paid) &&
-                    mainBill.bill_players?.length > 0;
-                  const mainUnpaid =
-                    mainBill.bill_players?.filter((p) => !p.is_paid).length ||
-                    0;
+              <div className="divide-y divide-slate-200 md:hidden">
+                {billGroups.map(({ mainBill, subBills }) => (
+                  <article key={mainBill.id} aria-label={"Bill chính #" + mainBill.id}>
+                    {[mainBill, ...subBills].map((bill, index) => {
+                      const isSubBill = index > 0;
+                      const overdue = isOverdueWarning(bill);
+                      const allPaid = bill.bill_players?.every((p) => p.is_paid) && bill.bill_players?.length > 0;
+                      const unpaidCount = bill.bill_players?.filter((p) => !p.is_paid).length || 0;
+                      const canView = hasPermission("bills.view");
+                      const Content = canView ? Link : "div";
 
-                  return (
-                    <article
-                      key={mainBill.id}
-                      className={`overflow-hidden rounded-2xl border transition ${
-                        mainBillWarning
-                          ? "border-rose-300 ring-1 ring-rose-100"
-                          : mainBillAllPaid
-                            ? "border-emerald-300 ring-1 ring-emerald-50"
-                            : "border-slate-200"
-                      }`}
-                    >
-                      {/* Main Bill Card */}
-                      <div
-                        className={`p-4 ${
-                          mainBillWarning
-                            ? "bg-rose-50/70"
-                            : mainBillAllPaid
-                              ? "bg-emerald-50/50"
-                              : "bg-white"
-                        }`}
-                      >
-                        <div className="mb-3 flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="font-tabular text-sm font-medium text-slate-500">
-                              {formatDate(mainBill.date)}
-                            </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-2">
-                              <span className="badge badge-slate">
-                                Bill chính #{mainBill.id}
+                      return (
+                        <div
+                          key={bill.id}
+                          className={"flex items-center gap-1 px-3 " + (isSubBill ? "ml-3 border-l-2 border-t border-sky-200 " : "") + (
+                            overdue ? "bg-rose-50/70" : allPaid ? "bg-emerald-50/50" : isSubBill ? "bg-sky-50/50" : "bg-white"
+                          )}
+                        >
+                          <Content
+                            {...(canView ? { to: "/bills/" + bill.id, "aria-label": "Chi tiết bill #" + bill.id } : {})}
+                            className={"min-w-0 flex-1 rounded-lg py-3 " + (canView ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" : "")}
+                          >
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+                              <span className="font-tabular text-sm font-medium text-slate-700">
+                                {formatDate(bill.date)}
                               </span>
-                              {mainBillWarning && (
-                                <span className="badge badge-rose gap-1">
-                                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-rose-500" />
-                                  Quá hạn
+                              <span className="font-tabular text-lg font-semibold leading-tight tracking-tight text-slate-900">
+                                {formatCurrencyRounded(bill.total_amount)}
+                              </span>
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                              <span className={"text-xs " + (isSubBill ? "text-sky-700" : "text-slate-500")}>
+                                {isSubBill ? "Bill con" : "Bill chính"} #{bill.id}
+                              </span>
+                              <span aria-label={getStatusText(bill)} className={"badge gap-1 " + getStatusColor(bill)}>
+                                <span className={"h-1.5 w-1.5 rounded-full " + (allPaid ? "bg-emerald-500" : bill.bill_players?.some((p) => p.is_paid) ? "bg-amber-500" : "bg-slate-400")} aria-hidden="true" />
+                                {allPaid ? "Đã TT" : bill.bill_players?.some((p) => p.is_paid) ? "TT 1 phần" : "Chưa TT"}
+                              </span>
+                            </div>
+                            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
+                              <span className={overdue ? "text-rose-700" : unpaidCount > 0 ? "text-slate-500" : "text-emerald-700"}>
+                                {unpaidCount > 0 ? unpaidCount + " người chưa TT" : "Tất cả đã thanh toán"}
+                                {overdue && " · Quá hạn"}
+                              </span>
+                              {canView && (
+                                <span className="inline-flex items-center gap-0.5 font-medium text-emerald-700">
+                                  Chi tiết <ChevronLeft className="h-3 w-3 rotate-180" />
                                 </span>
                               )}
                             </div>
-                          </div>
-                          <span
-                            className={`badge gap-1.5 ${getStatusColor(mainBill)}`}
-                          >
-                            <span
-                              className={`h-1.5 w-1.5 rounded-full ${mainBillAllPaid ? "bg-emerald-500" : mainUnpaid > 0 && mainBill.bill_players?.some((p) => p.is_paid) ? "bg-amber-500" : "bg-slate-400"}`}
-                            />
-                            {getStatusText(mainBill)}
-                          </span>
-                        </div>
-
-                        <div className="font-tabular text-2xl font-semibold leading-tight tracking-tight text-slate-900">
-                          {formatCurrencyRounded(mainBill.total_amount)}
-                        </div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {mainUnpaid > 0 ? (
-                            <>
-                              <span className="font-semibold text-slate-700">
-                                {mainUnpaid}
-                              </span>{" "}
-                              người chưa thanh toán
-                            </>
-                          ) : (
-                            <span className="font-medium text-emerald-700">
-                              Tất cả đã thanh toán
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="mt-4 flex gap-2 border-t border-slate-200/70 pt-3">
-                          {hasPermission("bills.view") && (
-                            <Link
-                              to={`/bills/${mainBill.id}`}
-                              className="btn btn-primary flex-1"
-                            >
-                              Chi tiết
-                            </Link>
-                          )}
+                          </Content>
                           {hasPermission("bills.delete") && (
                             <button
                               type="button"
-                              onClick={() => handleDeleteClick(mainBill.id)}
-                              aria-label={`Xóa bill #${mainBill.id}`}
-                              className="btn btn-danger-soft btn-icon"
+                              onClick={() => handleDeleteClick(bill.id)}
+                              aria-label={"Xóa " + (isSubBill ? "bill con" : "bill") + " #" + bill.id}
+                              className="btn btn-danger-ghost btn-icon shrink-0 sm:h-11 sm:w-11"
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Trash2 className="h-4 w-4" />
                             </button>
                           )}
                         </div>
-                      </div>
-
-                      {/* Sub Bills Cards */}
-                      {subBills.map((subBill) => {
-                        const subBillWarning = isOverdueWarning(subBill);
-                        const subBillAllPaid =
-                          subBill.bill_players?.every((p) => p.is_paid) &&
-                          subBill.bill_players?.length > 0;
-                        const subUnpaid =
-                          subBill.bill_players?.filter((p) => !p.is_paid)
-                            .length || 0;
-                        return (
-                          <div
-                            key={subBill.id}
-                            className={`relative border-t border-slate-200/70 p-4 pl-6 ${
-                              subBillWarning
-                                ? "bg-rose-50/70"
-                                : subBillAllPaid
-                                  ? "bg-emerald-50/40"
-                                  : "bg-sky-50/60"
-                            }`}
-                          >
-                            <span
-                              className="absolute left-2 top-4 bottom-4 w-0.5 rounded-full bg-sky-300"
-                              aria-hidden
-                            />
-                            <div className="mb-3 flex items-start justify-between gap-3">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="badge badge-sky">
-                                    Bill con
-                                  </span>
-                                  <span className="text-xs text-slate-500">
-                                    của #{mainBill.id}
-                                  </span>
-                                </div>
-                              </div>
-                              <span
-                                className={`badge gap-1.5 ${getStatusColor(subBill)}`}
-                              >
-                                <span
-                                  className={`h-1.5 w-1.5 rounded-full ${subBillAllPaid ? "bg-emerald-500" : subUnpaid > 0 && subBill.bill_players?.some((p) => p.is_paid) ? "bg-amber-500" : "bg-slate-400"}`}
-                                />
-                                {getStatusText(subBill)}
-                              </span>
-                            </div>
-                            <div className="font-tabular text-xl font-semibold tracking-tight text-slate-900">
-                              {formatCurrencyRounded(subBill.total_amount)}
-                            </div>
-                            <div className="mt-1 text-xs text-slate-500">
-                              {subUnpaid > 0 ? (
-                                <>
-                                  <span className="font-semibold text-slate-700">
-                                    {subUnpaid}
-                                  </span>{" "}
-                                  người chưa thanh toán
-                                </>
-                              ) : (
-                                <span className="font-medium text-emerald-700">
-                                  Tất cả đã thanh toán
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-4 flex gap-2 border-t border-slate-200/70 pt-3">
-                              {hasPermission("bills.view") && (
-                                <Link
-                                  to={`/bills/${subBill.id}`}
-                                  className="btn btn-secondary flex-1"
-                                >
-                                  Chi tiết
-                                </Link>
-                              )}
-                              {hasPermission("bills.delete") && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteClick(subBill.id)}
-                                  aria-label={`Xóa bill con #${subBill.id}`}
-                                  className="btn btn-danger-soft btn-icon"
-                                >
-                                  <Trash2 className="h-5 w-5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </article>
-                  );
-                })}
+                      );
+                    })}
+                  </article>
+                ))}
               </div>
 
               {/* Legend/Chú thích */}
-              <div className="border-t border-slate-200 bg-slate-50 px-4 py-4 sm:px-6">
+              <div className="border-t border-slate-200 bg-slate-50 px-3 py-3 sm:px-6 sm:py-4">
                 <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <div className="flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <div className="flex items-center space-x-2">
                       <div className="h-4 w-4 flex-shrink-0 rounded border border-rose-300 bg-rose-100"></div>
                       <span className="text-xs text-slate-600 sm:text-sm">
@@ -1669,7 +1570,7 @@ export default function Dashboard() {
         <Link
           to="/bills/create"
           aria-label="Tạo bill mới"
-          className="fab-enter fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-30 sm:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
+          className="fab-enter fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-30 sm:bottom-5 sm:right-5 inline-flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
         >
           <Plus className="h-6 w-6" strokeWidth={2.25} />
         </Link>

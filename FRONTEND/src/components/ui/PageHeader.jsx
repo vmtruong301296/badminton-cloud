@@ -7,9 +7,9 @@ import { ChevronLeft } from "./icons";
  * - actions: nằm bên phải trên desktop, xuống dưới tiêu đề trên điện thoại.
  * - back: { to, label } -> liên kết quay lại có mũi tên, đặt trên tiêu đề.
  */
-export default function PageHeader({ title, description, actions, back }) {
+export default function PageHeader({ title, description, actions, back, compactActions = false }) {
   return (
-    <div className="mb-5 sm:mb-6">
+    <div className="mb-3 sm:mb-6">
       {back && (
         <Link
           to={back.to}
@@ -19,13 +19,13 @@ export default function PageHeader({ title, description, actions, back }) {
           {back.label}
         </Link>
       )}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className={`flex gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 ${compactActions ? "flex-row items-center justify-between" : "flex-col"}`}>
         <div className="min-w-0">
-          <h1 className="break-words text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="break-words text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
             {title}
           </h1>
           {description && (
-            <div className="mt-1 text-sm text-slate-500">{description}</div>
+            <div className="mt-0.5 text-xs text-slate-500 sm:mt-1 sm:text-sm">{description}</div>
           )}
         </div>
         {actions && (
