@@ -10,6 +10,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
 import {
+  ChevronDown,
   ChevronLeft,
   Pencil,
   Plus,
@@ -38,6 +39,7 @@ const formatDateForUnpaid = (date) => {
 
 export default function PartyBills() {
   const [loading, setLoading] = useState(true);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [bills, setBills] = useState([]);
   const [filters, setFilters] = useState({
     date_from: "",
@@ -286,7 +288,7 @@ export default function PartyBills() {
   };
 
   return (
-    <div className="px-4 pb-24 sm:px-0 md:pb-0">
+    <div className="px-3 pb-16 sm:px-0 md:pb-0">
       <PageHeader
         title="Danh sách Bills tiệc"
         description={
@@ -314,11 +316,11 @@ export default function PartyBills() {
       />
 
       {/* Filters — toolbar gọn 1 hàng trên desktop */}
-      <section className="card mb-6 !p-0">
-        <div className="flex flex-col gap-3 p-3 sm:p-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
+      <section aria-label="Lọc danh sách bill tiệc" className="card mb-3 !p-0 sm:mb-6">
+        <div className="flex flex-col gap-3 p-2 sm:p-4 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-3 lg:flex lg:gap-3">
-            <div>
+          <div id="party-filter-dates" className={`${mobileFiltersOpen ? "grid" : "hidden"} min-w-0 grid-cols-2 gap-2 sm:grid sm:gap-3 lg:flex`}>
+            <div className="min-w-0">
               <label htmlFor="pb-date-from" className="field-label">
                 Từ ngày
               </label>
@@ -329,10 +331,10 @@ export default function PartyBills() {
                 onChange={(e) =>
                   setFilters({ ...filters, date_from: e.target.value })
                 }
-                className="field-input lg:w-40"
+                className="field-input min-w-0 lg:w-40"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label htmlFor="pb-date-to" className="field-label">
                 Đến ngày
               </label>
@@ -343,13 +345,13 @@ export default function PartyBills() {
                 onChange={(e) =>
                   setFilters({ ...filters, date_to: e.target.value })
                 }
-                className="field-input lg:w-40"
+                className="field-input min-w-0 lg:w-40"
               />
             </div>
           </div>
 
           {/* Tên tiệc */}
-          <div className="lg:min-w-[200px] lg:flex-1">
+          <div id="party-filter-name" className={`${mobileFiltersOpen ? "block" : "hidden"} sm:block lg:min-w-[200px] lg:flex-1`}>
             <label htmlFor="pb-name" className="field-label">
               Tên tiệc
             </label>
@@ -364,14 +366,14 @@ export default function PartyBills() {
           </div>
 
           {/* Status chips */}
-          <div>
-            <span id="pb-status-label" className="field-label">
+          <div className="order-first sm:order-none">
+            <span id="pb-status-label" className="sr-only sm:not-sr-only sm:field-label">
               Trạng thái
             </span>
             <div
               role="group"
               aria-labelledby="pb-status-label"
-              className="grid grid-cols-3 gap-1.5 sm:flex sm:flex-wrap sm:gap-2"
+              className="grid grid-cols-[repeat(3,minmax(0,1fr))_auto] gap-1 sm:flex sm:flex-wrap sm:gap-2"
             >
               {[
                 {
@@ -405,13 +407,14 @@ export default function PartyBills() {
                     key={opt.value}
                     type="button"
                     aria-pressed={isActive}
+                    aria-label={opt.label}
                     onClick={() => {
                       const next = isActive
                         ? filters.status.filter((s) => s !== opt.value)
                         : [...filters.status, opt.value];
                       setFilters({ ...filters, status: next });
                     }}
-                    className={`inline-flex h-11 items-center justify-center gap-1.5 rounded-full border px-2 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:px-3.5 sm:text-sm ${
+                    className={`inline-flex h-11 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:rounded-full sm:px-3.5 sm:text-sm ${
                       isActive
                         ? opt.activeCls
                         : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50"
@@ -426,11 +429,25 @@ export default function PartyBills() {
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setMobileFiltersOpen((open) => !open)}
+                aria-expanded={mobileFiltersOpen}
+                aria-controls="party-filter-dates party-filter-name party-filter-options"
+                aria-label="Bộ lọc nâng cao"
+                className="btn btn-ghost gap-1 px-2 text-xs sm:hidden"
+              >
+                Lọc
+                {(filters.date_from || filters.date_to || filters.name || filters.limit !== 10) && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-label="Có bộ lọc nâng cao đang áp dụng" />
+                )}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} />
+              </button>
             </div>
           </div>
 
           {/* Limit + Clear — đẩy sang phải trên desktop */}
-          <div className="grid grid-cols-2 gap-3 lg:ml-auto lg:flex lg:items-end lg:gap-3">
+          <div id="party-filter-options" className={`${mobileFiltersOpen ? "grid" : "hidden"} grid-cols-2 gap-2 sm:grid sm:gap-3 lg:ml-auto lg:flex lg:items-end`}>
             <div>
               <label htmlFor="pb-limit" className="field-label">
                 Số bill / trang
@@ -471,6 +488,12 @@ export default function PartyBills() {
             </div>
           </div>
         </div>
+        {!mobileFiltersOpen && (filters.date_from || filters.date_to || filters.name) && (
+          <p className="break-words px-3 pb-2 text-xs text-slate-600 sm:hidden">
+            {(filters.date_from || filters.date_to) && <>{filters.date_from ? formatDate(filters.date_from) : "Từ đầu"} – {filters.date_to ? formatDate(filters.date_to) : "hiện tại"}</>}
+            {filters.name && <>{filters.date_from || filters.date_to ? " · " : ""}Tên: {filters.name}</>}
+          </p>
+        )}
       </section>
 
       {/* Main content: bills list (3/4) + unpaid sidebar (1/4) */}
@@ -500,16 +523,15 @@ export default function PartyBills() {
                   </div>
                 ))}
               </div>
-              <div className="md:hidden space-y-3 p-3">
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="rounded-xl border border-slate-100 p-4"
-                  >
-                    <div className="skeleton h-3 w-20 mb-3" />
-                    <div className="skeleton h-6 w-32 mb-2" />
-                    <div className="skeleton h-4 w-24 mb-4" />
-                    <div className="skeleton h-11 w-full" />
+              <div className="divide-y divide-slate-100 md:hidden">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="space-y-2 px-3 py-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="skeleton h-4 w-24" />
+                      <div className="skeleton h-5 w-28" />
+                    </div>
+                    <div className="skeleton h-3 w-32" />
+                    <div className="skeleton h-3 w-40" />
                   </div>
                 ))}
               </div>
@@ -641,7 +663,7 @@ export default function PartyBills() {
               </div>
 
               {/* Mobile Cards */}
-              <div className="md:hidden space-y-3 p-3">
+              <div className="divide-y divide-slate-200 md:hidden">
                 {paginatedBills.map((bill) => {
                   const status = getBillStatus(bill);
                   const meta = getStatusMeta(status);
@@ -655,16 +677,10 @@ export default function PartyBills() {
                   return (
                     <article
                       key={bill.id}
-                      className={`overflow-hidden rounded-2xl border transition ${
-                        overdue
-                          ? "border-rose-300 ring-1 ring-rose-100"
-                          : status === "paid"
-                            ? "border-emerald-300 ring-1 ring-emerald-50"
-                            : "border-slate-200"
-                      }`}
+                      className="overflow-hidden"
                     >
                       <div
-                        className={`p-4 ${
+                        className={`grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 p-3 ${
                           overdue
                             ? "bg-rose-50/70"
                             : status === "paid"
@@ -672,13 +688,13 @@ export default function PartyBills() {
                               : "bg-white"
                         }`}
                       >
-                        <div className="mb-3 flex items-start justify-between gap-3">
+                        <div className="col-span-2 mb-2 flex items-start justify-between gap-2">
                           <div className="min-w-0 flex-1">
                             <div className="text-xs font-medium text-slate-500">
                               {formatDate(bill.date)}
                             </div>
                             <div className="mt-1 flex flex-wrap items-center gap-2">
-                              <h3 className="truncate font-display text-base font-semibold text-slate-900">
+                              <h3 className="truncate text-sm font-semibold text-slate-900">
                                 {bill.name || "—"}
                               </h3>
                               {overdue && (
@@ -694,24 +710,24 @@ export default function PartyBills() {
                               </div>
                             )}
                           </div>
-                          <span className={`badge gap-1.5 whitespace-nowrap ${meta.cls}`}>
+                          <span aria-label={meta.text} className={`badge gap-1.5 whitespace-nowrap ${meta.cls}`}>
                             <span
                               className={`h-1.5 w-1.5 rounded-full ${meta.dot}`}
                             />
-                            {meta.text}
+                            {status === "partial" ? "TT 1 phần" : status === "paid" ? "Đã TT" : "Chưa TT"}
                           </span>
                         </div>
 
-                        <div className="font-display font-tabular text-2xl font-semibold leading-tight text-slate-900">
+                        <div className="col-start-1 font-tabular text-lg font-semibold leading-tight text-slate-900">
                           {formatCurrencyRounded(totalWithFood)}
                         </div>
-                        <div className="mt-1 text-xs text-slate-500">
+                        <div className="col-start-1 mt-1 text-xs text-slate-500">
                           {unpaidCount > 0 ? (
                             <>
                               <span className="font-semibold text-slate-700">
                                 {unpaidCount}
                               </span>{" "}
-                              người chưa thanh toán
+                              người chưa TT
                             </>
                           ) : (
                             <span className="font-medium text-emerald-700">
@@ -720,19 +736,20 @@ export default function PartyBills() {
                           )}
                         </div>
 
-                        <div className="mt-4 flex gap-2 border-t border-slate-200/70 pt-3">
+                        <div className="col-start-2 row-start-2 row-span-2 flex items-center gap-0.5">
                           <Link
                             to={`/party-bills/${bill.id}`}
-                            className="btn btn-primary flex-1"
+                            aria-label={`Chi tiết bill tiệc #${bill.id}`}
+                            className="btn btn-ghost btn-icon text-emerald-700 sm:h-11 sm:w-11"
                           >
-                            Chi tiết
+                            <span className="sr-only">Chi tiết</span>
                             <ChevronLeft className="h-4 w-4 rotate-180" />
                           </Link>
                           {status !== "paid" && (
                             <Link
                               to={`/party-bills/${bill.id}/edit`}
                               aria-label={`Sửa bill #${bill.id}`}
-                              className="btn btn-secondary btn-icon"
+                              className="btn btn-ghost btn-icon sm:h-11 sm:w-11"
                             >
                               <Pencil className="h-[18px] w-[18px]" />
                             </Link>
@@ -743,7 +760,7 @@ export default function PartyBills() {
                               setDeleteConfirm({ isOpen: true, id: bill.id })
                             }
                             aria-label={`Xóa bill #${bill.id}`}
-                            className="btn btn-danger-soft btn-icon"
+                            className="btn btn-danger-ghost btn-icon sm:h-11 sm:w-11"
                           >
                             <Trash2 className="h-[18px] w-[18px]" />
                           </button>
@@ -946,7 +963,7 @@ export default function PartyBills() {
       <Link
         to="/party-bills/create"
         aria-label="Tạo Bill tiệc mới"
-        className="fab-enter fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] right-5 z-30 sm:bottom-5 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
+        className="fab-enter fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-30 sm:bottom-5 sm:right-5 inline-flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
       >
         <Plus className="h-6 w-6" strokeWidth={2.25} />
       </Link>
