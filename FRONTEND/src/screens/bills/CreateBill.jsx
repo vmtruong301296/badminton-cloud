@@ -5,16 +5,14 @@ import {
   calculateBillPreview,
   formatCurrencyRounded,
   formatDate,
-  formatRatio,
   shuttleUnitPrice,
 } from "../../utils/formatters";
 import { selectableMenus } from "../../utils/menus";
 import CurrencyInput from "../../components/common/CurrencyInput";
-import NumberInput from "../../components/common/NumberInput";
 import DatePicker from "../../components/common/DatePicker";
 import PlayerSelector from "../../components/bill/PlayerSelector";
 import ShuttleRow from "../../components/bill/ShuttleRow";
-import MenuItemPicker from "../../components/bill/MenuItemPicker";
+import PlayerBillCard from "../../components/bill/PlayerBillCard";
 import QuickAddMenu from "../../components/bill/QuickAddMenu";
 import BillSummary from "../../components/bill/BillSummary";
 import PageHeader from "../../components/ui/PageHeader";
@@ -485,81 +483,16 @@ export default function CreateBill() {
                     </div>
                     <div className="space-y-3 sm:space-y-4">
                       {formData.players.map((player, index) => (
-                        <article
+                        <PlayerBillCard
                           key={index}
-                          className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/60"
-                        >
-                          <div className="grid grid-cols-1 gap-4 p-3 sm:p-4 md:grid-cols-3 md:gap-6">
-                            {/* Player info & ratio */}
-                            <div className="md:col-span-1">
-                              <div className="mb-3 flex items-start gap-2">
-                                <h4 className="min-w-0 break-words text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-                                  {player.name}
-                                </h4>
-                                {player.gender === "female" && (
-                                  <span className="flex-shrink-0 rounded-full bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-700">
-                                    Nữ
-                                  </span>
-                                )}
-                                {player.gender === "male" && (
-                                  <span className="flex-shrink-0 rounded-full bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-700">
-                                    Nam
-                                  </span>
-                                )}
-                              </div>
-                              <div>
-                                {/* Mobile: label + input on one row. Desktop: stacked. */}
-                                <div className="flex items-center justify-between gap-3 sm:block">
-                                  <label
-                                    htmlFor={`player-ratio-${index}`}
-                                    className="text-sm font-medium text-slate-700 sm:mb-1.5 sm:block"
-                                  >
-                                    Mức tính (override)
-                                  </label>
-                                  <div className="w-32 sm:w-full">
-                                    <NumberInput
-                                      id={`player-ratio-${index}`}
-                                      value={
-                                        player.ratio_value ??
-                                        player.default_ratio_value ??
-                                        1.0
-                                      }
-                                      onChange={(value) =>
-                                        handleUpdatePlayer(index, {
-                                          ...player,
-                                          ratio_value: value,
-                                        })
-                                      }
-                                      min={0}
-                                      step={0.1}
-                                      baseClassName="field-input"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="mt-1 text-xs text-slate-500">
-                                  Mặc định:{" "}
-                                  <span className="font-tabular font-medium text-slate-600">
-                                    {formatRatio(
-                                      player.default_ratio_value ?? 1.0,
-                                    )}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Menu picker */}
-                            <div className="md:col-span-2">
-                              <span className="field-label">Menu nước</span>
-                              <MenuItemPicker
-                                player={player}
-                                onUpdate={(updated) =>
-                                  handleUpdatePlayer(index, updated)
-                                }
-                                menus={activeMenus}
-                              />
-                            </div>
-                          </div>
-                        </article>
+                          player={player}
+                          index={index}
+                          menus={activeMenus}
+                          onUpdate={(updated) =>
+                            handleUpdatePlayer(index, updated)
+                          }
+                          showDefault
+                        />
                       ))}
                     </div>
                   </div>
