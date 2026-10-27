@@ -8,6 +8,7 @@ import {
   formatDateDisplay,
   formatRatio,
 } from "../../utils/formatters";
+import { billCollectedTotal, billPlayingTotal } from "../../utils/billTotals";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
@@ -1154,11 +1155,21 @@ export default function BillDetail() {
                     </td>
                     <td className="font-tabular px-4 py-3 text-right">
                       {formatCurrencyRounded(
-                        bill.bill_players?.reduce(
-                          (sum, p) =>
-                            sum + (p.total_amount || 0) + (p.debt_amount || 0),
-                          0,
-                        ) || 0,
+                        billCollectedTotal(bill.bill_players),
+                      )}
+                    </td>
+                    <td></td>
+                  </tr>
+                  <tr className="text-sm text-slate-600">
+                    <td colSpan="5" className="px-4 pb-3 text-right">
+                      Tổng tiền đánh{" "}
+                      <span className="text-slate-400">
+                        (không gồm nợ cũ, menu):
+                      </span>
+                    </td>
+                    <td className="font-tabular px-4 pb-3 text-right font-semibold text-slate-700">
+                      {formatCurrencyRounded(
+                        billPlayingTotal(bill.bill_players),
                       )}
                     </td>
                     <td></td>
@@ -1361,11 +1372,20 @@ export default function BillDetail() {
                   </span>
                   <span className="font-tabular text-xl font-semibold tracking-tight text-emerald-700">
                     {formatCurrencyRounded(
-                      bill.bill_players?.reduce(
-                        (sum, p) =>
-                          sum + (p.total_amount || 0) + (p.debt_amount || 0),
-                        0,
-                      ) || 0,
+                      billCollectedTotal(bill.bill_players),
+                    )}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-3">
+                  <span className="text-xs font-medium text-slate-500">
+                    Tổng tiền đánh{" "}
+                    <span className="font-normal text-slate-400">
+                      (không gồm nợ cũ, menu)
+                    </span>
+                  </span>
+                  <span className="font-tabular text-sm font-semibold text-slate-700">
+                    {formatCurrencyRounded(
+                      billPlayingTotal(bill.bill_players),
                     )}
                   </span>
                 </div>
