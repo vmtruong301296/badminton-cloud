@@ -8,7 +8,12 @@ import {
   formatDateDisplay,
   formatRatio,
 } from "../../utils/formatters";
-import { billCollectedTotal, billPlayingTotal } from "../../utils/billTotals";
+import {
+  billCollectedTotal,
+  billPlayingTotal,
+  billProfit,
+  formatProfit,
+} from "../../utils/billTotals";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
@@ -1174,6 +1179,24 @@ export default function BillDetail() {
                     </td>
                     <td></td>
                   </tr>
+                  <tr className="text-sm text-slate-600">
+                    <td colSpan="5" className="px-4 pb-3 text-right">
+                      Tiền lời{" "}
+                      <span className="text-slate-400">
+                        (tiền đánh − tổng tiền bill):
+                      </span>
+                    </td>
+                    <td
+                      className={`font-tabular px-4 pb-3 text-right font-semibold ${
+                        billProfit(bill) < 0
+                          ? "text-rose-600"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      {formatProfit(billProfit(bill))}
+                    </td>
+                    <td></td>
+                  </tr>
                 </tfoot>
               </table>
             </div>
@@ -1387,6 +1410,21 @@ export default function BillDetail() {
                     {formatCurrencyRounded(
                       billPlayingTotal(bill.bill_players),
                     )}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-baseline justify-between gap-3">
+                  <span className="text-xs font-medium text-slate-500">
+                    Tiền lời{" "}
+                    <span className="font-normal text-slate-400">
+                      (tiền đánh − tổng tiền bill)
+                    </span>
+                  </span>
+                  <span
+                    className={`font-tabular text-sm font-semibold ${
+                      billProfit(bill) < 0 ? "text-rose-600" : "text-emerald-700"
+                    }`}
+                  >
+                    {formatProfit(billProfit(bill))}
                   </span>
                 </div>
               </div>

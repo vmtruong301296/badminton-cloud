@@ -1,4 +1,4 @@
-import { roundToNearestThousand } from "./formatters";
+import { formatCurrency, roundToNearestThousand } from "./formatters";
 
 /**
  * Tổng tiền của một bill cầu lông, tính từ bill_players của API chi tiết bill.
@@ -31,3 +31,15 @@ export const billPlayingTotal = (players = []) =>
       (Number(player.menu_extra_total) || 0),
     0,
   );
+
+/**
+ * Tiền lời của bill: tổng tiền đánh trừ tổng tiền bill (tiền sân + tiền cầu).
+ * Âm khi làm tròn từng người thu thiếu. Chỉ hiện ở màn chi tiết để quản lý,
+ * không đưa vào ảnh xuất bill (BillExport.jsx).
+ */
+export const billProfit = (bill) =>
+  billPlayingTotal(bill.bill_players) - (Number(bill.total_amount) || 0);
+
+/** Tiền lời có dấu: "+7.000 ₫", "-3.000 ₫", "0 ₫". */
+export const formatProfit = (value) =>
+  `${value > 0 ? "+" : ""}${formatCurrency(value)}`;

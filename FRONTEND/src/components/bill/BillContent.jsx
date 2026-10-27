@@ -1,6 +1,6 @@
 import { Check } from '../ui/icons';
 import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from '../../utils/formatters';
-import { billCollectedTotal, billPlayingTotal } from '../../utils/billTotals';
+import { billCollectedTotal, billPlayingTotal, billProfit, formatProfit } from '../../utils/billTotals';
 
 // Hiển thị bill trên màn hình chi tiết (KHÔNG phải ảnh xuất: ảnh xuất do BillExport.jsx dựng riêng).
 // Danh sách người chơi dạng hàng/thẻ thay cho bảng 8 cột: cột chứa nó chỉ rộng ~600 px trên desktop
@@ -111,6 +111,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
 
   const mainTotalSum = billCollectedTotal(bill.bill_players);
   const playingTotal = billPlayingTotal(bill.bill_players);
+  const profit = billProfit(bill);
 
   // Tổng cột "TT + Bill sau" (rỗng nếu không bill con nào có tiền dương)
   const renderFooterWithSubBills = () => {
@@ -305,6 +306,14 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                 Tổng tiền đánh <span className="font-normal text-slate-400">(không gồm nợ cũ, menu)</span>
               </span>
               <span className="font-tabular text-sm font-semibold text-slate-700">{formatCurrencyRounded(playingTotal)}</span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between gap-3">
+              <span className="text-xs font-medium text-slate-500">
+                Tiền lời <span className="font-normal text-slate-400">(tiền đánh − tổng tiền bill)</span>
+              </span>
+              <span className={`font-tabular text-sm font-semibold ${profit < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                {formatProfit(profit)}
+              </span>
             </div>
             {hasSubBills && footerWithSubBills !== '' && (
               <div className="mt-1 flex items-baseline justify-between gap-3">

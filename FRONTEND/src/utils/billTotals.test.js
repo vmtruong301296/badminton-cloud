@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   billCollectedTotal,
   billPlayingTotal,
+  billProfit,
+  formatProfit,
   playerDueAmount,
 } from "./billTotals";
 
@@ -56,5 +58,39 @@ describe("billPlayingTotal", () => {
     const players = [player(71920, 40000, 10000), player(52533)];
     expect(billCollectedTotal(players)).toBe(165000);
     expect(billPlayingTotal(players)).toBe(115000);
+  });
+});
+
+describe("billProfit", () => {
+  it("tổng tiền đánh trừ tổng tiền bill (bill #2678797: 795.000 - 788.000 = 7.000)", () => {
+    expect(
+      billProfit({ total_amount: 788000, bill_players: bill2678797 }),
+    ).toBe(7000);
+  });
+
+  it("âm khi làm tròn thu thiếu (bill #2648790: 823.000 - 826.000)", () => {
+    const players = [
+      ...Array.from({ length: 14 }, () => player(56190)),
+      player(39333),
+    ];
+    expect(
+      billProfit({ total_amount: "826000.00", bill_players: players }),
+    ).toBe(-3000);
+  });
+
+  it("nợ cũ và menu không tính vào lời", () => {
+    const players = [player(71920, 40000, 10000), player(52533)];
+    // tiền đánh 115.000 - tổng bill 114.453
+    expect(billProfit({ total_amount: 114453, bill_players: players })).toBe(
+      547,
+    );
+  });
+});
+
+describe("formatProfit", () => {
+  it("lời có dấu +, lỗ có dấu -, hòa không dấu", () => {
+    expect(formatProfit(7000)).toBe("+7.000\u00a0₫");
+    expect(formatProfit(-3000)).toBe("-3.000\u00a0₫");
+    expect(formatProfit(0)).toBe("0\u00a0₫");
   });
 });
