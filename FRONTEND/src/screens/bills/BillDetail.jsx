@@ -802,16 +802,16 @@ export default function BillDetail() {
 
       {/* Layout 2 cột nếu có sub-bills, 1 cột nếu không */}
       {!bill.parent_bill_id && bill.sub_bills && bill.sub_bills.length > 0 ? (
-        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:h-[calc(100vh-200px)]">
+        <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Cột trái: Bill chính */}
-          <section className="flex flex-col overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-card ring-1 ring-emerald-50">
+          <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-card ring-1 ring-emerald-50">
             <div className="border-b border-emerald-100 bg-emerald-50/60 px-4 py-3 sm:px-5 sm:py-4">
               <p className="text-sm font-medium text-emerald-700">Bill chính</p>
               <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900">
                 #{bill.id}
               </h3>
             </div>
-            <div className="flex-1 p-3 sm:p-4 lg:min-h-0 lg:overflow-y-auto">
+            <div className="p-3 sm:p-4">
               <BillContent
                 bill={bill}
                 showHeader={false}
@@ -823,7 +823,7 @@ export default function BillDetail() {
           </section>
 
           {/* Cột phải: Bill con */}
-          <div className="space-y-3 sm:space-y-4 lg:overflow-y-auto">
+          <div className="space-y-3 sm:space-y-4">
             {bill.sub_bills.map((subBill) => (
               <section
                 key={subBill.id}
