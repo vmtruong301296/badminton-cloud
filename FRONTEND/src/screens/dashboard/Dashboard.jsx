@@ -21,6 +21,7 @@ import {
   Trash2,
 } from "../../components/ui/icons";
 import { useAuth } from "../../contexts/AuthContext";
+import MonthlyStatsCharts from "../../components/dashboard/MonthlyStatsCharts";
 
 const BALLS_PER_TUBE = 12;
 // Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống
@@ -1460,6 +1461,13 @@ export default function Dashboard() {
         </div>
 
         <div className="space-y-4">
+          <MonthlyStatsCharts
+            bills={allBills}
+            mode={statsMode}
+            month={statsMonth}
+            year={statsYear}
+          />
+
           {/* Shuttle Statistics */}
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
             <h3 className="mb-3 text-base font-semibold text-slate-900">
