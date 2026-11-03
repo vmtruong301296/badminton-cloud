@@ -113,6 +113,9 @@ class BillController extends Controller
                         $menuExtraTotal += $menu->price * $menuData['quantity'];
                     }
                 }
+                // Tiền cộng thêm kèm nội dung nằm chung trong chi phí thêm với menu nước
+                $extraAmount = (int) ($playerData['extra_amount'] ?? 0);
+                $menuExtraTotal += $extraAmount;
 
                 // Get current debt
                 $debtAmount = $user->getCurrentDebtAmount();
@@ -122,6 +125,8 @@ class BillController extends Controller
                     'user' => $user,
                     'ratio_value' => $ratioValue,
                     'menu_extra_total' => $menuExtraTotal,
+                    'extra_amount' => $extraAmount,
+                    'extra_note' => $playerData['extra_note'] ?? null,
                     'debt_amount' => $debtAmount,
                     'debt_date' => $debtDate,
                     'menus' => $playerData['menus'] ?? [],
@@ -181,6 +186,8 @@ class BillController extends Controller
                     'user_id' => $user->id,
                     'ratio_value' => $ratioValue,
                     'menu_extra_total' => $menuExtraTotal,
+                    'extra_amount' => $playerData['extra_amount'],
+                    'extra_note' => $playerData['extra_note'],
                     'debt_amount' => $debtAmount,
                     'debt_date' => $debtDate,
                     'share_amount' => $shareAmount,
@@ -389,6 +396,9 @@ class BillController extends Controller
                         $menuExtraTotal += ($billMenuPrices[$menu->id] ?? $menu->price) * $menuData['quantity'];
                     }
                 }
+                // Tiền cộng thêm kèm nội dung nằm chung trong chi phí thêm với menu nước
+                $extraAmount = (int) ($playerData['extra_amount'] ?? 0);
+                $menuExtraTotal += $extraAmount;
 
                 // Get current debt
                 $debtAmount = $user->getCurrentDebtAmount();
@@ -398,6 +408,8 @@ class BillController extends Controller
                     'user' => $user,
                     'ratio_value' => $ratioValue,
                     'menu_extra_total' => $menuExtraTotal,
+                    'extra_amount' => $extraAmount,
+                    'extra_note' => $playerData['extra_note'] ?? null,
                     'debt_amount' => $debtAmount,
                     'debt_date' => $debtDate,
                     'menus' => $playerData['menus'] ?? [],
@@ -465,6 +477,8 @@ class BillController extends Controller
                     'user_id' => $user->id,
                     'ratio_value' => $ratioValue,
                     'menu_extra_total' => $menuExtraTotal,
+                    'extra_amount' => $playerData['extra_amount'],
+                    'extra_note' => $playerData['extra_note'],
                     'debt_amount' => $debtAmount,
                     'debt_date' => $debtDate,
                     'share_amount' => $shareAmount,

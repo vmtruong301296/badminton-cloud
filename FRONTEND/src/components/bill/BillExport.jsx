@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from "../../utils/formatters";
+import { hasExtraCosts } from "../../utils/billTotals";
 
 export default function BillExport({ bill, paymentAccounts = [], paymentAccountImages = {} }) {
 	// Get active payment accounts (memoized to avoid re-renders)
@@ -122,15 +123,20 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 									<td className="border border-gray-300 px-3 py-2 font-medium">{player.user?.name}</td>
 									<td className="border border-gray-300 px-2 py-2 text-right">{formatRatio(player.ratio_value)}</td>
 									<td className="border border-gray-300 px-3 py-2 text-right">
-										{player.bill_player_menus && player.bill_player_menus.length > 0 ? (
+										{hasExtraCosts(player) ? (
 											<div className="text-right">
 												<div className="font-semibold mb-1">{formatCurrencyRounded(player.menu_extra_total || 0)}</div>
 												<div className="text-xs text-gray-600 space-y-1">
-													{player.bill_player_menus.map((menuItem, idx) => (
+													{(player.bill_player_menus || []).map((menuItem, idx) => (
 														<div key={idx} className="text-right">
 															{menuItem.menu?.name} × {menuItem.quantity} = {formatCurrencyRounded(menuItem.subtotal)}
 														</div>
 													))}
+													{Number(player.extra_amount) ? (
+														<div className="text-right">
+															{player.extra_note || "Cộng thêm"} = {formatCurrencyRounded(player.extra_amount)}
+														</div>
+													) : null}
 												</div>
 											</div>
 										) : (

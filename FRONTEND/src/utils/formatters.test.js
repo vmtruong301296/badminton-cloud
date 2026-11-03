@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatRatio } from "./formatters";
+import { calculateBillPreview, formatRatio } from "./formatters";
 
 describe("formatRatio", () => {
   it("bỏ sai số cộng số thực khi tổng mức tính", () => {
@@ -17,5 +17,34 @@ describe("formatRatio", () => {
     expect(formatRatio(null)).toBe("");
     expect(formatRatio(undefined)).toBe("");
     expect(formatRatio("abc")).toBe("");
+  });
+});
+
+describe("calculateBillPreview", () => {
+  it("tiền cộng thêm của người chơi nằm trong chi phí thêm và tổng tiền", () => {
+    const preview = calculateBillPreview(
+      200000,
+      [],
+      [
+        {
+          ratio_value: 1,
+          menus: [{ subtotal: 30000 }],
+          extra_amount: 10000,
+          extra_note: "Tiền cộng thêm 10k ở trận trước",
+        },
+      ],
+    );
+
+    expect(preview.players[0].menu_extra_total).toBe(40000);
+    expect(preview.players[0].total_amount).toBe(240000);
+  });
+
+  it("không nhập cộng thêm thì chi phí thêm chỉ là tiền menu", () => {
+    const preview = calculateBillPreview(100000, [], [
+      { ratio_value: 1, menus: [{ subtotal: 5000 }] },
+    ]);
+
+    expect(preview.players[0].menu_extra_total).toBe(5000);
+    expect(preview.players[0].total_amount).toBe(105000);
   });
 });

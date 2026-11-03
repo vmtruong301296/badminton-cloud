@@ -1,3 +1,5 @@
+import { playerExtraTotal } from "./menus";
+
 /**
  * Format number as Vietnamese currency (VND)
  */
@@ -99,7 +101,8 @@ export const calculateBillPreview = (courtTotal, shuttles, players) => {
   // Calculate per player
   const playersWithAmounts = players.map((player) => {
     const shareAmount = Math.round((player.ratio_value || 0) * unitPrice);
-    const menuTotal = (player.menus || []).reduce((sum, m) => sum + (m.subtotal || 0), 0);
+    // Chi phí thêm = menu nước + tiền cộng thêm kèm nội dung
+    const menuTotal = playerExtraTotal(player);
     const debtAmount = player.debt_amount || 0;
     const playerTotalAmount = shareAmount + menuTotal + debtAmount;
 

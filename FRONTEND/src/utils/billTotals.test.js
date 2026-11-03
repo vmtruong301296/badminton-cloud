@@ -4,6 +4,7 @@ import {
   billPlayingTotal,
   billProfit,
   formatProfit,
+  hasExtraCosts,
   playerDueAmount,
 } from "./billTotals";
 
@@ -92,5 +93,19 @@ describe("formatProfit", () => {
     expect(formatProfit(7000)).toBe("+7.000\u00a0₫");
     expect(formatProfit(-3000)).toBe("-3.000\u00a0₫");
     expect(formatProfit(0)).toBe("0\u00a0₫");
+  });
+});
+
+describe("hasExtraCosts", () => {
+  it("có menu nước hoặc tiền cộng thêm thì hiện khối Chi phí thêm", () => {
+    expect(hasExtraCosts({ bill_player_menus: [{ subtotal: 5000 }] })).toBe(true);
+    expect(hasExtraCosts({ bill_player_menus: [], extra_amount: 10000 })).toBe(true);
+    expect(hasExtraCosts({ extra_amount: -5000 })).toBe(true);
+  });
+
+  it("không có gì thì ẩn", () => {
+    expect(hasExtraCosts({})).toBe(false);
+    expect(hasExtraCosts({ bill_player_menus: [], extra_amount: 0 })).toBe(false);
+    expect(hasExtraCosts({ bill_player_menus: null, extra_amount: null })).toBe(false);
   });
 });

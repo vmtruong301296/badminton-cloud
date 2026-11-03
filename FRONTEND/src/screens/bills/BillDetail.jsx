@@ -13,6 +13,7 @@ import {
   billPlayingTotal,
   billProfit,
   formatProfit,
+  hasExtraCosts,
 } from "../../utils/billTotals";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
@@ -1047,8 +1048,7 @@ export default function BillDetail() {
                           {formatRatio(player.ratio_value)}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {player.bill_player_menus &&
-                          player.bill_player_menus.length > 0 ? (
+                          {hasExtraCosts(player) ? (
                             <div className="text-right">
                               <div className="font-tabular mb-1 font-semibold">
                                 {formatCurrencyRounded(
@@ -1056,7 +1056,7 @@ export default function BillDetail() {
                                 )}
                               </div>
                               <div className="space-y-1 text-xs text-slate-500">
-                                {player.bill_player_menus.map(
+                                {(player.bill_player_menus || []).map(
                                   (menuItem, idx) => (
                                     <div key={idx} className="text-right">
                                       {menuItem.menu?.name} ×{" "}
@@ -1065,6 +1065,12 @@ export default function BillDetail() {
                                     </div>
                                   ),
                                 )}
+                                {Number(player.extra_amount) ? (
+                                  <div className="text-right">
+                                    {player.extra_note || "Cộng thêm"} ={" "}
+                                    {formatCurrency(player.extra_amount)}
+                                  </div>
+                                ) : null}
                               </div>
                             </div>
                           ) : (
@@ -1285,39 +1291,48 @@ export default function BillDetail() {
                           </div>
                         </div>
 
-                        {player.bill_player_menus &&
-                          player.bill_player_menus.length > 0 && (
-                            <div className="mt-3 rounded-lg bg-slate-50 p-2.5">
-                              <div className="flex items-baseline justify-between gap-2">
-                                <span className="text-xs font-medium text-slate-500">
-                                  Chi phí thêm
-                                </span>
-                                <span className="font-tabular text-sm font-semibold text-slate-900">
-                                  {formatCurrencyRounded(
-                                    player.menu_extra_total || 0,
-                                  )}
-                                </span>
-                              </div>
-                              <div className="mt-1 space-y-0.5 text-xs text-slate-600">
-                                {player.bill_player_menus.map(
-                                  (menuItem, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex justify-between"
-                                    >
-                                      <span>
-                                        {menuItem.menu?.name} ×{" "}
-                                        {menuItem.quantity}
-                                      </span>
-                                      <span className="font-tabular">
-                                        {formatCurrency(menuItem.subtotal)}
-                                      </span>
-                                    </div>
-                                  ),
+                        {hasExtraCosts(player) && (
+                          <div className="mt-3 rounded-lg bg-slate-50 p-2.5">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <span className="text-xs font-medium text-slate-500">
+                                Chi phí thêm
+                              </span>
+                              <span className="font-tabular text-sm font-semibold text-slate-900">
+                                {formatCurrencyRounded(
+                                  player.menu_extra_total || 0,
                                 )}
-                              </div>
+                              </span>
                             </div>
-                          )}
+                            <div className="mt-1 space-y-0.5 text-xs text-slate-600">
+                              {(player.bill_player_menus || []).map(
+                                (menuItem, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex justify-between"
+                                  >
+                                    <span>
+                                      {menuItem.menu?.name} ×{" "}
+                                      {menuItem.quantity}
+                                    </span>
+                                    <span className="font-tabular">
+                                      {formatCurrency(menuItem.subtotal)}
+                                    </span>
+                                  </div>
+                                ),
+                              )}
+                              {Number(player.extra_amount) ? (
+                                <div className="flex justify-between gap-2">
+                                  <span className="min-w-0 break-words">
+                                    {player.extra_note || "Cộng thêm"}
+                                  </span>
+                                  <span className="font-tabular flex-shrink-0">
+                                    {formatCurrency(player.extra_amount)}
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        )}
 
                         {player.debt_amount > 0 && (
                           <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">

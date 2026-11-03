@@ -4,6 +4,7 @@ import { billsApi, shuttlesApi, menusApi } from "../../services/api";
 import { formatDate, shuttleUnitPrice } from "../../utils/formatters";
 import {
   billMenuPrices,
+  playerExtraTotal,
   selectableMenus,
   withBillPrices,
 } from "../../utils/menus";
@@ -80,6 +81,8 @@ export default function EditBill() {
         debt_amount: 0,
         debt_date: null,
         include_debt: false,
+        extra_amount: p.extra_amount || 0,
+        extra_note: p.extra_note || "",
         menus: (p.bill_player_menus || []).map((m) => ({
           menu_id: m.menu_id,
           name: m.menu?.name,
@@ -139,10 +142,7 @@ export default function EditBill() {
           const ratioValue =
             player.ratio_value ?? player.default_ratio_value ?? 1.0;
           const shareAmount = Math.round(ratioValue * unitPrice);
-          const menuTotal = (player.menus || []).reduce(
-            (sum, m) => sum + (m.subtotal || 0),
-            0,
-          );
+          const menuTotal = playerExtraTotal(player);
           const debtAmount = 0;
           const playerTotalAmount = shareAmount + menuTotal + debtAmount;
 
@@ -292,10 +292,7 @@ export default function EditBill() {
       const ratioValue =
         player.ratio_value ?? player.default_ratio_value ?? 1.0;
       const shareAmount = Math.round(ratioValue * unitPrice);
-      const menuTotal = (player.menus || []).reduce(
-        (sum, m) => sum + (m.subtotal || 0),
-        0,
-      );
+      const menuTotal = playerExtraTotal(player);
       const debtAmount = 0; // Không tính debt khi edit
       const playerTotalAmount = shareAmount + menuTotal + debtAmount;
 
@@ -419,6 +416,8 @@ export default function EditBill() {
         players: formData.players.map((p) => ({
           user_id: p.user_id,
           ratio_value: p.ratio_value || null,
+          extra_amount: Number(p.extra_amount) || 0,
+          extra_note: (p.extra_note || "").trim() || null,
           menus: (p.menus || []).map((m) => ({
             menu_id: m.menu_id,
             quantity: m.quantity,

@@ -33,6 +33,8 @@ class UpdateBillRequest extends FormRequest
             'players' => 'required|array|min:1',
             'players.*.user_id' => 'required|exists:users,id',
             'players.*.ratio_value' => 'nullable|numeric|min:0',
+            'players.*.extra_amount' => 'nullable|integer',
+            'players.*.extra_note' => 'nullable|string|max:255',
             'players.*.menus' => 'nullable|array',
             'players.*.menus.*.menu_id' => 'required_with:players.*.menus|exists:menus,id',
             'players.*.menus.*.quantity' => 'required_with:players.*.menus|integer|min:1',

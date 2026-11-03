@@ -1,6 +1,6 @@
 import { Check } from '../ui/icons';
 import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from '../../utils/formatters';
-import { billCollectedTotal, billPlayingTotal, billProfit, formatProfit } from '../../utils/billTotals';
+import { billCollectedTotal, billPlayingTotal, billProfit, formatProfit, hasExtraCosts } from '../../utils/billTotals';
 
 // Hiển thị bill trên màn hình chi tiết (KHÔNG phải ảnh xuất: ảnh xuất do BillExport.jsx dựng riêng).
 // Danh sách người chơi dạng hàng/thẻ thay cho bảng 8 cột: cột chứa nó chỉ rộng ~600 px trên desktop
@@ -227,7 +227,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                         {renderPaidControl(player)}
                       </div>
 
-                      {player.bill_player_menus && player.bill_player_menus.length > 0 && (
+                      {hasExtraCosts(player) && (
                         <div className="mt-2 rounded-lg bg-slate-50 p-2">
                           <div className="flex items-baseline justify-between gap-2">
                             <span className="text-xs font-medium text-slate-500">Chi phí thêm</span>
@@ -236,7 +236,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                             </span>
                           </div>
                           <div className="mt-1 space-y-0.5 text-xs text-slate-600">
-                            {player.bill_player_menus.map((menuItem, idx) => (
+                            {(player.bill_player_menus || []).map((menuItem, idx) => (
                               <div key={idx} className="flex justify-between gap-2">
                                 <span className="min-w-0 break-words">
                                   {menuItem.menu?.name} × {menuItem.quantity}
@@ -244,6 +244,12 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                                 <span className="font-tabular flex-shrink-0">{formatCurrencyRounded(menuItem.subtotal)}</span>
                               </div>
                             ))}
+                            {Number(player.extra_amount) ? (
+                              <div className="flex justify-between gap-2">
+                                <span className="min-w-0 break-words">{player.extra_note || "Cộng thêm"}</span>
+                                <span className="font-tabular flex-shrink-0">{formatCurrencyRounded(player.extra_amount)}</span>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       )}

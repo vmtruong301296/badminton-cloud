@@ -249,6 +249,8 @@ export default function CreateBill() {
         players: formData.players.map((p) => ({
           user_id: p.user_id,
           ratio_value: p.ratio_value || null,
+          extra_amount: Number(p.extra_amount) || 0,
+          extra_note: (p.extra_note || "").trim() || null,
           menus: (p.menus || []).map((m) => ({
             menu_id: m.menu_id,
             quantity: m.quantity,

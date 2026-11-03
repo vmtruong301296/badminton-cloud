@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   billMenuPrices,
   findMenuByName,
+  playerExtraTotal,
   selectableMenus,
   withBillPrices,
 } from "./menus";
@@ -72,5 +73,25 @@ describe("withBillPrices", () => {
     expect(withBillPrices(menus, { 5: 15000 }).map((m) => m.price)).toEqual([
       15000, 5000,
     ]);
+  });
+});
+
+describe("playerExtraTotal", () => {
+  it("cộng tiền menu nước với tiền cộng thêm của người chơi", () => {
+    const player = {
+      menus: [{ subtotal: 30000 }, { subtotal: 5000 }],
+      extra_amount: 10000,
+    };
+
+    expect(playerExtraTotal(player)).toBe(45000);
+  });
+
+  it("không có menu, không nhập cộng thêm thì bằng 0", () => {
+    expect(playerExtraTotal({})).toBe(0);
+    expect(playerExtraTotal({ menus: [], extra_amount: "" })).toBe(0);
+  });
+
+  it("tiền cộng thêm âm (trừ bớt) vẫn tính", () => {
+    expect(playerExtraTotal({ menus: [{ subtotal: 15000 }], extra_amount: -5000 })).toBe(10000);
   });
 });

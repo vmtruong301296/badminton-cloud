@@ -8,6 +8,14 @@ import { formatCurrency, roundToNearestThousand } from "./formatters";
  * 53.000/người nhưng tổng thô làm tròn chỉ ra 788.000 thay vì 795.000).
  */
 
+/**
+ * Người chơi có chi phí thêm (menu nước hoặc tiền cộng thêm kèm nội dung) để
+ * hiện khối "Chi phí thêm" ở chi tiết / xuất bill.
+ */
+export const hasExtraCosts = (player = {}) =>
+  (player.bill_player_menus || []).length > 0 ||
+  (Number(player.extra_amount) || 0) !== 0;
+
 /** Số tiền một người phải trả: tiền bill (đánh + menu) cộng nợ cũ, làm tròn nghìn. */
 export const playerDueAmount = (player) =>
   roundToNearestThousand(

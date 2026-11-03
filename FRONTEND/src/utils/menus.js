@@ -25,3 +25,12 @@ export const billMenuPrices = (billPlayers = []) =>
  */
 export const withBillPrices = (menus = [], prices = {}) =>
   menus.map((m) => (m.id in prices ? { ...m, price: prices[m.id] } : m));
+
+/**
+ * Tổng chi phí thêm của một người trong form tạo / sửa bill: tiền menu nước
+ * cộng tiền cộng thêm (có thể âm để trừ bớt). Máy chủ cộng y hệt vào
+ * menu_extra_total.
+ */
+export const playerExtraTotal = (player = {}) =>
+  (player.menus || []).reduce((sum, m) => sum + (Number(m.subtotal) || 0), 0) +
+  (Number(player.extra_amount) || 0);

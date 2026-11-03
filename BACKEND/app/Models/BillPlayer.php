@@ -13,6 +13,8 @@ class BillPlayer extends Model
         'user_id',
         'ratio_value',
         'menu_extra_total',
+        'extra_amount',
+        'extra_note',
         'debt_amount',
         'debt_date',
         'share_amount',
@@ -25,6 +27,7 @@ class BillPlayer extends Model
     {
         return [
             'ratio_value' => 'decimal:3',
+            'extra_amount' => 'integer',
             'debt_date' => 'date',
             'is_paid' => 'boolean',
             'paid_at' => 'datetime',

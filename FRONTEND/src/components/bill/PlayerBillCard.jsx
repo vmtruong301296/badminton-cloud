@@ -1,6 +1,8 @@
+import CurrencyInput from "../common/CurrencyInput";
 import NumberInput from "../common/NumberInput";
 import MenuItemPicker from "./MenuItemPicker";
 import { formatCurrency, formatRatio } from "../../utils/formatters";
+import { playerExtraTotal } from "../../utils/menus";
 
 /** Các mức tính hay dùng, bấm một lần là chọn. */
 const RATIO_PRESETS = [0.5, 0.6, 0.7, 0.8, 1];
@@ -14,8 +16,10 @@ const sameRatio = (a, b) => Math.abs(Number(a) - Number(b)) < 0.0005;
 
 /**
  * Thẻ một người chơi trong form tạo / sửa bill: mức tính (chọn nhanh hoặc
- * nhập tay) và menu nước. `showDefault` bật dòng "Mặc định" — chỉ có nghĩa ở
- * màn tạo, nơi default_ratio_value là mức tính gốc của người chơi.
+ * nhập tay), menu nước và tiền cộng thêm kèm nội dung (vd "Tiền cộng thêm 10k
+ * ở trận trước"). Menu nước và cộng thêm gộp lại thành chi phí thêm của người
+ * đó. `showDefault` bật dòng "Mặc định" — chỉ có nghĩa ở màn tạo, nơi
+ * default_ratio_value là mức tính gốc của người chơi.
  */
 export default function PlayerBillCard({
   player,
@@ -27,11 +31,10 @@ export default function PlayerBillCard({
   const ratio = player.ratio_value ?? player.default_ratio_value ?? 1.0;
   const defaultRatio = player.default_ratio_value ?? 1.0;
   const badge = GENDER_BADGE[player.gender];
-  const menuTotal = (player.menus || []).reduce(
-    (sum, m) => sum + m.subtotal,
-    0,
-  );
+  const extraTotal = playerExtraTotal(player);
   const inputId = `player-ratio-${index}`;
+  const extraNoteId = `player-extra-note-${index}`;
+  const extraAmountId = `player-extra-amount-${index}`;
 
   const setRatio = (value) => onUpdate({ ...player, ratio_value: value });
 
@@ -54,9 +57,9 @@ export default function PlayerBillCard({
           <span className="font-tabular rounded-md bg-emerald-50 px-2 py-1 font-semibold text-emerald-700">
             ×{formatRatio(ratio)}
           </span>
-          {menuTotal > 0 && (
+          {extraTotal !== 0 && (
             <span className="font-tabular rounded-md bg-amber-50 px-2 py-1 font-semibold text-amber-700">
-              {formatCurrency(menuTotal)}
+              {formatCurrency(extraTotal)}
             </span>
           )}
         </div>
@@ -130,6 +133,44 @@ export default function PlayerBillCard({
             Menu nước
           </span>
           <MenuItemPicker player={player} onUpdate={onUpdate} menus={menus} />
+        </section>
+
+        {/* Cộng thêm: số tiền + nội dung, nằm trong chi phí thêm cùng menu nước */}
+        <section className="md:col-span-5">
+          <label
+            htmlFor={extraAmountId}
+            className="mb-2 block text-sm font-medium text-slate-700"
+          >
+            Cộng thêm
+          </label>
+          <div className="grid grid-cols-12 gap-2">
+            <div className="col-span-12 sm:col-span-8">
+              <input
+                id={extraNoteId}
+                type="text"
+                value={player.extra_note || ""}
+                onChange={(e) =>
+                  onUpdate({ ...player, extra_note: e.target.value })
+                }
+                maxLength={255}
+                placeholder="Nội dung, vd: Tiền cộng thêm 10k ở trận trước"
+                aria-label="Nội dung cộng thêm"
+                className="field-input"
+              />
+            </div>
+            <div className="col-span-12 sm:col-span-4">
+              <CurrencyInput
+                id={extraAmountId}
+                value={player.extra_amount ?? 0}
+                onChange={(value) =>
+                  onUpdate({ ...player, extra_amount: value })
+                }
+                aria-label="Số tiền cộng thêm"
+                baseClassName="field-input"
+                className="text-right font-tabular"
+              />
+            </div>
+          </div>
         </section>
       </div>
     </article>
