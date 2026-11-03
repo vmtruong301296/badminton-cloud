@@ -1,5 +1,5 @@
 import { useId, useMemo } from "react";
-import NumberInput from "../common/NumberInput";
+import CurrencyInput from "../common/CurrencyInput";
 import { formatCurrency, shuttleUnitPrice } from "../../utils/formatters";
 import { X } from "../ui/icons";
 
@@ -104,11 +104,13 @@ export default function ShuttleRow({
           <label htmlFor={`${uid}-qty`} className="field-label">
             Số lượng
           </label>
-          <NumberInput
+          {/* Gõ như ô số tiền: xoá hết thành 0 rồi nhập số mới đè lên; lưu bill
+              sẽ chặn dòng 0 quả. */}
+          <CurrencyInput
             id={`${uid}-qty`}
             value={shuttle.quantity}
             onChange={handleQuantityChange}
-            min={1}
+            allowNegative={false}
             baseClassName="field-input"
           />
         </div>

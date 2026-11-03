@@ -5,11 +5,28 @@ import { formatCurrency, formatRatio } from "../../utils/formatters";
 import { playerExtraTotal } from "../../utils/menus";
 
 /** Các mức tính hay dùng, bấm một lần là chọn. */
-const RATIO_PRESETS = [0.5, 0.6, 0.7, 0.8, 1];
+const RATIO_PRESETS = [0.4, 0.5, 0.6, 0.7, 0.8, 1];
 
-const GENDER_BADGE = {
-  female: { label: "Nữ", className: "bg-pink-100 text-pink-700" },
-  male: { label: "Nam", className: "bg-sky-100 text-sky-700" },
+/** Nền thanh tiêu đề theo giới tính để lướt nhanh phân biệt nam / nữ; nhãn
+ *  Nam / Nữ vẫn giữ để không chỉ dựa vào màu. */
+const GENDER_STYLE = {
+  female: {
+    label: "Nữ",
+    badge: "bg-pink-100 text-pink-700",
+    header: "border-pink-100 bg-pink-50",
+    order: "text-pink-700",
+  },
+  male: {
+    label: "Nam",
+    badge: "bg-sky-100 text-sky-700",
+    header: "border-sky-100 bg-sky-50",
+    order: "text-sky-700",
+  },
+};
+
+const NEUTRAL_STYLE = {
+  header: "border-slate-100 bg-slate-50/70",
+  order: "text-slate-500",
 };
 
 const sameRatio = (a, b) => Math.abs(Number(a) - Number(b)) < 0.0005;
@@ -30,7 +47,9 @@ export default function PlayerBillCard({
 }) {
   const ratio = player.ratio_value ?? player.default_ratio_value ?? 1.0;
   const defaultRatio = player.default_ratio_value ?? 1.0;
-  const badge = GENDER_BADGE[player.gender];
+  const genderStyle = GENDER_STYLE[player.gender];
+  const { header: headerClass, order: orderClass } =
+    genderStyle ?? NEUTRAL_STYLE;
   const extraTotal = playerExtraTotal(player);
   const inputId = `player-ratio-${index}`;
   const extraNoteId = `player-extra-note-${index}`;
@@ -40,16 +59,19 @@ export default function PlayerBillCard({
 
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-      <header className="flex items-center justify-between gap-3 border-b border-slate-100 bg-slate-50/70 px-3 py-2.5 sm:px-4">
+      <header
+        className={`flex items-center justify-between gap-3 border-b px-3 py-2.5 sm:px-4 ${headerClass}`}
+      >
         <div className="flex min-w-0 items-center gap-2">
           <h4 className="min-w-0 truncate text-base font-semibold tracking-tight text-slate-900">
+            <span className={`font-tabular ${orderClass}`}>#{index + 1}</span>{" "}
             {player.name}
           </h4>
-          {badge && (
+          {genderStyle && (
             <span
-              className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium ${badge.className}`}
+              className={`flex-shrink-0 rounded-full px-1.5 py-0.5 text-xs font-medium ${genderStyle.badge}`}
             >
-              {badge.label}
+              {genderStyle.label}
             </span>
           )}
         </div>
@@ -93,7 +115,7 @@ export default function PlayerBillCard({
             <div
               role="group"
               aria-label="Chọn nhanh mức tính"
-              className="flex flex-wrap gap-1.5"
+              className="grid w-full max-w-xs grid-cols-6 gap-1.5"
             >
               {RATIO_PRESETS.map((preset) => {
                 const active = sameRatio(ratio, preset);
@@ -103,7 +125,7 @@ export default function PlayerBillCard({
                     type="button"
                     aria-pressed={active}
                     onClick={() => setRatio(preset)}
-                    className={`font-tabular h-10 min-w-[2.75rem] rounded-lg border px-2 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
+                    className={`font-tabular h-10 rounded-lg border px-1 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
                       active
                         ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
                         : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"

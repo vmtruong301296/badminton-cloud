@@ -18,6 +18,14 @@ import BillSummary from "../../components/bill/BillSummary";
 import PageHeader from "../../components/ui/PageHeader";
 import { CalendarDays, Check, Loader, Plus } from "../../components/ui/icons";
 
+const DEFAULT_COURT_TOTAL = 280000;
+
+/** Loại cầu điền sẵn khi tạo bill mới, khớp theo tên trong bảng shuttle_types. */
+const DEFAULT_SHUTTLES = [
+  { name: "Cầu S70", quantity: 12 },
+  { name: "Cầu Thành Công", quantity: 12 },
+];
+
 export default function CreateBill() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -30,7 +38,7 @@ export default function CreateBill() {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     note: "",
-    court_total: 140000,
+    court_total: DEFAULT_COURT_TOTAL,
     shuttles: [],
     players: [],
     parent_bill_id: parentBillId || null,
@@ -89,22 +97,22 @@ export default function CreateBill() {
 
   useEffect(() => {
     if (shuttlesDefaultedRef.current || shuttleTypes.length === 0) return;
-    const s70Shuttle = shuttleTypes.find((st) => st.name === "Cầu S70");
+    const defaultShuttles = DEFAULT_SHUTTLES.flatMap(({ name, quantity }) => {
+      const type = shuttleTypes.find((st) => st.name === name);
+      return type
+        ? [
+            {
+              shuttle_type_id: type.id,
+              quantity,
+              price: shuttleUnitPrice(type),
+            },
+          ]
+        : [];
+    });
     shuttlesDefaultedRef.current = true;
     setFormData((prev) => {
       if (prev.shuttles.length > 0) return prev;
-      return {
-        ...prev,
-        shuttles: s70Shuttle
-          ? [
-              {
-                shuttle_type_id: s70Shuttle.id,
-                quantity: 12,
-                price: shuttleUnitPrice(s70Shuttle),
-              },
-            ]
-          : [],
-      };
+      return { ...prev, shuttles: defaultShuttles };
     });
   }, [shuttleTypes]);
 
@@ -145,7 +153,7 @@ export default function CreateBill() {
           const type = shuttleTypes.find((st) => st.id === s.shuttle_type_id);
           return {
             price: shuttleUnitPrice(type),
-            quantity: s.quantity || 1,
+            quantity: Number(s.quantity) || 0,
           };
         }),
       formData.players.map((p) => ({
@@ -220,6 +228,12 @@ export default function CreateBill() {
       alert(
         "Vui lòng thêm ít nhất một loại cầu hợp lệ hoặc nhập tổng tiền sân lớn hơn 0",
       );
+      return;
+    }
+
+    // Ô số lượng cho xoá về 0 để nhập lại, nhưng không được lưu dòng 0 quả
+    if (validShuttles.some((s) => !(Number(s.quantity) > 0))) {
+      alert("Số lượng cầu phải lớn hơn 0");
       return;
     }
 
@@ -479,7 +493,7 @@ export default function CreateBill() {
                   <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-6 sm:pt-6">
                     <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
                       <h2 className="text-base font-semibold text-slate-900">
-                        Chi tiết người chơi
+                        Chi tiết người chơi ({formData.players.length})
                       </h2>
                       <QuickAddMenu menus={menus} onCreated={handleMenuAdded} />
                     </div>

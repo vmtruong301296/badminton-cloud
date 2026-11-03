@@ -19,6 +19,7 @@ export default function CurrencyInput({
   placeholder = "0",
   className = "",
   baseClassName = DEFAULT_BASE_CLASS,
+  allowNegative = true,
   ...props
 }) {
   const [displayValue, setDisplayValue] = useState("");
@@ -30,7 +31,7 @@ export default function CurrencyInput({
   }, [value]);
 
   const handleChange = (e) => {
-    let input = e.target.value.replace(/[^\d-]/g, "");
+    let input = e.target.value.replace(allowNegative ? /[^\d-]/g : /\D/g, "");
 
     // Only allow minus sign at the beginning
     if (input.includes("-")) {

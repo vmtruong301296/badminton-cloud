@@ -265,7 +265,7 @@ export default function EditBill() {
         const price = shuttleUnitPrice(type) || s.price || 0;
         return {
           price: price,
-          quantity: s.quantity || 1,
+          quantity: Number(s.quantity) || 0,
         };
       });
 
@@ -387,6 +387,12 @@ export default function EditBill() {
       alert(
         "Vui lòng thêm ít nhất một loại cầu hợp lệ hoặc nhập tổng tiền sân lớn hơn 0",
       );
+      return;
+    }
+
+    // Ô số lượng cho xoá về 0 để nhập lại, nhưng không được lưu dòng 0 quả
+    if (validShuttles.some((s) => !(Number(s.quantity) > 0))) {
+      alert("Số lượng cầu phải lớn hơn 0");
       return;
     }
 
@@ -637,7 +643,7 @@ export default function EditBill() {
                   <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-6 sm:pt-6">
                     <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
                       <h2 className="text-base font-semibold text-slate-900">
-                        Chi tiết người chơi
+                        Chi tiết người chơi ({formData.players.length})
                       </h2>
                       <QuickAddMenu menus={menus} onCreated={handleMenuAdded} />
                     </div>
