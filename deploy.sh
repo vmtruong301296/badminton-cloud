@@ -110,6 +110,26 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
+# Reload PHP-FPM để OPcache nạp code mới. Server đặt opcache.validate_timestamps=0
+# nên nếu không reload, PHP-FPM vẫn chạy code cũ dù file trên đĩa đã đổi
+# (2026-11-03: deploy xong nhưng API vẫn bỏ qua trường mới vì bước này thiếu).
+print_info "Đang reload PHP-FPM để nạp code mới..."
+if command -v systemctl >/dev/null 2>&1; then
+    FPM_UNITS=$(systemctl list-units --type=service --plain --no-legend 'php*-fpm*' 2>/dev/null | awk '{print $1}')
+    if [ -z "$FPM_UNITS" ]; then
+        print_info "Không tìm thấy service php-fpm, bỏ qua reload"
+    fi
+    for unit in $FPM_UNITS; do
+        if sudo -n systemctl reload "$unit" 2>/dev/null; then
+            print_success "Đã reload $unit"
+        else
+            print_error "Không reload được $unit — hãy chạy tay: sudo systemctl reload $unit"
+        fi
+    done
+else
+    print_info "Không có systemctl, bỏ qua reload PHP-FPM"
+fi
+
 print_success "Backend đã sẵn sàng!"
 
 # Step 3: Copy Frontend build to Backend public
