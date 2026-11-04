@@ -49,19 +49,43 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
         })
       : false;
 
-  // Cột "TT + Bill sau": tổng tiền bill chính + tổng tiền các bill phụ (làm tròn từng giá trị trước khi cộng)
-  const playerTotalWithSubBills = (player) => {
-    const mainBillTotalAmount = roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
-    const subBillsTotalAmount = subBills.reduce((sum, subBill) => {
+  const playerMainBillAmount = (player) =>
+    roundToNearestThousand((player.total_amount || 0) + (player.debt_amount || 0));
+
+  // Tiền của người chơi ở từng bill phụ (đã làm tròn), bỏ các bill phụ người đó không có tiền
+  const playerSubBillLines = (player) =>
+    subBills.flatMap((subBill) => {
       const subBillPlayer = subBill.bill_players?.find((p) => p.user_id === player.user_id);
-      if (subBillPlayer) {
-        const subBillTotalAmount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
-        return sum + subBillTotalAmount;
-      }
-      return sum;
-    }, 0);
-    return mainBillTotalAmount + subBillsTotalAmount;
-  };
+      if (!subBillPlayer) return [];
+      const amount = roundToNearestThousand((subBillPlayer.total_amount || 0) + (subBillPlayer.debt_amount || 0));
+      return amount ? [{ id: subBill.id, label: subBill.note || 'Bill sau', amount }] : [];
+    });
+
+  // Cột "TT + Bill sau": tổng tiền bill chính + tổng tiền các bill phụ (làm tròn từng giá trị trước khi cộng)
+  const playerTotalWithSubBills = (player) =>
+    playerMainBillAmount(player) + playerSubBillLines(player).reduce((sum, line) => sum + line.amount, 0);
+
+  // Khối nổi "TT + Bill sau" cho người có tiền ở bill phụ: bill chính, từng bill sau, rồi tổng phải trả
+  const renderSubBillSummary = (player, subBillLines) => (
+    <div className="mt-2 overflow-hidden rounded-lg border border-sky-200 bg-white">
+      <div className="space-y-0.5 px-2 py-1.5 text-xs text-slate-600">
+        <div className="flex justify-between gap-2">
+          <span>Bill chính</span>
+          <span className="font-tabular flex-shrink-0">{formatCurrencyRounded(playerMainBillAmount(player))}</span>
+        </div>
+        {subBillLines.map((line) => (
+          <div key={line.id} className="flex justify-between gap-2">
+            <span className="min-w-0 break-words">{line.label}</span>
+            <span className="font-tabular flex-shrink-0">{formatCurrencyRounded(line.amount)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex items-baseline justify-between gap-2 bg-sky-700 px-2 py-1.5 text-white">
+        <span className="text-xs font-semibold uppercase tracking-wide">TT + Bill sau</span>
+        <span className="font-tabular text-base font-bold">{formatCurrencyRounded(playerTotalWithSubBills(player))}</span>
+      </div>
+    </div>
+  );
 
   const renderPaidControl = (player) => {
     if (canMark) {
@@ -202,16 +226,31 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
           <ul className="divide-y divide-slate-100 border-t border-slate-100">
             {sortedPlayers.map((player, index) => {
               const hasSubBillWithMoney = playerHasSubBillMoney(player.user_id);
+              const subBillLines = hasSubBillWithMoney ? playerSubBillLines(player) : [];
               const rowTotal = formatCurrencyRounded((player.total_amount || 0) + (player.debt_amount || 0));
+              // Người nhiều bill: nền sky + vạch trái (hồng = chưa TT, xanh lá = đã TT). Vạch vẽ bằng shadow inset
+              // vì divide-y của <ul> đè border-color của các thẻ từ thứ 2 trở đi.
+              const rowTone = hasSubBillWithMoney
+                ? `bg-sky-50 ${player.is_paid ? 'shadow-[inset_4px_0_0_theme(colors.emerald.500)]' : 'shadow-[inset_4px_0_0_theme(colors.rose.400)]'}`
+                : !player.is_paid
+                  ? 'bg-rose-50'
+                  : '';
               return (
-                <li key={player.id} className={`px-3 py-3 sm:px-4 ${!player.is_paid ? 'bg-rose-50' : ''}`}>
+                <li key={player.id} className={`px-3 py-3 sm:px-4 ${rowTone}`}>
                   <div className="flex items-start gap-3">
                     <span className="font-tabular mt-0.5 inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 px-1.5 text-xs font-medium text-slate-600">
                       {index + 1}
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 break-words text-sm font-medium text-slate-900">{player.user?.name}</div>
+                        <div className="min-w-0 break-words text-sm font-medium text-slate-900">
+                          {player.user?.name}
+                          {hasSubBillWithMoney && (
+                            <span className="ml-1.5 inline-flex items-center rounded-full bg-sky-100 px-1.5 py-0.5 align-middle text-[11px] font-semibold leading-none text-sky-700">
+                              {subBillLines.length + 1} bill
+                            </span>
+                          )}
+                        </div>
                         <div
                           className={`font-tabular flex-shrink-0 text-sm font-semibold ${
                             !hasSubBillWithMoney && hasSubBills ? 'text-emerald-700' : 'text-slate-900'
@@ -285,14 +324,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                         </div>
                       )}
 
-                      {hasSubBills && hasSubBillWithMoney && (
-                        <div className="mt-2 flex items-baseline justify-between gap-2 text-xs">
-                          <span className="font-medium text-slate-500">TT + Bill sau</span>
-                          <span className="font-tabular font-semibold text-emerald-700">
-                            {formatCurrencyRounded(playerTotalWithSubBills(player))}
-                          </span>
-                        </div>
-                      )}
+                      {hasSubBillWithMoney && renderSubBillSummary(player, subBillLines)}
 
                     </div>
                   </div>
