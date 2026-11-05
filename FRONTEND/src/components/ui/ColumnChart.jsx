@@ -1,12 +1,5 @@
 import { useState } from "react";
-
-/** Làm tròn lên số "đẹp" 1 / 2 / 5 x 10^n để vạch trục dễ đọc. */
-const niceCeil = (value) => {
-  if (value <= 0) return 1;
-  const power = 10 ** Math.floor(Math.log10(value));
-  const step = [1, 2, 5, 10].find((s) => s * power >= value);
-  return step * power;
-};
+import { niceAxisMax } from "../../utils/chartAxis";
 
 const formatTick = (value) =>
   value >= 1000 ? `${Number((value / 1000).toFixed(1))}K` : String(value);
@@ -14,17 +7,19 @@ const formatTick = (value) =>
 /**
  * Biểu đồ cột một chuỗi số liệu, vẽ bằng HTML (không thư viện).
  *
- * - `data`: [{ key, label, fullLabel, value }] — label hiện dưới cột, fullLabel
- *   hiện trong tooltip.
+ * - `data`: [{ key, label, fullLabel, value }] — label hiện dưới cột (ngắn, vd số
+ *   tháng, để 12 cột vừa 360 px), fullLabel hiện trong tooltip.
  * - `highlightKey`: cột được nhấn (xanh), các cột khác xám. Bỏ trống thì mọi cột
  *   cùng màu xanh.
  * - Chỉ ghi số trên cột nhấn và cột cao nhất; số các cột khác xem qua tooltip
  *   (rê chuột / chạm / Tab) hoặc bảng số liệu đi kèm.
+ * - Chữ trục, nhãn cột, số trên cột 12 px; đỉnh trục là số tròn để cột cao nhất
+ *   chiếm hơn nửa khung, vạch giữa luôn là số nguyên.
  */
 export default function ColumnChart({ data, unit, highlightKey = null }) {
   const [activeKey, setActiveKey] = useState(null);
   const maxValue = Math.max(0, ...data.map((d) => d.value));
-  const axisMax = niceCeil(maxValue);
+  const axisMax = niceAxisMax(maxValue);
   const peakKey =
     maxValue > 0 ? data.find((d) => d.value === maxValue).key : null;
   const lastIndex = data.length - 1;
@@ -40,7 +35,7 @@ export default function ColumnChart({ data, unit, highlightKey = null }) {
               className="absolute left-0 right-0 flex items-center"
               style={{ bottom: `${ratio * 100}%` }}
             >
-              <span className="font-tabular w-7 -translate-y-px pr-1 text-right text-[10px] leading-none text-slate-400">
+              <span className="font-tabular w-7 -translate-y-px pr-1 text-right text-xs leading-none text-slate-400">
                 {formatTick(axisMax * ratio)}
               </span>
               <span className="h-px flex-1 bg-slate-200" />
@@ -81,14 +76,14 @@ export default function ColumnChart({ data, unit, highlightKey = null }) {
                   style={{ height: `${(d.value / axisMax) * 100}%` }}
                 >
                   {showValue && d.value > 0 && (
-                    <span className="font-tabular absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 whitespace-nowrap text-[10px] font-semibold leading-none text-slate-700">
+                    <span className="font-tabular absolute bottom-full left-1/2 mb-0.5 -translate-x-1/2 whitespace-nowrap text-xs font-semibold leading-none text-slate-700">
                       {d.value}
                     </span>
                   )}
                 </span>
               </span>
               <span
-                className={`absolute bottom-0 text-[10px] leading-5 ${
+                className={`absolute bottom-0 text-xs leading-5 ${
                   d.key === highlightKey
                     ? "font-semibold text-slate-900"
                     : "text-slate-500"

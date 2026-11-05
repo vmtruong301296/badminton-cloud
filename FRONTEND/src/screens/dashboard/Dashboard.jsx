@@ -1,59 +1,75 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { billsApi, shuttlesApi } from "../../services/api";
 import {
   formatCurrencyRounded,
   formatDate,
-  formatNumber,
-  roundToNearestThousand,
 } from "../../utils/formatters";
+import {
+  BILL_PAGE_SIZE,
+  buildBillEntries,
+  collectUnpaidPlayers,
+  dateRangeLabel,
+  groupEntriesByMonth,
+  isBillOverdue,
+  isPlayerOverdue,
+  matchesStatusFilter,
+  takeEntries,
+} from "../../utils/billList";
+import {
+  formatShuttleStock,
+  LOW_STOCK_BALLS,
+  LOW_STOCK_TUBES,
+} from "../../utils/shuttleStock";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import Modal from "../../components/ui/Modal";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
+import useToast from "../../components/ui/useToast";
 import {
   ChartLine,
-  ChevronDown,
+  Check,
   ChevronLeft,
   CircleAlert,
   Plus,
   Receipt,
+  SlidersHorizontal,
   Trash2,
+  X,
 } from "../../components/ui/icons";
 import { useAuth } from "../../contexts/AuthContext";
-import MonthlyStatsCharts from "../../components/dashboard/MonthlyStatsCharts";
+import BillFilterSheet from "../../components/dashboard/BillFilterSheet";
+import DashboardSummary from "../../components/dashboard/DashboardSummary";
+import MobileBillList, {
+  MobileBillListSkeleton,
+} from "../../components/dashboard/MobileBillList";
+import ShuttleStockSheet from "../../components/dashboard/ShuttleStockSheet";
+import StatsSheet from "../../components/dashboard/StatsSheet";
+import UnpaidPlayersSheet from "../../components/dashboard/UnpaidPlayersSheet";
 
-const BALLS_PER_TUBE = 12;
-// Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống
-const LOW_STOCK_TUBES = 10;
-const LOW_STOCK_BALLS = LOW_STOCK_TUBES * BALLS_PER_TUBE;
+const EMPTY_FILTERS = {
+  date_from: "",
+  date_to: "",
+  player_id: "",
+  status: [],
+  limit: 10,
+};
 
-/** Hiển thị tồn kho: quả + gợi ý ống (12 quả/ống). */
-function formatShuttleStockDisplay(totalBalls) {
-  const n = Math.floor(Number(totalBalls) || 0);
-  if (n < 0) {
-    return `${formatNumber(n)} quả`;
-  }
-  const tubes = Math.floor(n / BALLS_PER_TUBE);
-  const rem = n % BALLS_PER_TUBE;
-  if (n === 0) return "0 quả";
-  if (tubes === 0) return `${formatNumber(n)} quả`;
-  if (rem === 0) return `${tubes} ống (${formatNumber(n)} quả)`;
-  return `${tubes} ống + ${rem} quả (${formatNumber(n)} quả)`;
-}
-
-/** Tháng hiện tại ở định dạng YYYY-MM cho <input type="month">. */
-function currentMonthValue() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
+// Chip trạng thái trên điện thoại (thứ tự theo bản vẽ: việc cần thu trước)
+const STATUS_CHIPS = [
+  { value: "partial", label: "1 phần" },
+  { value: "unpaid", label: "Chưa TT" },
+  { value: "paid", label: "Đã TT" },
+];
 
 export default function Dashboard() {
   const { hasPermission } = useAuth();
+  const toast = useToast();
   const [bills, setBills] = useState([]);
   const [allBills, setAllBills] = useState([]); // Store all bills for unpaid players calculation
   const [loading, setLoading] = useState(true);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  // Đổi bộ lọc nhanh (vd Từ ngày rồi Đến ngày) gửi nhiều lần tải: chỉ nhận kết quả của lần mới nhất
+  const loadSeqRef = useRef(0);
   const [filters, setFilters] = useState({
     date_from: "",
     date_to: "",
@@ -67,16 +83,23 @@ export default function Dashboard() {
   });
   const [markingPayment, setMarkingPayment] = useState(new Set()); // Track players being marked as paid
   const [currentPage, setCurrentPage] = useState(1);
-  const [statsMonth, setStatsMonth] = useState(currentMonthValue);
-  const [statsYear, setStatsYear] = useState(() => new Date().getFullYear());
-  const [statsMode, setStatsMode] = useState("month"); // 'month' | 'year'
+  const [visibleCount, setVisibleCount] = useState(BILL_PAGE_SIZE); // Điện thoại: "Xem thêm" thay phân trang
   const [statsModalOpen, setStatsModalOpen] = useState(false);
+  // Thống kê không theo bộ lọc ngày: khi đang lọc ngày (hoặc danh sách lỗi) thì tải riêng mọi bill
+  const [statsData, setStatsData] = useState({ status: "idle", bills: [] });
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [loadingShuttles, setLoadingShuttles] = useState(true);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [unpaidSheetOpen, setUnpaidSheetOpen] = useState(false);
+  const [stockSheetOpen, setStockSheetOpen] = useState(false);
+  // "Đã trả hết": người đang chờ xác nhận, đang gọi API (kết quả: thông báo ngắn M8)
+  const [payAllTarget, setPayAllTarget] = useState(null);
+  const [payAllBusy, setPayAllBusy] = useState(false);
 
   useEffect(() => {
     loadBills();
     setCurrentPage(1); // Reset to page 1 when filters change
+    setVisibleCount(BILL_PAGE_SIZE);
   }, [filters]);
 
   useEffect(() => {
@@ -106,41 +129,36 @@ export default function Dashboard() {
   }, [bills, filters.limit, currentPage]);
 
   const loadBills = async () => {
+    const seq = ++loadSeqRef.current;
     try {
       setLoading(true);
+      setLoadError(false);
       const params = {};
       if (filters.date_from) params.date_from = filters.date_from;
       if (filters.date_to) params.date_to = filters.date_to;
       if (filters.player_id) params.player_id = filters.player_id;
 
       const response = await billsApi.getAll(params);
+      if (seq !== loadSeqRef.current) return;
       let filteredBills = response.data;
 
       // Store all bills for unpaid players calculation (without status filter)
       setAllBills(response.data);
 
       // Filter by status on frontend (multiple statuses can be selected)
-      if (filters.status && filters.status.length > 0) {
-        filteredBills = filteredBills.filter((bill) => {
-          const allPaid = bill.bill_players?.every((p) => p.is_paid) || false;
-          const somePaid = bill.bill_players?.some((p) => p.is_paid) || false;
-
-          // Check if bill matches any of the selected statuses
-          return filters.status.some((status) => {
-            if (status === "paid")
-              return allPaid && bill.bill_players?.length > 0;
-            if (status === "partial") return somePaid && !allPaid;
-            if (status === "unpaid") return !somePaid;
-            return false;
-          });
-        });
-      }
+      filteredBills = filteredBills.filter((bill) =>
+        matchesStatusFilter(bill, filters.status),
+      );
 
       setBills(filteredBills);
     } catch (error) {
+      if (seq !== loadSeqRef.current) return;
       console.error("Error loading bills:", error);
+      setLoadError(true);
+      setBills([]);
+      setAllBills([]);
     } finally {
-      setLoading(false);
+      if (seq === loadSeqRef.current) setLoading(false);
     }
   };
 
@@ -162,74 +180,31 @@ export default function Dashboard() {
     return "Chưa thanh toán";
   };
 
-  // Check if bill is overdue (quá 7 ngày) and has unpaid players
-  const isOverdueWarning = (bill) => {
-    if (!bill.date) return false;
-
-    const billDate = new Date(bill.date);
-    billDate.setHours(0, 0, 0, 0); // Reset time to start of day
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
-
-    // Calculate difference in days
-    const diffTime = today - billDate;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    // Check if bill is 7 days or more old (quá 7 ngày)
-    const isOverdue = diffDays >= 7;
-
-    // Check if there are unpaid players
-    const unpaidCount =
-      bill.bill_players?.filter((p) => !p.is_paid).length || 0;
-    const hasUnpaidPlayers = unpaidCount > 0;
-
-    return isOverdue && hasUnpaidPlayers;
-  };
-
-  // Check if player has overdue bills (quá 7 ngày)
-  const isPlayerOverdue = (player) => {
-    if (!player.unpaidDates || player.unpaidDates.length === 0) return false;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Reset time to start of day
-
-    // Check if any unpaid date is 7 days or more old
-    return player.unpaidDates.some((dateItem) => {
-      if (!dateItem.date) return false;
-
-      const billDate = new Date(dateItem.date);
-      billDate.setHours(0, 0, 0, 0); // Reset time to start of day
-
-      // Calculate difference in days
-      const diffTime = today - billDate;
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-      // Check if bill is 7 days or more old (quá 7 ngày)
-      return diffDays >= 7;
-    });
-  };
-
   const handleDeleteClick = (billId) => {
     setDeleteConfirm({ isOpen: true, billId });
   };
 
-  const handleDeleteConfirm = async () => {
+  const deleteBill = async (billId) => {
     try {
-      await billsApi.delete(deleteConfirm.billId);
+      await billsApi.delete(billId);
       setDeleteConfirm({ isOpen: false, billId: null });
       loadBills(); // Reload bills after deletion
     } catch (error) {
       console.error("Error deleting bill:", error);
-      alert("Có lỗi xảy ra khi xóa bill");
+      setDeleteConfirm({ isOpen: false, billId: null });
+      toast.error("Có lỗi xảy ra khi xóa bill", {
+        onRetry: () => deleteBill(billId),
+      });
     }
   };
+
+  const handleDeleteConfirm = () => deleteBill(deleteConfirm.billId);
 
   const handleDeleteCancel = () => {
     setDeleteConfirm({ isOpen: false, billId: null });
   };
 
-  // Mark payment for all unpaid bills of a player
+  // Mark payment for all unpaid bills of a player (lỗi ném ra cho nơi gọi báo)
   const handleMarkPlayerPayment = async (userId) => {
     try {
       setMarkingPayment((prev) => new Set(prev).add(userId));
@@ -296,7 +271,7 @@ export default function Dashboard() {
       });
     } catch (error) {
       console.error("Error marking player payment:", error);
-      alert("Có lỗi xảy ra khi đánh dấu thanh toán");
+      throw error;
     } finally {
       setMarkingPayment((prev) => {
         const newSet = new Set(prev);
@@ -304,6 +279,29 @@ export default function Dashboard() {
         return newSet;
       });
     }
+  };
+
+  /**
+   * "Đã trả hết" sau khi xác nhận: kết quả là thông báo ngắn (M8), kể cả khi đang mở sheet DS chưa
+   * thanh toán (thông báo nằm trên lớp nền của sheet, lên đỉnh màn).
+   */
+  const markPlayerPaid = async (player) => {
+    try {
+      await handleMarkPlayerPayment(player.userId);
+      toast.success(`Đã đánh dấu ${player.name} trả hết`);
+    } catch {
+      toast.error("Có lỗi xảy ra khi đánh dấu thanh toán", {
+        onRetry: () => markPlayerPaid(player),
+      });
+    }
+  };
+
+  const confirmPayAll = async () => {
+    const player = payAllTarget;
+    setPayAllBusy(true);
+    await markPlayerPaid(player);
+    setPayAllBusy(false);
+    setPayAllTarget(null);
   };
 
   // Format date to YYYY/MM/DD
@@ -317,112 +315,8 @@ export default function Dashboard() {
   };
 
   // Calculate unpaid players list
-  const unpaidPlayers = useMemo(() => {
-    const playerMap = new Map();
-
-    // Process all bills to collect unpaid players
-    allBills.forEach((bill) => {
-      if (!bill.bill_players) return;
-
-      bill.bill_players.forEach((player) => {
-        if (player.is_paid) return; // Skip paid players
-
-        const userId = player.user_id;
-        const userName = player.user?.name || "Unknown";
-
-        if (!playerMap.has(userId)) {
-          playerMap.set(userId, {
-            userId,
-            name: userName,
-            totalAmount: 0,
-            unpaidDates: [],
-          });
-        }
-
-        const playerData = playerMap.get(userId);
-        // Total amount includes both current bill amount and debt amount (đã làm tròn)
-        const playerTotal = roundToNearestThousand(
-          (player.total_amount || 0) + (player.debt_amount || 0),
-        );
-        playerData.totalAmount += playerTotal;
-
-        // Add bill date if player hasn't paid (only current bill amount, debt được tách ở debt_details)
-        if (bill.date && player.total_amount > 0) {
-          playerData.unpaidDates.push({
-            date: bill.date,
-            // Làm tròn giống như tổng để tránh lệch giữa "Tổng tiền" và "DS ngày thiếu"
-            amount: roundToNearestThousand(player.total_amount || 0),
-            billId: bill.id,
-          });
-        }
-
-        // Add debt details dates
-        if (player.debt_details && Array.isArray(player.debt_details)) {
-          player.debt_details.forEach((debt) => {
-            if (debt.date) {
-              let debtAmount = 0;
-              if (debt.parent_amount !== null) {
-                debtAmount += debt.parent_amount;
-              }
-              if (debt.sub_bills && Array.isArray(debt.sub_bills)) {
-                debt.sub_bills.forEach((subBill) => {
-                  debtAmount += subBill.amount || 0;
-                });
-              }
-
-              if (debtAmount > 0) {
-                playerData.unpaidDates.push({
-                  date: debt.date,
-                  // Làm tròn cho từng mục nợ theo đúng cách hiển thị
-                  amount: roundToNearestThousand(debtAmount),
-                  billId: bill.id,
-                });
-              }
-            }
-          });
-        }
-      });
-    });
-
-    // Convert map to array and sort dates (newest first)
-    return Array.from(playerMap.values())
-      .map((player) => {
-        // Sort dates: newest first (descending)
-        const sortedDates = [...player.unpaidDates].sort((a, b) => {
-          return new Date(b.date) - new Date(a.date);
-        });
-
-        // Group by date and sum amounts for same date
-        const dateMap = new Map();
-        sortedDates.forEach((item) => {
-          const dateKey = item.date;
-          if (!dateMap.has(dateKey)) {
-            dateMap.set(dateKey, { date: dateKey, amount: 0 });
-          }
-          dateMap.get(dateKey).amount += item.amount;
-        });
-
-        return {
-          ...player,
-          unpaidDates: Array.from(dateMap.values()).sort((a, b) => {
-            return new Date(b.date) - new Date(a.date);
-          }),
-        };
-      })
-      .filter((player) => player.totalAmount > 0)
-      .sort((a, b) => {
-        // Sort by latest unpaid date (descending - newest first)
-        const aLatestDate =
-          a.unpaidDates && a.unpaidDates.length > 0
-            ? new Date(a.unpaidDates[0].date)
-            : new Date(0);
-        const bLatestDate =
-          b.unpaidDates && b.unpaidDates.length > 0
-            ? new Date(b.unpaidDates[0].date)
-            : new Date(0);
-        return bLatestDate - aLatestDate; // Descending order (newest first)
-      });
-  }, [allBills]);
+  const unpaidPlayers = useMemo(() => collectUnpaidPlayers(allBills), [allBills]);
+  const unpaidTotal = unpaidPlayers.reduce((sum, p) => sum + p.totalAmount, 0);
 
   /** Chỉ loại còn tồn trên 0 quả (0 hoặc âm không hiển thị). */
   const shuttleTypesWithStock = useMemo(
@@ -506,145 +400,101 @@ export default function Dashboard() {
     };
   }, [bills, filters.limit, currentPage]);
 
-  /** Mở thống kê: luôn bắt đầu ở tháng hiện tại, kể cả lần trước xem theo năm. */
+  // Điện thoại: nhóm theo tháng (bill con mồ côi vẫn hiện), "Xem thêm" thay phân trang
+  const monthGroups = useMemo(
+    () => groupEntriesByMonth(buildBillEntries(bills)),
+    [bills],
+  );
+  const totalEntries = monthGroups.reduce((sum, g) => sum + g.billCount, 0);
+  const visibleGroups = useMemo(
+    () => takeEntries(monthGroups, visibleCount),
+    [monthGroups, visibleCount],
+  );
+
+  const hasDateFilter = Boolean(filters.date_from || filters.date_to);
+  // Rỗng vì đang lọc (còn bill bị lọc ra) → "Xóa lọc"; thật sự chưa có bill → "Tạo bill đầu tiên"
+  const isFiltered =
+    hasDateFilter || (filters.status.length > 0 && allBills.length > 0);
+  const clearFilters = () => setFilters(EMPTY_FILTERS);
+
+  const statsUsesOwnData = hasDateFilter || loadError;
+  const loadStatsBills = async () => {
+    setStatsData({ status: "loading", bills: [] });
+    try {
+      const response = await billsApi.getAll();
+      setStatsData({ status: "ready", bills: response.data });
+    } catch (error) {
+      console.error("Error loading bills for statistics:", error);
+      setStatsData({ status: "error", bills: [] });
+    }
+  };
+  const stats = statsUsesOwnData
+    ? statsData
+    : { status: loading ? "loading" : "ready", bills: allBills };
+
+  /** Mở thống kê: luôn bắt đầu ở tháng hiện tại (StatsSheet gắn lại mỗi lần mở). */
   const openStatsModal = () => {
-    setStatsMode("month");
-    setStatsMonth(currentMonthValue());
-    setStatsYear(new Date().getFullYear());
+    if (statsUsesOwnData) loadStatsBills();
     setStatsModalOpen(true);
   };
 
-  // Các năm có bill (kèm năm hiện tại), mới -> cũ. Dùng cho dropdown thống kê theo năm.
-  const availableYears = useMemo(() => {
-    const years = new Set([new Date().getFullYear()]);
-    (allBills || []).forEach((bill) => {
-      if (!bill.date) return;
-      const billYear = new Date(bill.date).getFullYear();
-      if (!Number.isNaN(billYear)) years.add(billYear);
-    });
-    return Array.from(years).sort((a, b) => b - a);
-  }, [allBills]);
+  const toggleStatus = (value) => {
+    const next = filters.status.includes(value)
+      ? filters.status.filter((s) => s !== value)
+      : [...filters.status, value];
+    setFilters({ ...filters, status: next });
+  };
 
-  // Calculate statistics for the selected period (month or year)
-  const periodStats = useMemo(() => {
-    if (!allBills || allBills.length === 0) {
-      return {
-        shuttles: [],
-        players: [],
-      };
-    }
-
-    // Khoảng ngày của kỳ đang xem: cả tháng hoặc cả năm
-    let startDate;
-    let endDate;
-    if (statsMode === "year") {
-      startDate = new Date(statsYear, 0, 1);
-      endDate = new Date(statsYear, 11, 31, 23, 59, 59);
-    } else {
-      const [year, month] = statsMonth.split("-").map(Number);
-      startDate = new Date(year, month - 1, 1);
-      endDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
-    }
-
-    // Filter bills in selected period
-    const billsInMonth = allBills.filter((bill) => {
-      if (!bill.date) return false;
-      const billDate = new Date(bill.date);
-      return billDate >= startDate && billDate <= endDate;
-    });
-
-    // Calculate shuttle statistics
-    const shuttleMap = new Map(); // { shuttleTypeId: { name, totalQuantity } }
-    billsInMonth.forEach((bill) => {
-      if (bill.bill_shuttles && Array.isArray(bill.bill_shuttles)) {
-        bill.bill_shuttles.forEach((shuttle) => {
-          const shuttleTypeId = shuttle.shuttle_type_id;
-          const shuttleTypeName = shuttle.shuttle_type?.name || "Unknown";
-          const quantity = shuttle.quantity || 0;
-
-          if (!shuttleMap.has(shuttleTypeId)) {
-            shuttleMap.set(shuttleTypeId, {
-              name: shuttleTypeName,
-              totalQuantity: 0,
-            });
-          }
-
-          const current = shuttleMap.get(shuttleTypeId);
-          current.totalQuantity += quantity;
-        });
+  const emptyState = (
+    <EmptyState
+      icon={Receipt}
+      title="Chưa có bill nào"
+      description="Thử xóa bộ lọc hoặc tạo bill mới để bắt đầu."
+      action={
+        isFiltered ? (
+          <button type="button" onClick={clearFilters} className="btn btn-secondary">
+            Xóa lọc
+          </button>
+        ) : (
+          hasPermission("bills.create") && (
+            <Link to="/bills/create" className="btn btn-primary">
+              <Plus className="h-4 w-4" />
+              Tạo bill đầu tiên
+            </Link>
+          )
+        )
       }
-    });
-
-    // Convert shuttle map to array and sort by name
-    const shuttles = Array.from(shuttleMap.values()).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
-
-    // Calculate player statistics
-    const playerMap = new Map(); // { userId: { name, totalAmount, billCount } }
-    billsInMonth.forEach((bill) => {
-      // Only count main bills (not sub-bills)
-      if (bill.parent_bill_id) return;
-
-      if (bill.bill_players && Array.isArray(bill.bill_players)) {
-        bill.bill_players.forEach((player) => {
-          const userId = player.user_id;
-          const userName = player.user?.name || "Unknown";
-          // Total amount includes both current bill amount and debt amount
-          const playerTotal = roundToNearestThousand(
-            (player.total_amount || 0) + (player.debt_amount || 0),
-          );
-
-          if (!playerMap.has(userId)) {
-            playerMap.set(userId, {
-              name: userName,
-              totalAmount: 0,
-              billCount: 0,
-            });
-          }
-
-          const current = playerMap.get(userId);
-          current.totalAmount += playerTotal;
-          current.billCount += 1; // Count this bill for this player
-        });
-      }
-    });
-
-    // Convert player map to array and sort by total amount (descending)
-    const players = Array.from(playerMap.values())
-      .filter((p) => p.totalAmount > 0)
-      .sort((a, b) => b.totalAmount - a.totalAmount);
-
-    // Calculate total shuttles for "ống cầu" calculation
-    const totalShuttles = shuttles.reduce((sum, s) => sum + s.totalQuantity, 0);
-    const totalOngCau = Math.floor(totalShuttles / 12); // 1 ống cầu = 12 quả
-    const remainingShuttles = totalShuttles % 12;
-
-    return {
-      shuttles,
-      players,
-      totalShuttles,
-      totalOngCau,
-      remainingShuttles,
-    };
-  }, [allBills, statsMode, statsMonth, statsYear]);
+    />
+  );
 
   return (
-    <div className="px-3 sm:px-0 pb-16 md:pb-0">
+    <div className="px-4 sm:px-0">
       <PageHeader
         compactActions
-        title="Danh sách Bills"
+        hideOnPhone
+        title="Bill cầu"
+        barAction={
+          <button
+            type="button"
+            onClick={openStatsModal}
+            aria-label="Thống kê"
+            aria-haspopup="dialog"
+            className="app-bar-btn"
+          >
+            <ChartLine className="h-6 w-6" />
+          </button>
+        }
         description={
           loading ? (
-            <span className="inline-block h-3.5 w-24 skeleton align-middle" />
+            <span className="hidden h-3.5 w-24 skeleton align-middle sm:inline-block" />
           ) : (
-            <>
+            <span className="hidden sm:inline">
               <span className="font-tabular font-semibold text-slate-700">
                 {bills.length}
               </span>{" "}
               {bills.length === 1 ? "bill" : "bills"} hiển thị
               {filters.date_from || filters.date_to ? " theo bộ lọc" : ""}
-            </>
+            </span>
           )
         }
         actions={
@@ -652,7 +502,7 @@ export default function Dashboard() {
             <button
               type="button"
               onClick={openStatsModal}
-              className="btn btn-secondary px-3 sm:px-4"
+              className="btn btn-secondary hidden px-3 sm:inline-flex sm:px-4"
             >
               <ChartLine className="h-[18px] w-[18px]" />
               Thống kê
@@ -670,11 +520,69 @@ export default function Dashboard() {
         }
       />
 
+      {/* Điện thoại: thanh trên đã có tiêu đề, khối mô tả / nút của PageHeader không dựng (hideOnPhone) */}
+      <div>
+        {!loadError && (
+          <DashboardSummary
+            unpaidTotal={unpaidTotal}
+            unpaidCount={unpaidPlayers.length}
+            stockBalls={totalShuttleStockBalls}
+            lowStock={isTotalLowStock}
+            loadingBills={loading}
+            loadingShuttles={loadingShuttles}
+            dateFiltered={hasDateFilter}
+            onOpenUnpaid={() => setUnpaidSheetOpen(true)}
+            onOpenStock={() => setStockSheetOpen(true)}
+          />
+        )}
+
+        {/* Lọc trên điện thoại (M4): "Lọc" ghim trái mở sheet khoảng ngày, chip trạng thái cuộn ngang */}
+        <div className="chip-bar mb-3 md:hidden">
+          <button
+            type="button"
+            onClick={() => setFilterSheetOpen(true)}
+            aria-haspopup="dialog"
+            aria-label={hasDateFilter ? "Lọc (1)" : undefined}
+            className="chip"
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Lọc
+            {hasDateFilter && <span className="chip-count">1</span>}
+          </button>
+          <div className="chip-row">
+            {hasDateFilter && (
+              <span className="chip chip-applied">
+                {dateRangeLabel(filters.date_from, filters.date_to)}
+                <button
+                  type="button"
+                  onClick={() => setFilters({ ...filters, date_from: "", date_to: "" })}
+                  aria-label="Bỏ lọc ngày"
+                  className="chip-remove"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </span>
+            )}
+            {STATUS_CHIPS.map((chip) => (
+              <button
+                key={chip.value}
+                type="button"
+                aria-pressed={filters.status.includes(chip.value)}
+                onClick={() => toggleStatus(chip.value)}
+                className="chip"
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Filters — toolbar gọn 1 hàng trên desktop */}
-      <section aria-label="Lọc danh sách bills" className="card mb-3 !p-2 sm:mb-6 sm:!p-4">
+      <section aria-label="Lọc danh sách bills" className="card mb-3 hidden !p-2 sm:mb-6 sm:!p-4 md:block">
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-end lg:gap-x-5 lg:gap-y-3">
           {/* Dates */}
-          <div id="bill-filter-dates" className={`${mobileFiltersOpen ? "grid" : "hidden"} min-w-0 grid-cols-2 gap-2 sm:grid sm:gap-3 lg:flex`}>
+          <div id="bill-filter-dates" className="grid min-w-0 grid-cols-2 gap-2 sm:gap-3 lg:flex">
             <div className="min-w-0">
               <label htmlFor="filter-date-from" className="field-label">
                 Từ ngày
@@ -742,12 +650,7 @@ export default function Dashboard() {
                     type="button"
                     aria-label={opt.label}
                     aria-pressed={isActive}
-                    onClick={() => {
-                      const next = isActive
-                        ? filters.status.filter((s) => s !== opt.value)
-                        : [...filters.status, opt.value];
-                      setFilters({ ...filters, status: next });
-                    }}
+                    onClick={() => toggleStatus(opt.value)}
                     className={`inline-flex h-11 items-center justify-center gap-1 whitespace-nowrap rounded-lg border px-1 text-xs font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 focus-visible:ring-offset-1 sm:h-10 sm:gap-2 sm:rounded-full sm:px-3.5 sm:text-sm ${
                       isActive
                         ? opt.activeCls
@@ -763,25 +666,11 @@ export default function Dashboard() {
                   </button>
                 );
               })}
-              <button
-                type="button"
-                onClick={() => setMobileFiltersOpen((open) => !open)}
-                aria-expanded={mobileFiltersOpen}
-                aria-controls="bill-filter-dates bill-filter-options"
-                aria-label="Bộ lọc nâng cao"
-                className="btn btn-ghost gap-1 px-2 text-xs sm:hidden"
-              >
-                Lọc
-                {(filters.date_from || filters.date_to || filters.limit !== 10) && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" aria-label="Có bộ lọc nâng cao đang áp dụng" />
-                )}
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${mobileFiltersOpen ? "rotate-180" : ""}`} />
-              </button>
             </div>
           </div>
 
           {/* Limit + Clear — đẩy sang phải trên desktop */}
-          <div id="bill-filter-options" className={`${mobileFiltersOpen ? "grid" : "hidden"} grid-cols-2 gap-2 sm:grid sm:gap-3 lg:ml-auto lg:flex lg:items-end`}>
+          <div id="bill-filter-options" className="grid grid-cols-2 gap-2 sm:gap-3 lg:ml-auto lg:flex lg:items-end">
             <div>
               <label htmlFor="filter-limit" className="field-label">
                 Số bill / trang
@@ -804,15 +693,7 @@ export default function Dashboard() {
             <div className="flex items-end">
               <button
                 type="button"
-                onClick={() =>
-                  setFilters({
-                    date_from: "",
-                    date_to: "",
-                    player_id: "",
-                    status: [],
-                    limit: 10,
-                  })
-                }
+                onClick={clearFilters}
                 className="btn btn-secondary w-full lg:w-auto"
               >
                 <Trash2 className="h-4 w-4" />
@@ -822,11 +703,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        {!mobileFiltersOpen && (filters.date_from || filters.date_to) && (
-          <p className="px-1 pt-2 text-xs text-slate-600 sm:hidden">
-            {filters.date_from ? formatDate(filters.date_from) : "Từ đầu"} – {filters.date_to ? formatDate(filters.date_to) : "hiện tại"}
-          </p>
-        )}
       </section>
 
       {/* Main Content: Bills Table and Unpaid Players */}
@@ -834,7 +710,9 @@ export default function Dashboard() {
         {/* Bills Table - Left Side (3/4 width) */}
         <div className="lg:col-span-3">
           {loading ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-card">
+            <>
+            <MobileBillListSkeleton className="md:hidden" />
+            <div className="hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-card md:block">
               <div className="hidden md:block">
                 <div className="grid grid-cols-6 gap-3 border-b border-slate-100 px-4 py-3">
                   {[...Array(6)].map((_, i) => (
@@ -856,35 +734,35 @@ export default function Dashboard() {
                   </div>
                 ))}
               </div>
-              <div className="divide-y divide-slate-100 md:hidden">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="space-y-2 px-3 py-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="skeleton h-4 w-24" />
-                      <div className="skeleton h-5 w-28" />
-                    </div>
-                    <div className="skeleton h-3 w-32" />
-                    <div className="skeleton h-3 w-40" />
-                  </div>
-                ))}
-              </div>
             </div>
-          ) : billGroups.length === 0 ? (
+            </>
+          ) : loadError ? (
             <EmptyState
-              icon={Receipt}
-              title="Chưa có bill nào"
-              description="Thử xóa bộ lọc hoặc tạo bill mới để bắt đầu."
-              action={
-                hasPermission("bills.create") && (
-                  <Link to="/bills/create" className="btn btn-primary">
-                    <Plus className="h-4 w-4" />
-                    Tạo bill đầu tiên
-                  </Link>
-                )
-              }
+              tone="error"
+              title="Không tải được danh sách bill"
+              description="Kiểm tra mạng rồi thử lại."
+              onRetry={loadBills}
             />
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
+            <>
+            <div className="md:hidden">
+              {totalEntries === 0 ? (
+                emptyState
+              ) : (
+                <MobileBillList
+                  groups={visibleGroups}
+                  shownCount={Math.min(visibleCount, totalEntries)}
+                  totalCount={totalEntries}
+                  pageSize={BILL_PAGE_SIZE}
+                  onShowMore={() => setVisibleCount((count) => count + BILL_PAGE_SIZE)}
+                  canView={hasPermission("bills.view")}
+                />
+              )}
+            </div>
+            {billGroups.length === 0 ? (
+              <div className="hidden md:block">{emptyState}</div>
+            ) : (
+            <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:block">
               <div className="hidden md:block">
                 <table className="min-w-full">
                   <thead className="bg-slate-50 text-xs font-medium text-slate-500">
@@ -912,7 +790,7 @@ export default function Dashboard() {
                   {billGroups.map((group) => {
                     const mainBill = group.mainBill;
                     const subBills = group.subBills;
-                    const mainBillWarning = isOverdueWarning(mainBill);
+                    const mainBillWarning = isBillOverdue(mainBill);
                     const mainBillAllPaid =
                       mainBill.bill_players?.every((p) => p.is_paid) &&
                       mainBill.bill_players?.length > 0;
@@ -981,7 +859,7 @@ export default function Dashboard() {
                         </tr>
                         {/* Sub Bills Rows */}
                         {subBills.map((subBill) => {
-                          const subBillWarning = isOverdueWarning(subBill);
+                          const subBillWarning = isBillOverdue(subBill);
                           const subBillAllPaid =
                             subBill.bill_players?.every((p) => p.is_paid) &&
                             subBill.bill_players?.length > 0;
@@ -1056,74 +934,6 @@ export default function Dashboard() {
                     );
                   })}
                 </table>
-              </div>
-
-              <div className="divide-y divide-slate-200 md:hidden">
-                {billGroups.map(({ mainBill, subBills }) => (
-                  <article key={mainBill.id} aria-label={"Bill chính #" + mainBill.id}>
-                    {[mainBill, ...subBills].map((bill, index) => {
-                      const isSubBill = index > 0;
-                      const overdue = isOverdueWarning(bill);
-                      const allPaid = bill.bill_players?.every((p) => p.is_paid) && bill.bill_players?.length > 0;
-                      const unpaidCount = bill.bill_players?.filter((p) => !p.is_paid).length || 0;
-                      const canView = hasPermission("bills.view");
-                      const Content = canView ? Link : "div";
-
-                      return (
-                        <div
-                          key={bill.id}
-                          className={"flex items-center gap-1 px-3 " + (isSubBill ? "ml-3 border-l-2 border-t border-sky-200 " : "") + (
-                            overdue ? "bg-rose-50/70" : allPaid ? "bg-emerald-50/50" : isSubBill ? "bg-sky-50/50" : "bg-white"
-                          )}
-                        >
-                          <Content
-                            {...(canView ? { to: "/bills/" + bill.id, "aria-label": "Chi tiết bill #" + bill.id } : {})}
-                            className={"min-w-0 flex-1 rounded-lg py-3 " + (canView ? "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40" : "")}
-                          >
-                            <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
-                              <span className="font-tabular text-sm font-medium text-slate-700">
-                                {formatDate(bill.date)}
-                              </span>
-                              <span className="font-tabular text-lg font-semibold leading-tight tracking-tight text-slate-900">
-                                {formatCurrencyRounded(bill.total_amount)}
-                              </span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-                              <span className={"text-xs " + (isSubBill ? "text-sky-700" : "text-slate-500")}>
-                                {isSubBill ? "Bill con" : "Bill chính"} #{bill.id}
-                              </span>
-                              <span aria-label={getStatusText(bill)} className={"badge gap-1 " + getStatusColor(bill)}>
-                                <span className={"h-1.5 w-1.5 rounded-full " + (allPaid ? "bg-emerald-500" : bill.bill_players?.some((p) => p.is_paid) ? "bg-amber-500" : "bg-slate-400")} aria-hidden="true" />
-                                {allPaid ? "Đã TT" : bill.bill_players?.some((p) => p.is_paid) ? "TT 1 phần" : "Chưa TT"}
-                              </span>
-                            </div>
-                            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 text-xs">
-                              <span className={overdue ? "text-rose-700" : unpaidCount > 0 ? "text-slate-500" : "text-emerald-700"}>
-                                {unpaidCount > 0 ? unpaidCount + " người chưa TT" : "Tất cả đã thanh toán"}
-                                {overdue && " · Quá hạn"}
-                              </span>
-                              {canView && (
-                                <span className="inline-flex items-center gap-0.5 font-medium text-emerald-700">
-                                  Chi tiết <ChevronLeft className="h-3 w-3 rotate-180" />
-                                </span>
-                              )}
-                            </div>
-                          </Content>
-                          {hasPermission("bills.delete") && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteClick(bill.id)}
-                              aria-label={"Xóa " + (isSubBill ? "bill con" : "bill") + " #" + bill.id}
-                              className="btn btn-danger-ghost btn-icon shrink-0 sm:h-11 sm:w-11"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </article>
-                ))}
               </div>
 
               {/* Legend/Chú thích */}
@@ -1242,11 +1052,13 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+            )}
+            </>
           )}
         </div>
 
-        {/* Right column: Cầu khả dụng + DS chưa thanh toán */}
-        <div className="lg:col-span-1 space-y-6">
+        {/* Right column: Cầu khả dụng + DS chưa thanh toán (dưới lg: ô tóm tắt + sheet) */}
+        <div className="hidden space-y-6 lg:col-span-1 lg:block">
           <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
             <div className="border-b border-slate-100 px-4 py-4 sm:px-5">
               <div className="flex items-start justify-between gap-2">
@@ -1263,7 +1075,7 @@ export default function Dashboard() {
                 )}
               </div>
               <div className="mt-1 text-sm font-semibold text-emerald-700">
-                Tổng: {formatShuttleStockDisplay(totalShuttleStockBalls)}
+                Tổng: {formatShuttleStock(totalShuttleStockBalls)}
               </div>
             </div>
             {isTotalLowStock && (
@@ -1298,7 +1110,7 @@ export default function Dashboard() {
                         {st.name}
                       </div>
                       <div className="mt-0.5 text-sm text-slate-600">
-                        {formatShuttleStockDisplay(q)}
+                        {formatShuttleStock(q)}
                       </div>
                     </div>
                   );
@@ -1339,7 +1151,7 @@ export default function Dashboard() {
                         isOverdue ? "bg-rose-50" : ""
                       }`}
                     >
-                      <div className="mb-2 pr-12">
+                      <div className="mb-2">
                         <div className="break-words text-sm font-semibold text-slate-900">
                           {player.name}:{" "}
                           <span className="font-tabular text-rose-600">
@@ -1347,7 +1159,7 @@ export default function Dashboard() {
                           </span>
                         </div>
                       </div>
-                      <div className="pr-12 text-sm">
+                      <div className="text-sm">
                         <div className="mb-1 font-medium text-slate-700">
                           DS ngày thiếu:
                         </div>
@@ -1364,18 +1176,18 @@ export default function Dashboard() {
                         </div>
                       </div>
                       {hasPermission("bills.mark_payment") && (
-                        <label className="absolute right-1 top-1 flex h-11 w-11 cursor-pointer items-center justify-center sm:right-2">
-                          <input
-                            type="checkbox"
-                            checked={false}
-                            onChange={() =>
-                              handleMarkPlayerPayment(player.userId)
-                            }
+                        <div className="mt-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setPayAllTarget(player)}
                             disabled={isMarking}
-                            aria-label={`Đánh dấu thanh toán tất cả bills của ${player.name}`}
-                            className="h-5 w-5 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                          />
-                        </label>
+                            aria-label={`Đã trả hết: ${player.name}`}
+                            className="btn btn-secondary btn-sm"
+                          >
+                            <Check className="h-4 w-4" />
+                            Đã trả hết
+                          </button>
+                        </div>
                       )}
                       {isMarking && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/75">
@@ -1401,186 +1213,66 @@ export default function Dashboard() {
         message="Bạn có chắc chắn muốn xóa bill này? Hành động này không thể hoàn tác."
       />
 
-      {/* Statistics Modal */}
-      <Modal
-        isOpen={statsModalOpen}
-        onClose={() => setStatsModalOpen(false)}
-        title="Thống kê"
-        size="xl"
-      >
-        <div className="mb-5 flex flex-wrap items-center gap-3">
-          {/* Chọn kỳ thống kê: theo tháng hoặc cả năm */}
-          <div className="inline-flex rounded-xl bg-slate-100 p-1">
-            {[
-              { value: "month", label: "Tháng" },
-              { value: "year", label: "Năm" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setStatsMode(option.value)}
-                aria-pressed={statsMode === option.value}
-                className={`h-9 rounded-lg px-4 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
-                  statsMode === option.value
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-600 hover:text-slate-900"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          <label
-            htmlFor="stats-period"
-            className="text-sm font-medium text-slate-700"
-          >
-            {statsMode === "year" ? "Chọn năm:" : "Chọn tháng:"}
-          </label>
-          {statsMode === "year" ? (
-            <select
-              id="stats-period"
-              value={statsYear}
-              onChange={(e) => setStatsYear(Number(e.target.value))}
-              className="field-input !w-auto"
-            >
-              {availableYears.map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              id="stats-period"
-              type="month"
-              value={statsMonth}
-              onChange={(e) => setStatsMonth(e.target.value)}
-              className="field-input !w-auto"
-            />
-          )}
-        </div>
+      <ConfirmDialog
+        isOpen={Boolean(payAllTarget)}
+        onClose={() => setPayAllTarget(null)}
+        onConfirm={confirmPayAll}
+        busy={payAllBusy}
+        title="Đánh dấu đã trả hết?"
+        message={
+          payAllTarget &&
+          `${payAllTarget.name}: ${payAllTarget.unpaidDates.length} ngày thiếu, tổng ${formatCurrencyRounded(payAllTarget.totalAmount)}. Mọi bill còn nợ của người này sẽ chuyển sang Đã TT.`
+        }
+        confirmLabel="Đã trả hết"
+        confirmVariant="primary"
+      />
 
-        <div className="space-y-4">
-          <MonthlyStatsCharts
-            bills={allBills}
-            mode={statsMode}
-            month={statsMonth}
-            year={statsYear}
-          />
+      <BillFilterSheet
+        isOpen={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        dateFrom={filters.date_from}
+        dateTo={filters.date_to}
+        onChange={(range) => setFilters({ ...filters, ...range })}
+        resultCount={totalEntries}
+        loading={loading}
+      />
 
-          {/* Shuttle Statistics */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h3 className="mb-3 text-base font-semibold text-slate-900">
-              Tổng số lượng cầu
-            </h3>
-            {periodStats.shuttles.length === 0 ? (
-              <div className="text-sm text-slate-500">
-                Không có dữ liệu cầu trong{" "}
-                {statsMode === "year" ? "năm" : "tháng"} này
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {periodStats.shuttles.map((shuttle, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between gap-3 border-b border-slate-200 py-2 last:border-0"
-                  >
-                    <span className="min-w-0 break-words text-sm font-medium text-slate-700">
-                      {shuttle.name}
-                    </span>
-                    <span className="flex-shrink-0 font-tabular text-sm font-semibold text-slate-900">
-                      {shuttle.totalQuantity} quả
-                    </span>
-                  </div>
-                ))}
-                <div className="mt-2 flex items-center justify-between border-t-2 border-slate-300 pt-2">
-                  <span className="text-sm font-bold text-slate-900">
-                    Tổng cộng:
-                  </span>
-                  <span className="font-tabular text-sm font-bold text-slate-900">
-                    {periodStats.totalShuttles} quả
-                  </span>
-                </div>
-                {/* Ống cầu */}
-                <div className="mt-2 flex items-center justify-between rounded-lg bg-sky-50 px-3 py-2">
-                  <span className="text-sm font-bold text-sky-900">
-                    Tổng ống cầu:
-                  </span>
-                  <span className="text-sm font-bold text-sky-900">
-                    {periodStats.totalOngCau} ống
-                    {periodStats.remainingShuttles > 0 && (
-                      <span className="ml-1 text-xs font-normal text-slate-600">
-                        ({periodStats.remainingShuttles} quả lẻ)
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="mt-1 text-xs italic text-slate-500">
-                  * 1 ống cầu = 12 quả
-                </div>
-              </div>
-            )}
-          </div>
+      <UnpaidPlayersSheet
+        isOpen={unpaidSheetOpen}
+        onClose={() => setUnpaidSheetOpen(false)}
+        players={unpaidPlayers}
+        total={unpaidTotal}
+        loading={loading}
+        canView={hasPermission("bills.view")}
+        canMark={hasPermission("bills.mark_payment")}
+        markingIds={markingPayment}
+        onPayAll={setPayAllTarget}
+      />
 
-          {/* Player Statistics */}
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <h3 className="mb-3 text-base font-semibold text-slate-900">
-              Tổng tiền theo người chơi ({periodStats.players.length})
-            </h3>
-            {periodStats.players.length === 0 ? (
-              <div className="text-sm text-slate-500">
-                Không có dữ liệu người chơi trong{" "}
-                {statsMode === "year" ? "năm" : "tháng"} này
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {periodStats.players.map((player, index) => (
-                  <div
-                    key={index}
-                    className="border-b border-slate-200 py-2 last:border-0"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="min-w-0 break-words text-sm font-medium text-slate-700">
-                        #{index + 1} {player.name}
-                      </span>
-                      <span className="flex-shrink-0 font-tabular text-sm font-semibold text-slate-900">
-                        {formatCurrencyRounded(player.totalAmount)}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex justify-end">
-                      <span className="text-xs text-slate-500">
-                        Số bill: {player.billCount || 0}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                <div className="mt-2 flex items-center justify-between border-t-2 border-slate-300 pt-2">
-                  <span className="text-sm font-bold text-slate-900">
-                    Tổng cộng:
-                  </span>
-                  <span className="font-tabular text-sm font-bold text-slate-900">
-                    {formatCurrencyRounded(
-                      periodStats.players.reduce(
-                        (sum, p) => sum + p.totalAmount,
-                        0,
-                      ),
-                    )}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </Modal>
+      <ShuttleStockSheet
+        isOpen={stockSheetOpen}
+        onClose={() => setStockSheetOpen(false)}
+        shuttleTypes={shuttleTypes}
+        stockedTypes={shuttleTypesWithStock}
+        totalBalls={totalShuttleStockBalls}
+        lowStock={isTotalLowStock}
+        loading={loadingShuttles}
+        canImport={hasPermission("shuttles.view")}
+      />
+
+      {statsModalOpen && (
+        <StatsSheet
+          onClose={() => setStatsModalOpen(false)}
+          bills={stats.bills}
+          status={stats.status}
+          onRetry={loadStatsBills}
+        />
+      )}
 
       {/* Sticky FAB — mobile only, primary action: create bill */}
       {hasPermission("bills.create") && (
-        <Link
-          to="/bills/create"
-          aria-label="Tạo bill mới"
-          className="fab-enter fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom))] right-3 z-30 sm:bottom-5 sm:right-5 inline-flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-all active:scale-95 hover:bg-emerald-800 md:hidden"
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.25} />
+        <Link to="/bills/create" aria-label="Tạo bill mới" className="fab fab-enter">
+          <Plus strokeWidth={2.25} />
         </Link>
       )}
     </div>

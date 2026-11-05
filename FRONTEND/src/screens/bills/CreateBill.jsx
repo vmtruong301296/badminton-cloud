@@ -1,22 +1,37 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { billsApi, shuttlesApi, menusApi } from "../../services/api";
 import {
   calculateBillPreview,
   formatCurrencyRounded,
   formatDate,
+  formatDateShort,
   shuttleUnitPrice,
 } from "../../utils/formatters";
 import { selectableMenus } from "../../utils/menus";
-import CurrencyInput from "../../components/common/CurrencyInput";
-import DatePicker from "../../components/common/DatePicker";
-import PlayerSelector from "../../components/bill/PlayerSelector";
-import ShuttleRow from "../../components/bill/ShuttleRow";
-import PlayerBillCard from "../../components/bill/PlayerBillCard";
-import QuickAddMenu from "../../components/bill/QuickAddMenu";
+import {
+  billFormErrorList,
+  serverErrorMessage,
+  validateBillForm,
+} from "../../utils/billFormErrors";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import BillSummary from "../../components/bill/BillSummary";
+import BillPlayersSection from "../../components/bill/BillPlayersSection";
+import {
+  BillActionBar,
+  BillBasicInfoCard,
+  BillShuttlesCard,
+} from "../../components/bill/BillFormSections";
+import {
+  focusField,
+  focusNextOnEnter,
+} from "../../components/bill/billFormFocus";
+import useConfirmLeave from "../../components/bill/useConfirmLeave";
 import PageHeader from "../../components/ui/PageHeader";
-import { CalendarDays, Check, Loader, Plus } from "../../components/ui/icons";
+import useToast from "../../components/ui/useToast";
+import { CalendarDays, Check, Loader } from "../../components/ui/icons";
+
+const FORM_ID = "bill-form";
 
 const DEFAULT_COURT_TOTAL = 280000;
 
@@ -26,14 +41,21 @@ const DEFAULT_SHUTTLES = [
   { name: "Cầu Thành Công", quantity: 12 },
 ];
 
+/** Bill con: ghi chú chính là nhãn dòng bill sau trong khối "TT + Bill sau" của bill chính. */
+const CHILD_NOTE_HINT = 'Ghi chú hiện ở dòng "TT + Bill sau" của bill chính.';
+
 export default function CreateBill() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [searchParams] = useSearchParams();
   const parentBillId = searchParams.get("parent_id");
   const [loading, setLoading] = useState(false);
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
   const [parentBill, setParentBill] = useState(null);
+  // Người dùng đã sửa gì chưa (để hỏi lại khi rời màn); đã bấm lưu lần nào chưa (để hiện lỗi M14)
+  const [touched, setTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -44,9 +66,14 @@ export default function CreateBill() {
     parent_bill_id: parentBillId || null,
   });
 
-  const [preview, setPreview] = useState(null);
   const [shuttleTypesLoading, setShuttleTypesLoading] = useState(true);
   const shuttlesDefaultedRef = useRef(false);
+
+  /** Thay đổi do người dùng: cập nhật theo state mới nhất (chọn nhiều người một lúc). */
+  const updateForm = (updater) => {
+    setTouched(true);
+    setFormData(updater);
+  };
 
   const loadShuttleTypesForBillDate = async (asOfDate) => {
     try {
@@ -90,9 +117,25 @@ export default function CreateBill() {
   const activeMenus = useMemo(() => selectableMenus(menus), [menus]);
 
   useEffect(() => {
-    if (parentBillId) {
-      loadParentBill();
-    }
+    if (!parentBillId) return;
+    const loadParentBill = async () => {
+      try {
+        const response = await billsApi.getById(parentBillId);
+        setParentBill(response.data);
+        // Set date same as parent bill (format to YYYY-MM-DD)
+        const parentDate = response.data.date;
+        const formattedDate = parentDate
+          ? formatDate(parentDate)
+          : new Date().toISOString().split("T")[0];
+        setFormData((prev) => ({
+          ...prev,
+          date: formattedDate,
+        }));
+      } catch (error) {
+        console.error("Error loading parent bill:", error);
+      }
+    };
+    loadParentBill();
   }, [parentBillId]);
 
   useEffect(() => {
@@ -116,35 +159,11 @@ export default function CreateBill() {
     });
   }, [shuttleTypes]);
 
-  useEffect(() => {
-    updatePreview();
-  }, [formData, shuttleTypes]);
-
-  const loadParentBill = async () => {
-    try {
-      const response = await billsApi.getById(parentBillId);
-      setParentBill(response.data);
-      // Set date same as parent bill (format to YYYY-MM-DD)
-      const parentDate = response.data.date;
-      const formattedDate = parentDate
-        ? formatDate(parentDate)
-        : new Date().toISOString().split("T")[0];
-      setFormData((prev) => ({
-        ...prev,
-        date: formattedDate,
-      }));
-    } catch (error) {
-      console.error("Error loading parent bill:", error);
-    }
-  };
-
-  const updatePreview = () => {
-    // Chỉ cần players để hiển thị preview, shuttles đã có mặc định
-    if (formData.players.length === 0) {
-      setPreview(null);
-      return;
-    }
-
+  /**
+   * Xem trước (calculateBillPreview). Tính cả khi chưa có người để thanh đáy luôn có tổng
+   * tiền; cột Tóm tắt desktop vẫn chỉ hiện khi đã có người như trước.
+   */
+  const fullPreview = useMemo(() => {
     const previewData = calculateBillPreview(
       formData.court_total,
       formData.shuttles
@@ -163,89 +182,64 @@ export default function CreateBill() {
         debt_amount: 0,
       })),
     );
-    setPreview({
-      ...previewData,
-      court_total: formData.court_total,
-    });
-  };
+    return { ...previewData, court_total: formData.court_total };
+  }, [formData, shuttleTypes]);
+  const preview = formData.players.length > 0 ? fullPreview : null;
+
+  const errors = useMemo(
+    () => (submitted ? validateBillForm(formData) : null),
+    [submitted, formData],
+  );
+
+  const handleChange = (patch) => updateForm((prev) => ({ ...prev, ...patch }));
 
   const handleAddShuttle = () => {
-    setFormData({
-      ...formData,
+    updateForm((prev) => ({
+      ...prev,
       shuttles: [
-        ...formData.shuttles,
+        ...prev.shuttles,
         { shuttle_type_id: null, quantity: 1, price: 0 },
       ],
-    });
+    }));
   };
 
   const handleUpdateShuttle = (index, updated) => {
-    const newShuttles = [...formData.shuttles];
-    newShuttles[index] = updated;
-    setFormData({ ...formData, shuttles: newShuttles });
+    updateForm((prev) => ({
+      ...prev,
+      shuttles: prev.shuttles.map((s, i) => (i === index ? updated : s)),
+    }));
   };
 
   const handleRemoveShuttle = (index) => {
-    setFormData({
-      ...formData,
-      shuttles: formData.shuttles.filter((_, i) => i !== index),
-    });
+    updateForm((prev) => ({
+      ...prev,
+      shuttles: prev.shuttles.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSelectPlayer = (player) => {
-    setFormData({
-      ...formData,
-      players: [...formData.players, player],
-    });
+    updateForm((prev) =>
+      prev.players.some((p) => p.user_id === player.user_id)
+        ? prev
+        : { ...prev, players: [...prev.players, player] },
+    );
   };
 
   const handleRemovePlayer = (index) => {
-    setFormData({
-      ...formData,
-      players: formData.players.filter((_, i) => i !== index),
-    });
+    updateForm((prev) => ({
+      ...prev,
+      players: prev.players.filter((_, i) => i !== index),
+    }));
   };
 
   const handleUpdatePlayer = (index, updated) => {
-    const newPlayers = [...formData.players];
-    newPlayers[index] = updated;
-    setFormData({ ...formData, players: newPlayers });
+    updateForm((prev) => ({
+      ...prev,
+      players: prev.players.map((p, i) => (i === index ? updated : p)),
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    // Validation
-    if (formData.players.length === 0) {
-      alert("Vui lòng chọn ít nhất một người chơi");
-      return;
-    }
-
-    // Kiểm tra shuttles: cho phép không có loại cầu nếu tổng tiền sân > 0
-    const validShuttles = formData.shuttles.filter((s) => s.shuttle_type_id);
-    const courtTotal = Number(formData.court_total) || 0;
-    if (validShuttles.length === 0 && courtTotal <= 0) {
-      alert(
-        "Vui lòng thêm ít nhất một loại cầu hợp lệ hoặc nhập tổng tiền sân lớn hơn 0",
-      );
-      return;
-    }
-
-    // Ô số lượng cho xoá về 0 để nhập lại, nhưng không được lưu dòng 0 quả
-    if (validShuttles.some((s) => !(Number(s.quantity) > 0))) {
-      alert("Số lượng cầu phải lớn hơn 0");
-      return;
-    }
-
-    const sumRatios = formData.players.reduce((sum, p) => {
-      const ratio = p.ratio_value ?? p.default_ratio_value ?? 1.0;
-      return sum + ratio;
-    }, 0);
-    if (sumRatios === 0) {
-      alert("Tổng mức tính phải lớn hơn 0");
-      return;
-    }
-
+  const save = async () => {
     try {
       setLoading(true);
 
@@ -276,21 +270,40 @@ export default function CreateBill() {
       navigate(`/bills/${response.data.id}`);
     } catch (error) {
       console.error("Error creating bill:", error);
-      alert(
-        "Có lỗi xảy ra khi tạo bill: " +
-          (error.response?.data?.message || error.message),
-      );
+      toast.error("Có lỗi xảy ra khi tạo bill: " + serverErrorMessage(error), {
+        onRetry: () => document.getElementById(FORM_ID)?.requestSubmit(),
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    // Kiểm hết rồi báo ngay dưới ô sai (M14), cuộn tới và đặt con trỏ vào ô sai đầu tiên
+    setSubmitted(true);
+    const errorList = billFormErrorList(validateBillForm(formData));
+    if (errorList.length > 0) {
+      focusField(errorList[0].field);
+      return;
+    }
+    save();
+  };
+
+  const backTo = parentBill ? `/bills/${parentBill.id}` : "/";
+  const leave = useConfirmLeave({ when: touched && !loading, backTo });
+  const playerCount = formData.players.length;
+  const isChildBill = Boolean(parentBillId);
+
   return (
-    <div className="px-4 sm:px-0 pb-24 md:pb-0">
+    <div className="px-4 sm:px-0">
       <PageHeader
         back={{
-          to: parentBill ? `/bills/${parentBill.id}` : "/",
+          to: backTo,
           label: parentBill ? "Về Bill chính" : "Danh sách",
+          onClick: leave.onBackClick,
         }}
         title={
           <>
@@ -317,7 +330,12 @@ export default function CreateBill() {
               <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 sm:text-sm">
                 <span className="inline-flex items-center gap-1.5">
                   <CalendarDays className="h-3.5 w-3.5" strokeWidth={2} />
-                  {formatDate(parentBill.date)}
+                  <span className="sm:hidden">
+                    {formatDateShort(parentBill.date)}
+                  </span>
+                  <span className="hidden sm:inline">
+                    {formatDate(parentBill.date)}
+                  </span>
                 </span>
                 <span className="font-tabular font-semibold text-slate-700">
                   {formatCurrencyRounded(parentBill.total_amount)}
@@ -331,196 +349,52 @@ export default function CreateBill() {
         </section>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form id={FORM_ID} onSubmit={handleSubmit} onKeyDown={focusNextOnEnter}>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Main Form */}
           <div className="space-y-4 sm:space-y-6 lg:col-span-2">
             {/* Basic Info and Shuttles */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 md:items-start">
-              {/* Basic Info */}
-              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-1">
-                <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Thông tin cơ bản
-                  </h2>
-                </div>
-                <div className="p-4 sm:p-5">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label htmlFor="bill-date" className="field-label">
-                        Ngày đánh *
-                      </label>
-                      <DatePicker
-                        id="bill-date"
-                        value={formData.date}
-                        onChange={(value) =>
-                          setFormData({ ...formData, date: value })
-                        }
-                        baseClassName="field-input"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="bill-court-total" className="field-label">
-                        Tổng tiền sân (VND) *
-                      </label>
-                      <CurrencyInput
-                        id="bill-court-total"
-                        value={formData.court_total}
-                        onChange={(value) =>
-                          setFormData({ ...formData, court_total: value })
-                        }
-                        baseClassName="field-input"
-                      />
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {[140000, 280000, 420000].map((amount) => (
-                          <button
-                            key={amount}
-                            type="button"
-                            onClick={() =>
-                              setFormData({ ...formData, court_total: amount })
-                            }
-                            className={`inline-flex h-11 items-center rounded-lg border px-3 text-sm font-semibold transition sm:h-9 ${
-                              Number(formData.court_total) === amount
-                                ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
-                            }`}
-                          >
-                            {amount.toLocaleString("vi-VN")}đ
-                          </button>
-                        ))}
-                        {(() => {
-                          const raw = Number(formData.court_total) || 0;
-                          const suggestion = raw * 1000;
-                          if (
-                            raw <= 0 ||
-                            raw >= 1000 ||
-                            [140000, 280000, 420000].includes(suggestion)
-                          )
-                            return null;
-                          return (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormData({
-                                  ...formData,
-                                  court_total: suggestion,
-                                })
-                              }
-                              className="inline-flex h-11 items-center rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500 sm:h-9"
-                            >
-                              → {suggestion.toLocaleString("vi-VN")}đ
-                            </button>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="bill-note" className="field-label">
-                        Ghi chú
-                      </label>
-                      <textarea
-                        id="bill-note"
-                        value={formData.note}
-                        onChange={(e) =>
-                          setFormData({ ...formData, note: e.target.value })
-                        }
-                        className="field-input !h-auto py-2"
-                        rows={1}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Shuttles */}
-              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-2">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Loại cầu
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={handleAddShuttle}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Thêm cầu
-                  </button>
-                </div>
-                <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                  {formData.shuttles.map((shuttle, index) => (
-                    <ShuttleRow
-                      key={index}
-                      shuttle={shuttle}
-                      shuttleTypes={shuttleTypes}
-                      typesLoading={shuttleTypesLoading}
-                      onUpdate={(updated) =>
-                        handleUpdateShuttle(index, updated)
-                      }
-                      onRemove={() => handleRemoveShuttle(index)}
-                    />
-                  ))}
-                </div>
-              </section>
+              <BillBasicInfoCard
+                formData={formData}
+                onChange={handleChange}
+                courtError={errors?.court}
+                noteHint={isChildBill ? CHILD_NOTE_HINT : undefined}
+              />
+              <BillShuttlesCard
+                shuttles={formData.shuttles}
+                shuttleTypes={shuttleTypes}
+                typesLoading={shuttleTypesLoading}
+                quantityErrors={errors?.shuttleQuantity}
+                onAdd={handleAddShuttle}
+                onUpdate={handleUpdateShuttle}
+                onRemove={handleRemoveShuttle}
+              />
             </div>
 
-            {/* Players */}
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                <h2 className="text-base font-semibold text-slate-900">
-                  Người chơi
-                </h2>
-                {formData.players.length > 0 && (
-                  <span className="font-tabular text-xs text-slate-500">
-                    {formData.players.length} người
-                  </span>
-                )}
-              </div>
-              <div className="p-4 sm:p-5">
-                <PlayerSelector
-                  selectedPlayers={formData.players}
-                  onSelect={handleSelectPlayer}
-                  onRemove={handleRemovePlayer}
-                  parentPlayerIds={
-                    parentBillId
-                      ? (parentBill?.bill_players?.map((bp) => bp.user_id) ??
-                        [])
-                      : undefined
-                  }
-                />
+            <BillPlayersSection
+              players={formData.players}
+              previewPlayers={fullPreview.players}
+              menus={activeMenus}
+              allMenus={menus}
+              onMenuAdded={handleMenuAdded}
+              onSelect={handleSelectPlayer}
+              onRemove={handleRemovePlayer}
+              onUpdate={handleUpdatePlayer}
+              parentPlayerIds={
+                parentBillId
+                  ? (parentBill?.bill_players?.map((bp) => bp.user_id) ?? [])
+                  : undefined
+              }
+              showDefault
+              error={errors?.players}
+            />
 
-                {formData.players.length > 0 && (
-                  <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-6 sm:pt-6">
-                    <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
-                      <h2 className="text-base font-semibold text-slate-900">
-                        Chi tiết người chơi ({formData.players.length})
-                      </h2>
-                      <QuickAddMenu menus={menus} onCreated={handleMenuAdded} />
-                    </div>
-                    <div className="space-y-3 sm:space-y-4">
-                      {formData.players.map((player, index) => (
-                        <PlayerBillCard
-                          key={index}
-                          player={player}
-                          index={index}
-                          menus={activeMenus}
-                          onUpdate={(updated) =>
-                            handleUpdatePlayer(index, updated)
-                          }
-                          showDefault
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Submit — desktop only (mobile uses fixed footer below) */}
+            {/* Submit — desktop only (mobile uses ActionBar below) */}
             <div className="hidden sm:flex sm:justify-end sm:gap-3">
               <button
                 type="button"
-                onClick={() => navigate("/")}
+                onClick={() => leave.requestLeave()}
                 className="btn btn-secondary"
               >
                 Hủy
@@ -545,44 +419,36 @@ export default function CreateBill() {
             </div>
           </div>
 
-          {/* Summary Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Summary Sidebar — điện thoại xem qua sheet Tóm tắt Bill ở thanh đáy */}
+          <div className="hidden sm:block lg:col-span-1">
             <div className="lg:sticky lg:top-20">
               <BillSummary preview={preview} />
             </div>
           </div>
         </div>
-
-        {/* Mobile-only fixed footer */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
-          <div className="mx-auto flex max-w-7xl gap-2">
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="btn btn-secondary flex-1"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary flex-1"
-            >
-              {loading ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  Đang tạo…
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" strokeWidth={2.5} />
-                  Tạo Bill
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </form>
+
+      <BillActionBar
+        formId={FORM_ID}
+        preview={fullPreview}
+        playerCount={playerCount}
+        loading={loading}
+        label="Tạo Bill"
+        busyLabel="Đang tạo…"
+      />
+
+      <ConfirmDialog
+        isOpen={leave.isOpen}
+        onClose={leave.cancel}
+        onConfirm={leave.confirm}
+        title="Bỏ bill đang tạo?"
+        message={
+          playerCount > 0
+            ? `${playerCount} người chơi và số cầu đã nhập sẽ mất.`
+            : "Các thay đổi chưa lưu sẽ mất."
+        }
+        confirmLabel="Bỏ bill"
+      />
     </div>
   );
 }

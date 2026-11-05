@@ -1,12 +1,16 @@
-import { useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import NavDropdown from "./NavDropdown";
 import Modal from "./ui/Modal";
+import { AppBarBackLink } from "./ui/AppBar";
+import AppBarContext from "./ui/appBarContext";
 import useDismiss from "./ui/useDismiss";
+import useKeyboardInset from "./ui/useKeyboardInset";
 import {
   Car,
   ChevronDown,
+  ChevronRight,
   Ellipsis,
   LogOut,
   Plus,
@@ -20,11 +24,13 @@ import {
 import {
   NAV_ITEMS,
   filterNavItems,
-  hidesTabBar,
   isNavItemActive,
+  pushedBackLink,
+  screenTitle,
   splitNavItems,
   toTabItems,
 } from "../utils/navItems";
+import { KEYBOARD_OPEN_MIN } from "../utils/keyboardInset";
 
 const NAV_ICONS = {
   receipt: Receipt,
@@ -161,20 +167,59 @@ function TabLink({ item, active }) {
     <Link
       to={item.path}
       aria-current={active ? "page" : undefined}
-      className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 ${
-        active ? "text-emerald-700" : "text-slate-500"
-      }`}
+      data-active={active}
+      className="tab-bar-item"
     >
-      <span
-        className={`flex h-7 w-14 items-center justify-center rounded-full ${active ? "bg-emerald-50" : ""}`}
-      >
+      <span className="tab-bar-pill">
         <IconComponent className="h-[22px] w-[22px]" />
       </span>
-      <span className="max-w-full truncate px-1 text-[11px] font-medium leading-tight">
-        {item.label}
-      </span>
+      <span className="tab-bar-label">{item.label}</span>
     </Link>
   );
+}
+
+// Thẻ tài khoản đầu sheet "Thêm" / "Tài khoản": Đăng xuất là hàng chữ trong thẻ, xa chỗ ngón cái nghỉ.
+function AccountCard({ user, onLogout }) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      <div className="flex items-center gap-3 p-3">
+        <Avatar name={user.name} className="h-10 w-10" />
+        <div className="min-w-0">
+          <div className="break-words text-[15px] font-semibold leading-5 text-slate-900">
+            {user.name}
+          </div>
+          <div className="break-words text-[13px] leading-[18px] text-slate-500">
+            {roleText(user)}
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-slate-200 p-1">
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex h-11 w-full items-center gap-2 rounded-xl px-2 text-left text-sm font-semibold text-slate-700 hover:bg-slate-100 active:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40"
+        >
+          <LogOut className="h-4 w-4" />
+          Đăng xuất
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Bàn phím ảo đang mở: đặt data-keyboard="open" lên <html> để CSS ẩn tab / FAB.
+function useKeyboardFlag() {
+  const { inset } = useKeyboardInset();
+  const open = inset > KEYBOARD_OPEN_MIN;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (open) root.dataset.keyboard = "open";
+    else delete root.dataset.keyboard;
+    return () => {
+      delete root.dataset.keyboard;
+    };
+  }, [open]);
 }
 
 export default function Layout({ children }) {
@@ -182,6 +227,16 @@ export default function Layout({ children }) {
   const navigate = useNavigate();
   const { user, logout, hasPermission } = useAuth();
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Thanh trên điện thoại: màn đưa tiêu đề / ‹ / ⋯ vào `slot` (AppBar, PageHeader) và báo
+  // loại màn qua `register` — màn không phải sửa Layout.
+  const [slot, setSlot] = useState(null);
+  const [page, setPage] = useState(null);
+  const register = useCallback((config) => {
+    setPage(config);
+    return () => setPage((current) => (current === config ? null : current));
+  }, []);
+  const appBar = useMemo(() => ({ slot, register }), [slot, register]);
+  useKeyboardFlag();
 
   const pathname = location.pathname;
 
@@ -201,17 +256,52 @@ export default function Layout({ children }) {
   );
 
   // Điện thoại: thanh tab dưới đáy, nhóm trỏ thẳng vào trang danh sách.
-  const tabSplit = splitNavItems(toTabItems(navItems));
+  const tabItems = toTabItems(navItems);
+  const tabSplit = splitNavItems(tabItems);
   const moreActive = tabSplit.more.some((item) =>
     isNavItemActive(item, pathname),
   );
-  const showTabBar = !hidesTabBar(pathname);
+  // Màn đẩy vào (tạo / sửa / chi tiết bill): nút ‹ thay biểu tượng app, không vòng tài khoản,
+  // không tab. Màn chưa tự đặt nút quay lại (đang tải, lỗi) thì dùng nút dự phòng theo đường dẫn.
+  const fallbackBack = pushedBackLink(pathname);
+  const pushed = Boolean(fallbackBack) || Boolean(page?.pushed);
+  const showTabBar = !pushed && !page?.hideTabBar;
 
   const closeSheet = () => setSheetOpen(false);
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
+      {/* Điện thoại: một thanh 56 px. Màn gốc: biểu tượng + tiêu đề trang + tài khoản; màn đẩy vào: ‹ + tiêu đề + ⋯ */}
+      <header className={`app-bar ${pushed ? "app-bar-pushed" : ""}`}>
+        {!pushed && (
+          <img src="/favicon.svg" alt="" className="mr-2 h-7 w-7 flex-none" />
+        )}
+        {pushed && !page?.pushed && fallbackBack && (
+          <AppBarBackLink back={fallbackBack} />
+        )}
+        {!page && (
+          <span className="app-bar-title">
+            {screenTitle(tabItems, pathname)}
+          </span>
+        )}
+        <div
+          ref={setSlot}
+          className={page ? "flex min-w-0 flex-1 items-center gap-0.5" : "hidden"}
+        />
+        {!pushed && user && (
+          <button
+            type="button"
+            onClick={() => setSheetOpen(true)}
+            aria-label="Tài khoản"
+            aria-haspopup="dialog"
+            className="app-bar-btn rounded-full"
+          >
+            <Avatar name={user.name} className="h-8 w-8" />
+          </button>
+        )}
+      </header>
+
+      <header className="sticky top-0 z-30 hidden border-b border-slate-200 bg-white/80 backdrop-blur sm:block">
         <div className="mx-auto flex h-12 max-w-7xl items-center gap-2 px-3 sm:h-16 sm:gap-4 sm:px-6 lg:px-8">
           <Link
             to="/"
@@ -249,62 +339,44 @@ export default function Layout({ children }) {
           {user && (
             <div className="ml-auto flex items-center sm:ml-0">
               <AccountMenu user={user} onLogout={handleLogout} />
-              <button
-                type="button"
-                onClick={() => setSheetOpen(true)}
-                aria-label="Tài khoản"
-                className="-mr-1 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:hidden"
-              >
-                <Avatar name={user.name} className="h-8 w-8" />
-              </button>
             </div>
           )}
         </div>
       </header>
 
       <main
-        className={`mx-auto max-w-7xl sm:px-6 sm:py-6 lg:px-8 ${
+        className={`app-main mx-auto max-w-7xl pt-3 sm:px-6 sm:py-6 lg:px-8 ${
           showTabBar
-            ? "pb-[calc(4.5rem+env(safe-area-inset-bottom))] pt-3 sm:pb-6"
-            : "py-3 sm:py-6"
+            ? "pb-[calc(var(--tab-bar-h)+env(safe-area-inset-bottom)+1rem)] sm:pb-6"
+            : "pb-3 sm:pb-6"
         }`}
       >
-        {children}
+        <AppBarContext.Provider value={appBar}>{children}</AppBarContext.Provider>
       </main>
 
       {showTabBar && (
-        <nav
-          aria-label="Điều hướng chính"
-          className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/90 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
-        >
-          <div className="flex h-14">
-            {tabSplit.primary.map((item) => (
-              <TabLink
-                key={item.key}
-                item={item}
-                active={isNavItemActive(item, pathname)}
-              />
-            ))}
-            {tabSplit.more.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setSheetOpen(true)}
-                aria-haspopup="dialog"
-                className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 ${
-                  moreActive ? "text-emerald-700" : "text-slate-500"
-                }`}
-              >
-                <span
-                  className={`flex h-7 w-14 items-center justify-center rounded-full ${moreActive ? "bg-emerald-50" : ""}`}
-                >
-                  <Ellipsis className="h-[22px] w-[22px]" />
-                </span>
-                <span className="text-[11px] font-medium leading-tight">
-                  Thêm
-                </span>
-              </button>
-            )}
-          </div>
+        <nav aria-label="Điều hướng chính" className="tab-bar">
+          {tabSplit.primary.map((item) => (
+            <TabLink
+              key={item.key}
+              item={item}
+              active={isNavItemActive(item, pathname)}
+            />
+          ))}
+          {tabSplit.more.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              aria-haspopup="dialog"
+              data-active={moreActive}
+              className="tab-bar-item"
+            >
+              <span className="tab-bar-pill">
+                <Ellipsis className="h-[22px] w-[22px]" />
+              </span>
+              <span className="tab-bar-label">Thêm</span>
+            </button>
+          )}
         </nav>
       )}
 
@@ -313,9 +385,11 @@ export default function Layout({ children }) {
         onClose={closeSheet}
         title={tabSplit.more.length > 0 ? "Thêm" : "Tài khoản"}
         size="sm"
+        initialFocus="panel"
       >
+        {user && <AccountCard user={user} onLogout={handleLogout} />}
         {tabSplit.more.length > 0 && (
-          <nav aria-label="Thêm" className="space-y-1">
+          <nav aria-label="Thêm" className="mt-3 flex flex-col gap-0.5">
             {tabSplit.more.map((item) => {
               const active = isNavItemActive(item, pathname);
               const IconComponent = NAV_ICONS[item.icon];
@@ -325,47 +399,17 @@ export default function Layout({ children }) {
                   to={item.path}
                   onClick={closeSheet}
                   aria-current={active ? "page" : undefined}
-                  className={`flex h-12 items-center gap-3 rounded-xl px-3 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 ${
-                    active
-                      ? "bg-slate-100 text-slate-900"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
+                  className="menu-row"
                 >
-                  <IconComponent
-                    className={`h-5 w-5 ${active ? "text-emerald-700" : "text-slate-500"}`}
-                  />
+                  <span className="menu-row-icon">
+                    <IconComponent />
+                  </span>
                   {item.label}
+                  <ChevronRight className="menu-row-chevron" />
                 </Link>
               );
             })}
           </nav>
-        )}
-        {user && (
-          <div
-            className={
-              tabSplit.more.length > 0 ? "mt-3 border-t border-slate-100 pt-4" : ""
-            }
-          >
-            <div className="flex items-center gap-3">
-              <Avatar name={user.name} className="h-10 w-10" />
-              <div className="min-w-0">
-                <div className="break-words text-sm font-medium text-slate-900">
-                  {user.name}
-                </div>
-                <div className="break-words text-xs text-slate-500">
-                  {roleText(user)}
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="btn btn-secondary mb-1 mt-4 w-full"
-            >
-              <LogOut className="h-4 w-4" />
-              Đăng xuất
-            </button>
-          </div>
         )}
       </Modal>
     </div>

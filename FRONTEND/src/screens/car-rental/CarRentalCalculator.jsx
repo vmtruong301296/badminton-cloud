@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { calculateCarRental } from "../../utils/carRentalCost";
 import {
@@ -11,7 +11,10 @@ import { useAuth } from "../../contexts/AuthContext";
 import CurrencyInput from "../../components/common/CurrencyInput";
 import ThousandHint from "../../components/common/ThousandHint";
 import OptionBreakdown from "../../components/car-rental/OptionBreakdown";
-import { Plus, X } from "../../components/ui/icons";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
+import ActionBar from "../../components/ui/ActionBar";
+import useToast from "../../components/ui/useToast";
+import { Copy, Loader, Plus, X } from "../../components/ui/icons";
 
 /** Loại xăng mà giá thị trường lấy được áp cho. */
 const PETROL_FUEL_KEY = "e10_ron95_iii";
@@ -239,12 +242,13 @@ export default function CarRentalCalculator({
   onCancelEdit,
 }) {
   const { hasPermission } = useAuth();
+  const toast = useToast();
   const [trip, setTrip] = useState(DEFAULT_TRIP);
   const [options, setOptions] = useState(DEFAULT_OPTIONS);
   const [sharedCosts, setSharedCosts] = useState(DEFAULT_SHARED_COSTS);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [marketPrice, setMarketPrice] = useState(null);
   const [partyBills, setPartyBills] = useState([]);
 
@@ -436,18 +440,14 @@ export default function CarRentalCalculator({
       await navigator.clipboard.writeText(
         buildCopyText(trip, result, hasKmLimit),
       );
-      setMessage({ type: "success", text: "Đã copy kết quả." });
+      toast.success("Đã copy kết quả.");
     } catch {
-      setMessage({
-        type: "error",
-        text: "Trình duyệt không cho copy. Hãy bôi đen và copy tay.",
-      });
+      toast.error("Trình duyệt không cho copy. Hãy bôi đen và copy tay.");
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
-    setMessage(null);
 
     const payload = {
       name: trip.name || null,
@@ -486,17 +486,24 @@ export default function CarRentalCalculator({
       }
       resetForm();
       onSaved?.();
+      toast.success("Đã lưu vào Lịch sử");
     } catch (error) {
       const data = error?.response?.data;
       const detail =
         data?.errors?.party_bill_id?.[0] ||
         data?.message ||
         "Không lưu được. Thử lại giúp mình.";
-      setMessage({ type: "error", text: detail });
+      // "Thử lại" lưu theo số đang có trên form lúc bấm, không phải số của lần lỗi.
+      toast.error(detail, { onRetry: () => handleSaveRef.current?.() });
     } finally {
       setSaving(false);
     }
   };
+
+  const handleSaveRef = useRef(handleSave);
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+  });
 
   const canSave = editing
     ? hasPermission("car_rentals.update")
@@ -505,23 +512,24 @@ export default function CarRentalCalculator({
   const inputClass = "field-input";
   const labelClass = "field-label";
 
-  return (
-    // pb-24 chừa chỗ cho thanh hành động dính đáy, không thì nó che mất phần
-    // cuối của khối Kết quả.
-    <div className="space-y-5 pb-24 sm:pb-0">
-      {message && (
-        <div
-          role={message.type === "error" ? "alert" : "status"}
-          className={`rounded-xl px-4 py-3 text-sm ${
-            message.type === "error"
-              ? "border border-rose-200 bg-rose-50 text-rose-700"
-              : "border border-emerald-200 bg-emerald-50 text-emerald-800"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
+  const cheapest = result.options.find((option) => option.is_cheapest);
+  const saveLabel = saving ? "Đang lưu..." : editing ? "Cập nhật" : "Lưu lại";
 
+  // Chạm phần tổng của thanh đáy: cuộn tới khối Kết quả, đưa focus vào tiêu đề khối.
+  const resultsRef = useRef(null);
+  const resultsHeadingRef = useRef(null);
+  const scrollToResults = () => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultsRef.current?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    resultsHeadingRef.current?.focus({ preventScroll: true });
+  };
+
+  return (
+    // Thanh dính đáy là ActionBar: nội dung tự chừa đáy (.app-main:has(.action-bar)).
+    <div className="space-y-5">
       {editing && (
         <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <span>Đang sửa bản ghi đã lưu trước đó.</span>
@@ -970,8 +978,17 @@ export default function CarRentalCalculator({
       </section>
 
       {/* Kết quả */}
-      <section className="card">
-        <h2 className="mb-3 text-base font-semibold text-slate-900">Kết quả</h2>
+      <section
+        ref={resultsRef}
+        className="card scroll-mt-[calc(var(--app-bar-h)+env(safe-area-inset-top)+0.75rem)]"
+      >
+        <h2
+          ref={resultsHeadingRef}
+          tabIndex={-1}
+          className="mb-3 text-base font-semibold text-slate-900 focus:outline-none"
+        >
+          Kết quả
+        </h2>
 
         <OptionBreakdown options={result.options} />
 
@@ -1089,24 +1106,35 @@ export default function CarRentalCalculator({
               disabled={saving}
               className="btn btn-primary"
             >
-              {saving ? "Đang lưu..." : editing ? "Cập nhật" : "Lưu lại"}
+              {saveLabel}
             </button>
           )}
           <button
             type="button"
-            onClick={resetForm}
+            onClick={() => setResetConfirmOpen(true)}
             className="btn btn-ghost"
           >
             Nhập lại
           </button>
         </div>
 
-        {/* Mobile: "Nhập lại" ở lại trong luồng — nó xóa trắng form, không nên
-            nằm sát mép dưới nơi ngón cái hay quệt trúng. */}
-        <div className="mt-5 sm:hidden">
+        {/* Mobile: "Nhập lại" (và "Copy kết quả" khi thanh đáy là "Lưu lại") ở lại trong
+            luồng — "Nhập lại" xóa trắng form, không nên nằm sát mép dưới nơi ngón cái hay
+            quệt trúng. */}
+        <div className="mt-5 flex flex-wrap gap-3 sm:hidden">
+          {canSave && (
+            <button
+              type="button"
+              onClick={handleCopy}
+              className="btn btn-secondary"
+            >
+              <Copy className="h-4 w-4" />
+              Copy kết quả
+            </button>
+          )}
           <button
             type="button"
-            onClick={resetForm}
+            onClick={() => setResetConfirmOpen(true)}
             className="btn btn-ghost"
           >
             Nhập lại
@@ -1114,30 +1142,58 @@ export default function CarRentalCalculator({
         </div>
       </section>
 
-      {/* Mobile: hai hành động chính dính đáy màn hình. Trang này dài (chuyến
-          đi + từng phương án + chi phí chung + kết quả) nên không phải cuộn
-          xuống tận cùng mới bấm được. */}
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 border-t border-slate-200 bg-white/95 px-4 py-2 backdrop-blur sm:hidden">
-        <div className="flex gap-2">
+      {/* Mobile (M2): thanh trên tab luôn cho thấy phương án rẻ nhất khi đang gõ, chạm vào thì
+          cuộn tới Kết quả (không mở hộp thoại); bên phải là "Lưu lại" (không có quyền lưu:
+          "Copy kết quả"). Tên phương án dài cắt "…", số tiền giữ nguyên. */}
+      <ActionBar
+        overTab
+        summary={
+          cheapest && {
+            label: (
+              <span className="block max-w-[calc(100vw-11.5rem)] truncate">
+                Rẻ nhất:{" "}
+                {cheapest.name || `Phương án ${cheapest.sort_order + 1}`}
+              </span>
+            ),
+            value: formatCurrency(cheapest.total_cost),
+            onClick: scrollToResults,
+            haspopup: false,
+          }
+        }
+      >
+        {canSave ? (
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="btn btn-primary flex-1"
+          >
+            {saving && <Loader className="h-4 w-4 animate-spin" />}
+            {saveLabel}
+          </button>
+        ) : (
           <button
             type="button"
             onClick={handleCopy}
             className="btn btn-secondary flex-1"
           >
+            <Copy className="h-4 w-4" />
             Copy kết quả
           </button>
-          {canSave && (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="btn btn-primary flex-1"
-            >
-              {saving ? "Đang lưu..." : editing ? "Cập nhật" : "Lưu lại"}
-            </button>
-          )}
-        </div>
-      </div>
+        )}
+      </ActionBar>
+
+      <ConfirmDialog
+        isOpen={resetConfirmOpen}
+        onClose={() => setResetConfirmOpen(false)}
+        onConfirm={() => {
+          setResetConfirmOpen(false);
+          resetForm();
+        }}
+        title="Nhập lại từ đầu?"
+        message="Mọi số đã nhập ở tab Tính toán sẽ bị xóa."
+        confirmLabel="Nhập lại"
+      />
     </div>
   );
 }

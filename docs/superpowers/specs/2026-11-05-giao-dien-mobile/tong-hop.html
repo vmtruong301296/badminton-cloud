@@ -1,0 +1,999 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Tổng hợp đề xuất mobile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --e7: #047857;
+        --e50: #ecfdf5;
+        --s50: #f8fafc;
+        --s100: #f1f5f9;
+        --s200: #e2e8f0;
+        --s500: #64748b;
+        --s700: #334155;
+        --s900: #0f172a;
+        --r6: #e11d48;
+        --r50: #fff1f2;
+        --a50: #fffbeb;
+        --a7: #b45309;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font:
+          15px/1.6 Inter,
+          system-ui,
+          sans-serif;
+        color: var(--s700);
+        background: var(--s50);
+        font-variant-numeric: tabular-nums;
+      }
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px 20px 80px;
+      }
+      h1 {
+        font-size: 28px;
+        color: var(--s900);
+        margin: 0 0 4px;
+        letter-spacing: -0.02em;
+      }
+      h2 {
+        font-size: 20px;
+        color: var(--s900);
+        margin: 44px 0 12px;
+        letter-spacing: -0.01em;
+      }
+      h3 {
+        font-size: 16px;
+        color: var(--s900);
+        margin: 24px 0 8px;
+      }
+      .sub {
+        color: var(--s500);
+        margin: 0 0 20px;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        overflow: hidden;
+        font-size: 14px;
+      }
+      th {
+        background: var(--s50);
+        text-align: left;
+        font-weight: 600;
+        color: var(--s500);
+        font-size: 13px;
+        padding: 10px 12px;
+      }
+      td {
+        border-top: 1px solid var(--s100);
+        padding: 10px 12px;
+        vertical-align: top;
+      }
+      .wrap {
+        overflow-x: auto;
+        border-radius: 16px;
+      }
+      a {
+        color: var(--e7);
+        font-weight: 600;
+      }
+      code {
+        background: var(--s100);
+        border-radius: 6px;
+        padding: 1px 5px;
+        font-size: 13px;
+      }
+      .badge {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 1px 9px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .b-e {
+        background: var(--e50);
+        color: var(--e7);
+      }
+      .b-a {
+        background: var(--a50);
+        color: var(--a7);
+      }
+      .b-r {
+        background: var(--r50);
+        color: var(--r6);
+      }
+      .b-s {
+        background: var(--s100);
+        color: var(--s700);
+      }
+      .kpi {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+        margin: 16px 0;
+      }
+      .kpi div {
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        padding: 14px 16px;
+      }
+      .kpi b {
+        display: block;
+        font-size: 22px;
+        color: var(--s900);
+      }
+      .kpi span {
+        font-size: 13px;
+        color: var(--s500);
+      }
+      ul {
+        padding-left: 20px;
+        margin: 8px 0;
+      }
+      li {
+        margin: 4px 0;
+      }
+      .shot {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--s200);
+        display: block;
+      }
+      .note {
+        font-size: 13px;
+        color: var(--s500);
+      }
+      .rec {
+        font-weight: 600;
+        color: var(--e7);
+        white-space: nowrap;
+      }
+      .flow {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: stretch;
+      }
+      .flow .step {
+        flex: 1 1 220px;
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        padding: 14px 16px;
+      }
+      .flow .step b {
+        color: var(--s900);
+      }
+      @media (max-width: 640px) {
+        main {
+          padding: 20px 14px 60px;
+        }
+        h1 {
+          font-size: 22px;
+        }
+        td,
+        th {
+          padding: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Tổng hợp đề xuất giao diện điện thoại: Sổ cầu lông</h1>
+      <p class="sub">
+        05/11/2026 · PM tổng hợp từ 7 nhóm designer ·
+        <span class="badge b-a">Bước 1: chờ chủ dự án duyệt</span> · chưa sửa
+        dòng code nào trong repo
+      </p>
+
+      <div class="card">
+        <b style="color: var(--s900)">Tóm tắt</b>
+        <ul>
+          <li>
+            Đợt này sửa <b>bố cục và luồng bấm trên điện thoại</b>: thông tin
+            quan trọng lên đầu, nút chính trong tầm ngón cái, danh sách gọn lại,
+            bỏ hộp <code>alert()</code>. Màu và phông giữ hệ thống đã duyệt ngày
+            22/10.
+          </li>
+          <li>
+            Phủ <b>toàn bộ chức năng</b>: khung app, đăng nhập, bill cầu (danh
+            sách, tạo, sửa, chi tiết), bill tiệc, người chơi, master (4 tab),
+            quyền, thuê xe, xếp bảng.
+          </li>
+          <li>
+            <b>Chỉ sửa frontend</b>: không thêm API, không migration.
+            <b>Ảnh bill xuất gửi Telegram giữ nguyên</b>: nhóm 04 và 05 đã xuất
+            thử và đối chiếu. Desktop giữ nguyên, vì thay đổi chỉ áp dưới
+            640–768 px.
+          </li>
+          <li>
+            Rà chéo xong: 17 mẫu dùng chung đã đánh số lại cho khỏi trùng. PM đã
+            chốt 8 chỗ các nhóm vẽ lệch nhau (mục 3).
+          </li>
+          <li>
+            Trong lúc đọc code, các designer thấy
+            <b>14 lỗi có sẵn ngoài phạm vi giao diện</b>. PM đã kiểm lại 2 lỗi
+            nghiêm trọng nhất: backend không kiểm quyền ở API nào, và sửa bill
+            làm mất dấu "Đã TT" (mục 6).
+          </li>
+        </ul>
+      </div>
+
+      <div class="kpi">
+        <div>
+          <b>7 / 7</b
+          ><span
+            >bản đề xuất đã nộp, mỗi bản có mockup 390 px và kiểm ở 360 và 430
+            px</span
+          >
+        </div>
+        <div>
+          <b>~95</b
+          ><span
+            >chỗ <code>alert</code> / <code>confirm</code> /
+            <code>prompt</code> được thay bằng thông báo ngắn, lỗi ngay tại ô
+            hoặc hộp xác nhận</span
+          >
+        </div>
+        <div>
+          <b>15.200 → 2.540 px</b
+          ><span>chiều dài màn tạo bill 25 người (nhóm 03)</span>
+        </div>
+        <div>
+          <b>1 → 8</b
+          ><span>số người chơi thấy được trên một màn (nhóm 06)</span>
+        </div>
+      </div>
+
+      <img
+        class="shot"
+        src="anh-tong-hop.png"
+        alt="Ảnh ghép màn chính phương án A của 7 nhóm ở 390 px"
+      />
+      <p class="note">
+        Ảnh ghép màn chính phương án A, lấy từ ảnh chụp của từng nhóm. Khi triển
+        khai, các màn gốc 02, 05, 06, 07 sẽ theo thanh trên gộp của nhóm 01 (xem
+        3.1).
+      </p>
+
+      <h2>1. Bảy bản đề xuất</h2>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Nhóm</th>
+            <th>Phương án A (khuyên dùng), ý chính</th>
+            <th>Việc chính: cũ → mới</th>
+            <th>Công A / B</th>
+            <th>PM khuyên</th>
+          </tr>
+          <tr>
+            <td>
+              <a href="01-khung-app-de-xuat.html">01 Khung app<br />+ bộ mẫu</a>
+            </td>
+            <td>
+              Gộp thành một thanh trên 56 px (màn gốc là tiêu đề trang, màn con
+              là ‹ + tiêu đề + ⋯). Tab dưới chỉ hiện ở màn gốc. Thông báo ngắn
+              thay <code>alert</code>. Sheet nổi lên trên bàn phím. Màn đăng
+              nhập có dải sân cầu lông. Vẽ đủ bộ mẫu M1–M15.
+            </td>
+            <td>
+              Gửi Telegram rồi quay về 3 → 2 · đăng nhập trên iPhone 6 → 3 · mở
+              link không có quyền: bị kẹt → 1
+            </td>
+            <td>4–5 ngày / 2,5</td>
+            <td class="rec">A, làm trước tiên</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="02-bill-cau-danh-sach-de-xuat.html"
+                >02 Bill cầu:<br />danh sách</a
+              >
+            </td>
+            <td>
+              Ô tóm tắt "Còn phải thu" và "Cầu khả dụng" lên đầu trang. Danh
+              sách nhóm theo tháng, đầu nhóm dính. Hàng thấp từ 91 xuống 64 px,
+              bỏ nút Xóa trên hàng. Ngày in "T4, 04/11". "Xem thêm" thay phân
+              trang. Thống kê chọn tháng bằng ‹ ›.
+            </td>
+            <td>Tìm bill tháng trước còn nợ: ~8 chạm + 2 ô → 1 chạm</td>
+            <td>~3 ngày / ~1</td>
+            <td class="rec">A</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="03-bill-cau-tao-sua-de-xuat.html"
+                >03 Bill cầu:<br />tạo / sửa</a
+              >
+            </td>
+            <td>
+              Một trang cuộn. Thẻ người chơi 465 px thành hàng 65 px, chạm hàng
+              thì mở ra sửa tại chỗ. Sheet chọn nhiều người liên tục, Enter chọn
+              kết quả đầu. Thanh dưới đáy luôn có tổng tiền và nút Tạo. Lỗi báo
+              ngay dưới ô.
+            </td>
+            <td>
+              Tạo bill 12 người: 21 chạm, cuộn 8.100 px → 16 chạm, cuộn 450 px
+            </td>
+            <td>3–4 ngày / ~1,5</td>
+            <td class="rec">A</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="04-bill-cau-chi-tiet-de-xuat.html"
+                >04 Bill cầu:<br />chi tiết</a
+              >
+            </td>
+            <td>
+              Thẻ tóm tắt "Đã thu 18/25" có thanh tiến độ. Chip lọc Chưa TT / Đã
+              TT / Nợ cũ. Nút "Đã TT" 84×44 ở mép phải, bấm xong hàng không nhảy
+              chỗ. Nút "Gửi ảnh" có xem trước ảnh. Hộp nợ cũ ghi số tiền trên
+              nút.
+            </td>
+            <td>
+              Xuất ảnh rồi gửi nhóm: cuộn 3.000 px + 3 chạm → 2 chạm, có xem
+              trước
+            </td>
+            <td>2,5–3 ngày / ~1</td>
+            <td class="rec">A</td>
+          </tr>
+          <tr>
+            <td><a href="05-bill-tiec-de-xuat.html">05 Bill tiệc</a></td>
+            <td>
+              Cùng kiểu với bill cầu: hàng gọn, chip lọc, "Chưa thanh toán" lên
+              đầu, thanh dưới đáy có "Còn thu" + Gửi Telegram. Hiện nợ cũ trên
+              màn (hiện chỉ có trong ảnh). Tùy chọn A+: "Lấy người từ bill cầu
+              cùng ngày".
+            </td>
+            <td>
+              Tạo bill 15 người: 23 → 24 chạm (A), 8 chạm (A+); trang 5.000 →
+              2.000 px
+            </td>
+            <td>3,5–4 ngày / ~2</td>
+            <td class="rec">A; A+ làm sau</td>
+          </tr>
+          <tr>
+            <td><a href="06-quan-ly-de-xuat.html">06 Quản lý</a></td>
+            <td>
+              Người chơi thành hàng 64 px, avatar màu nam/nữ, hiện tiền nợ. Thêm
+              nhanh liên tục, có cảnh báo trùng tên. Master 4 tab vừa 360 px.
+              Loại cầu có số tồn to và nút "Nhập kho" trên hàng. Quyền chia nhóm
+              gập / mở.
+            </td>
+            <td>Thêm nhanh 3 người: 9 chạm, 5 ô → 6 chạm, 3 ô</td>
+            <td>4–5 ngày / ~1,5</td>
+            <td class="rec">B trước</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="07-thue-xe-xep-bang-de-xuat.html"
+                >07 Thuê xe<br />+ Xếp bảng</a
+              >
+            </td>
+            <td>
+              Thuê xe: thanh dưới đáy luôn hiện "Rẻ nhất: … · tổng", mỗi phương
+              án một thẻ kết quả, số ngày có nút −/+. Xếp bảng: hàng VĐV 60 px,
+              sheet thêm VĐV liên tục, bảng thi đấu lưới 2 cột.
+            </td>
+            <td>
+              Nhập 16 VĐV rồi chia 4 bảng: 68 → 29–51 chạm · thuê xe 11 → 11
+              (thấy ngay xe rẻ nhất)
+            </td>
+            <td>5–6 ngày / 2,5–3</td>
+            <td class="rec">B trước</td>
+          </tr>
+        </table>
+      </div>
+      <p class="note">
+        Ngày công là ước lượng của từng designer (S &lt; ½ ngày, M ½–1 ngày, L
+        &gt; 1 ngày). Toàn bộ A: ~26–30 ngày. Toàn bộ B: ~12 ngày.
+        <b
+          >PM khuyên gói hỗn hợp: A cho 01–05 (luồng dùng hằng buổi ở sân), B
+          cho 06–07 (dùng thỉnh thoảng), tổng ~21–24 ngày.</b
+        >
+        Nâng 06–07 lên A sau vẫn được, nhưng sẽ làm lại một phần.
+      </p>
+
+      <h2>2. Bộ mẫu dùng chung sau khi rà chéo</h2>
+      <p>
+        Mọi màn dùng chung các mẫu này để cùng một kiểu bấm ở mọi nơi. Chi tiết
+        kích thước nằm ở
+        <a href="01-khung-app-de-xuat.html">trang nhóm 01, mục 5 và 16</a>.
+      </p>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>Mã</th>
+            <th>Mẫu</th>
+            <th>Ghi chú sau rà chéo</th>
+            <th>Ai làm</th>
+          </tr>
+          <tr>
+            <td>M1</td>
+            <td>Thanh đầu màn con: ‹ + tiêu đề + ⋯</td>
+            <td>
+              Thay thanh "Sổ cầu lông", không chồng hai thanh. Không có ⋯ nếu
+              màn không có hành động phụ (Tạo / Sửa bill).
+            </td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M2</td>
+            <td>Thanh hành động dính đáy</td>
+            <td>
+              Màn con: tab ẩn. Màn gốc (Thuê xe): đứng trên tab. Vùng tổng tiền
+              bấm được để mở sheet tóm tắt (03).
+            </td>
+            <td>01 (<code>ActionBar</code>)</td>
+          </tr>
+          <tr>
+            <td>M3</td>
+            <td>Hàng danh sách bấm cả hàng</td>
+            <td>Không đặt nút Xóa trên hàng. Cao 60–76 px.</td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M3b</td>
+            <td>Hàng có nút đuôi</td>
+            <td>
+              Gộp đề xuất của 04, 05 và 06. Nút đuôi có chữ, ≥ 84×44 (ví dụ "Đã
+              TT", "Nhập kho"), không bao giờ là Xóa, không lồng nút trong nút.
+            </td>
+            <td>01 vẽ · 04, 05, 06 dùng</td>
+          </tr>
+          <tr>
+            <td>M3c</td>
+            <td>Hàng mở ra tại chỗ</td>
+            <td>
+              Dùng để sửa người trong form tạo bill (03) và xem chi tiết người
+              trong màn chi tiết bill (04). Mỗi lúc chỉ mở một hàng.
+            </td>
+            <td>03, 04</td>
+          </tr>
+          <tr>
+            <td>M4</td>
+            <td>Chip lọc + nút "Lọc"</td>
+            <td>
+              Nút "Lọc" (có số đếm) <b>ghim bên trái</b>, chip cuộn bên phải. Có
+              ≤ 4 lựa chọn một-chọn thì chỉ cần chip, không có nút "Lọc". Chip
+              đang bật có dấu ✓.
+            </td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M5</td>
+            <td>Bottom sheet</td>
+            <td>
+              Thêm biến thể "chọn nhiều" (cao cố định, không tự bật bàn phím,
+              chân sheet ghi "Xong · N") và biến thể sheet sửa có nút Xóa đầu
+              chân sheet. <code>Modal</code> thêm tùy chọn không tự focus và nổi
+              lên trên bàn phím.
+            </td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M6</td>
+            <td>Ngày</td>
+            <td>
+              <code>formatDateShort</code>: "T4, 04/11"; khác năm in
+              "04/11/2025". Không dùng "Hôm nay".
+            </td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M7</td>
+            <td>Số tiền</td>
+            <td>In qua <code>formatters.js</code>; số chính 20 px đậm.</td>
+            <td>-</td>
+          </tr>
+          <tr>
+            <td>M8</td>
+            <td>Thông báo ngắn thay <code>alert()</code></td>
+            <td>
+              Đứng trên tab, FAB hoặc M2. Báo thành công tắt sau 4 giây, báo lỗi
+              7 giây và có "Thử lại". Không có "Hoàn tác" (cần API).
+            </td>
+            <td>01 (<code>useToast</code>)</td>
+          </tr>
+          <tr>
+            <td>M9</td>
+            <td>Nút tạo mới (FAB)</td>
+            <td>Đáy tab 56 px + vùng an toàn + 16 px.</td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M10–M12</td>
+            <td>Đầu nhóm dính · ô tóm tắt bấm được · chọn kỳ ‹ ›</td>
+            <td>
+              Nhóm 02 đề xuất, nhóm 01 nhận và sửa.
+              <code>PeriodStepper</code> do 02 viết, các nhóm khác dùng lại.
+            </td>
+            <td>01 · 02</td>
+          </tr>
+          <tr>
+            <td>M13–M15</td>
+            <td>Lỗi tải / rỗng · lỗi ngay tại ô · hàng menu trong sheet</td>
+            <td>M14 thay 21 <code>alert()</code> kiểm form.</td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M16</td>
+            <td>Chọn nhanh 2–3 lựa chọn (Nam / Nữ…)</td>
+            <td>
+              06 và 07 cùng đề xuất. 06 đặt mã M10, trùng với 02, nên
+              <b>đổi thành M16</b>. Dùng lại kiểu <code>.tab-list</code> trong
+              form.
+            </td>
+            <td>01</td>
+          </tr>
+          <tr>
+            <td>M17</td>
+            <td>Ô số có nút −/+</td>
+            <td>
+              Cho số ngày thuê, số bảng, level (07). Thêm dưới dạng tùy chọn của
+              <code>NumberInput</code>, kèm tùy chọn bôi đen cả số khi chạm
+              (03).
+            </td>
+            <td>01</td>
+          </tr>
+        </table>
+      </div>
+
+      <h2>3. Chỗ lệch giữa các bản: PM đã chốt, áp dụng khi triển khai</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3 style="margin-top: 0">3.1 Thanh trên ở màn gốc</h3>
+          Nhóm 01 gộp tiêu đề trang vào thanh trên. Nhóm 02, 05, 06, 07 vẽ theo
+          khung cũ: thanh "Sổ cầu lông" rồi tiêu đề trang bên dưới.
+          <b>Chốt:</b> theo 01 nếu chủ dự án chọn 01-A. Bốn màn kia bỏ dòng tiêu
+          đề riêng và lên thêm khoảng 50 px. Nếu chọn 01-B thì giữ như mockup
+          của từng nhóm.
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.2 Nút đánh dấu đã trả</h3>
+          Nhóm 04 dùng nút có chữ "Đã TT" 84×44, nhóm 05 dùng nút tròn 44 px
+          không chữ. <b>Chốt:</b> dùng kiểu của 04 cho cả bill cầu lẫn bill
+          tiệc. Lý do: có chữ thì rõ nghĩa hơn, vùng chạm rộng hơn, và giống chữ
+          "Đã TT" người dùng đang quen.
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.3 Vị trí nút "Lọc"</h3>
+          Nhóm 01 đặt cuối hàng chip, nhóm 02 và 05 đặt đầu hàng.
+          <b>Chốt:</b> ghim trái. Ở bề ngang 360 px, hàng chip cuộn ngang làm
+          nút đặt cuối bị đẩy ra ngoài màn: chính mockup của 01 đã bị cắt còn
+          "Lọc 2".
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.4 Chiều cao thanh tab</h3>
+          Brief ghi 64 px, nhưng app thật đang 56 px. Nhóm 01 <b>chốt 56 px</b>,
+          mọi vị trí tính theo biến <code>--tab-bar-h</code>. Mockup của 06 và
+          07 vẽ 64 px, khi triển khai chỉnh theo biến này. Không phải vẽ lại.
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.5 Sheet chọn người</h3>
+          Nhóm 03 (<code>PlayerPickerSheet</code>) và nhóm 05
+          (<code>PartyPlayerPicker</code>) mỗi bên vẽ một sheet.
+          <b>Chốt:</b> chỉ làm một component do 03 viết, 05 dùng lại. Vì vậy 05
+          triển khai sau 03.
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.6 Hai hộp thoại dùng chung</h3>
+          Hai hộp <code>SelectPaymentAccountDialog</code> (thêm xem trước ảnh,
+          <code>confirmLabel</code>, bỏ qua khi chỉ có một tài khoản) và
+          <code>PayOldBillsDialog</code> <b>do 04 làm</b>, 05 dùng lại. Thay đổi
+          đều là thêm prop tùy chọn.
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.7 Chữ trên nút bỏ đánh dấu</h3>
+          Hộp bỏ đánh dấu đang có nút "Xóa". 04 và 05 cùng đề xuất đổi thành
+          <b>"Bỏ đánh dấu"</b>, dùng <code>confirmLabel</code> có sẵn của
+          <code>ConfirmDialog</code>.
+        </div>
+        <div class="card">
+          <h3 style="margin-top: 0">3.8 Tiêu đề màn gốc</h3>
+          Tiêu đề đang lẫn kiểu: "Danh sách Bills", "Danh sách Bills tiệc",
+          "Quản lý Người chơi". Nhóm 02 đề xuất "Bill cầu".
+          <b>PM đề xuất</b> dùng đúng nhãn tab ("Bill cầu", "Bill tiệc", "Người
+          chơi", "Xếp bảng", "Thuê xe", "Master", "Quyền"). Đây là đổi chữ cũ
+          nên cần chủ dự án gật (mục 4, câu 4).
+        </div>
+      </div>
+
+      <h2>4. Điều chủ dự án cần quyết</h2>
+      <h3>4.1 Chung cho toàn app</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Câu hỏi</th>
+            <th>Nhóm</th>
+            <th>PM khuyên</th>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td>Chọn A hay B cho từng nhóm (bảng ở mục 1)</td>
+            <td>tất cả</td>
+            <td class="rec">A cho 01–05, B cho 06–07</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>
+              Gộp thanh trên: bỏ tầng "Sổ cầu lông" riêng, màn con dùng thanh ‹
+              ⋯
+            </td>
+            <td>01, 03, 04, 05</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>
+              Ẩn tab dưới đáy ở màn chi tiết bill (cả bill cầu và bill tiệc),
+              giống màn tạo / sửa
+            </td>
+            <td>01, 04, 05</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>
+              Tiêu đề màn gốc dùng đúng nhãn tab ("Bill cầu" thay "Danh sách
+              Bills"…), áp cả desktop
+            </td>
+            <td>02, PM</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Màn đăng nhập: dải sân cầu lông (A) hay giữ thẻ trắng (B)</td>
+            <td>01</td>
+            <td class="rec">A: trông riêng, không giống form mẫu</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Giữ thanh tab 56 px</td>
+            <td>01</td>
+            <td class="rec">Có</td>
+          </tr>
+        </table>
+      </div>
+
+      <h3>4.2 Đổi cách app chạy (không chỉ đổi giao diện)</h3>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Thay đổi</th>
+            <th>Nhóm</th>
+            <th>PM khuyên</th>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>
+              "Đã trả hết" (đánh dấu mọi bill của một người) phải hỏi lại trước
+              khi làm. Hiện bấm một lần là đổi ngay.
+            </td>
+            <td>02, 05</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>
+              Bấm "Đã TT" xong, hàng đứng yên tới lần mở trang sau. Hiện hàng
+              nhảy xuống cuối nên dễ bấm nhầm người kế.
+            </td>
+            <td>04, 05</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>
+              Hiện nợ cũ trên màn chi tiết bill tiệc. Hiện chỉ có trong ảnh
+              xuất, nên số trên màn khác số trong ảnh.
+            </td>
+            <td>05</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td>
+              Ẩn nút Xóa / Đã TT theo quyền ở màn chi tiết (Dashboard đã ẩn, màn
+              chi tiết thì chưa)
+            </td>
+            <td>04, 05</td>
+            <td class="rec">Có, nhưng xem lỗi 6.1</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td>
+              Trên điện thoại, "Xuất Bill" mở bảng chia sẻ của máy (lưu vào Ảnh,
+              gửi Zalo); máy không hỗ trợ thì tải file như cũ
+            </td>
+            <td>04</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td>
+              Bỏ qua bước chọn tài khoản nhận tiền khi chỉ có một tài khoản đang
+              bật (bớt 1 chạm)
+            </td>
+            <td>05, 04</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td>
+              Thống kê không phụ thuộc bộ lọc ngày của danh sách. Hiện tháng nằm
+              ngoài khoảng lọc ra 0.
+            </td>
+            <td>02</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>14</td>
+            <td>
+              Bỏ ô "Số bill / trang" trên điện thoại (thay bằng "Xem thêm")
+            </td>
+            <td>02</td>
+            <td class="rec">Có</td>
+          </tr>
+          <tr>
+            <td>15</td>
+            <td>
+              Ảnh "Xuất bảng" thi đấu đổi sang khung 720 px, 2 cột, áp cả
+              desktop. Đây là ảnh xuất duy nhất bị đổi.
+            </td>
+            <td>07</td>
+            <td>Tùy chủ dự án (chỉ khi chọn 07-A)</td>
+          </tr>
+        </table>
+      </div>
+      <p class="note">
+        Câu hỏi riêng của từng nhóm, như bill con có điền sẵn 280k không, đổi
+        "Unit price" thành "Tiền cho mức 1", hay có làm tròn nghìn số "/người" ở
+        thuê xe không, nằm ở mục "Cần chủ dự án quyết" cuối mỗi trang. Chữ mới
+        chờ gật nằm ở mục "Chữ mới" của từng trang:
+        <a href="01-khung-app-de-xuat.html#chumoi">01</a> ·
+        <a href="02-bill-cau-danh-sach-de-xuat.html#chu-moi">02</a> ·
+        <a href="03-bill-cau-tao-sua-de-xuat.html">03</a> ·
+        <a href="04-bill-cau-chi-tiet-de-xuat.html#chu-moi">04</a> ·
+        <a href="05-bill-tiec-de-xuat.html#chu-moi">05</a> ·
+        <a href="06-quan-ly-de-xuat.html#chu-moi">06</a> ·
+        <a href="07-thue-xe-xep-bang-de-xuat.html#chu-moi">07</a>.
+      </p>
+
+      <h2>5. Lộ trình triển khai (bước 2, chỉ chạy sau khi duyệt)</h2>
+      <div class="flow">
+        <div class="step">
+          <span class="badge b-e">Đợt 0 · tuần tự</span><br /><b
+            >01 Khung app + nền</b
+          ><br />Thanh trên và M1, <code>ActionBar</code>,
+          <code>useToast</code>, <code>Modal</code> (bàn phím, tắt tự focus),
+          class M3, M4, M10, M11, M13, M14, <code>formatDateShort</code>, tùy
+          chọn −/+ và bôi đen số cho <code>NumberInput</code>, ẩn tab ở màn chi
+          tiết, màu ô tích. <b>Vào <code>main</code> trước mọi nhóm.</b>
+        </div>
+        <div class="step">
+          <span class="badge b-e">Đợt 1 · song song, mỗi nhóm một worktree</span
+          ><br /><b>02 · 03 · 04 · 06 · 07</b><br />Không nhóm nào sửa file của
+          đợt 0. Cần thêm class chung thì ghi vào báo cáo để PM gom lại. 03 sở
+          hữu <code>PlayerPickerSheet</code> + <code>PlayerSelector</code>, 04
+          sở hữu hai hộp thoại dùng chung.
+        </div>
+        <div class="step">
+          <span class="badge b-e">Đợt 2</span><br /><b>05 Bill tiệc</b
+          ><br />Dùng lại sheet chọn người của 03 và hộp thoại, hàng M3b của 04,
+          nên làm sau khi 03 và 04 đã vào <code>main</code>.
+        </div>
+        <div class="step">
+          <span class="badge b-s">Mỗi đợt</span><br />Cổng kiểm:
+          <code>npm test</code> 0 lỗi, ESLint không thêm lỗi so với mốc, build
+          ok. Chụp ảnh qua máy chủ giả ở 360, 390, 430 và 1280 px. Đối chiếu ảnh
+          bill xuất với bản <code>main</code>. Chủ dự án xem ảnh rồi mới merge.
+          Không deploy khi chưa được bảo.
+        </div>
+      </div>
+
+      <h2>6. Lỗi có sẵn phát hiện khi đọc code (ngoài phạm vi, chưa sửa)</h2>
+      <p>
+        Đề xuất tách thành task riêng. Hai lỗi đầu nên làm trước cả đợt giao
+        diện.
+      </p>
+      <div class="wrap">
+        <table>
+          <tr>
+            <th>#</th>
+            <th>Lỗi</th>
+            <th>Chỗ</th>
+            <th>Mức</th>
+            <th>Kiểm chứng</th>
+          </tr>
+          <tr>
+            <td>6.1</td>
+            <td>
+              <b>Backend không kiểm quyền ở API nào.</b> Route chỉ yêu cầu đăng
+              nhập, 26 hàm <code>authorize()</code> đều
+              <code>return true</code>, không có Gate / Policy. Theo code thì
+              tài khoản nào đã đăng nhập cũng gọi API trực tiếp để xóa bill, sửa
+              vai trò hay tự cấp quyền được. Quyền hiện chỉ dùng để ẩn nút trên
+              giao diện.
+            </td>
+            <td>
+              <code>routes/api.php:27</code>,
+              <code>Requests/StoreRoleRequest.php:14</code> ("TODO"),
+              <code>PartyBillController.php:261</code>
+            </td>
+            <td><span class="badge b-r">Cao · bảo mật</span></td>
+            <td>PM đọc code xác nhận, chưa gọi API thật</td>
+          </tr>
+          <tr>
+            <td>6.2</td>
+            <td>
+              <b>Sửa bill cầu làm mất dấu "Đã TT":</b> xóa hết người rồi tạo lại
+              với <code>is_paid = false</code>.
+            </td>
+            <td><code>Api/BillController.php</code> ~440–486</td>
+            <td><span class="badge b-r">Cao · dữ liệu</span></td>
+            <td>PM đọc code xác nhận</td>
+          </tr>
+          <tr>
+            <td>6.3</td>
+            <td>Nợ cũ có thể bị cộng 2 lần ở khối "DS chưa thanh toán"</td>
+            <td>
+              <code>BillController.php:182</code> +
+              <code>Dashboard.jsx:344</code>
+            </td>
+            <td><span class="badge b-a">Vừa</span></td>
+            <td>
+              Giả thuyết. Kiểm bằng cách đếm
+              <code>bill_players.debt_amount &lt;&gt; 0</code>
+            </td>
+          </tr>
+          <tr>
+            <td>6.4</td>
+            <td>
+              Chia bảng thi đấu dồn phần dư vào Bảng 1: 16 VĐV chia 4 bảng ra
+              6/6/4/0
+            </td>
+            <td><code>BracketController.php:106–122</code></td>
+            <td><span class="badge b-a">Vừa</span></td>
+            <td>
+              Designer chép vòng lặp ra chạy thử, chưa chạy controller thật
+            </td>
+          </tr>
+          <tr>
+            <td>6.5</td>
+            <td>
+              "Thêm nhanh người chơi" tạo tài khoản mật khẩu cố định "password"
+            </td>
+            <td><code>PlayerSelector.jsx:150–159</code></td>
+            <td><span class="badge b-a">Vừa · bảo mật</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.6</td>
+            <td>
+              Đánh dấu bill chính tự đánh dấu bill con, nhưng bỏ đánh dấu thì
+              bill con vẫn giữ
+            </td>
+            <td><code>BillDetail.jsx:159–186</code></td>
+            <td><span class="badge b-a">Vừa</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.7</td>
+            <td>Bill con còn nợ bị ẩn khi bill chính đã trả xong</td>
+            <td><code>Dashboard.jsx:471–475</code></td>
+            <td><span class="badge b-a">Vừa</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.8</td>
+            <td>
+              Ngày mặc định lấy theo UTC: mở màn từ 0h đến 7h sáng giờ Việt Nam
+              ra ngày hôm qua
+            </td>
+            <td>
+              <code>CreateBill.jsx:39</code>,
+              <code>ShuttlesManagement.jsx:15</code>
+            </td>
+            <td><span class="badge b-s">Thấp</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.9</td>
+            <td>
+              Câu lỗi đọc <code>message</code> nhưng máy chủ trả
+              <code>error</code>, nên người dùng chỉ thấy "Request failed…"
+            </td>
+            <td>
+              <code>CreateBill.jsx:281</code>, <code>EditBill.jsx:440</code>
+            </td>
+            <td><span class="badge b-s">Thấp</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.10</td>
+            <td>Tồn kho cầu có thể âm vì trừ kho không chặn</td>
+            <td><code>BillController.php:665</code></td>
+            <td><span class="badge b-s">Thấp</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.11</td>
+            <td>
+              Trả hết bill tiệc gửi song song từng bill: một bill lỗi thì các
+              bill khác đã đổi mà giao diện không cập nhật
+            </td>
+            <td><code>PartyBills.jsx:247–288</code></td>
+            <td><span class="badge b-s">Thấp</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.12</td>
+            <td>Nút Xóa bill bấm được 2 lần khi đang chờ API</td>
+            <td><code>Dashboard.jsx:217–226</code></td>
+            <td><span class="badge b-s">Thấp</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.13</td>
+            <td>
+              Danh sách VĐV lọc theo người tạo, nên vai trò "Xem bảng thi đấu"
+              gần như không thấy gì
+            </td>
+            <td><code>TournamentBrackets</code> / API</td>
+            <td><span class="badge b-s">Thấp</span></td>
+            <td>Designer đọc code</td>
+          </tr>
+          <tr>
+            <td>6.14</td>
+            <td>
+              Máy chủ demo trả sai tên trường (<code>court_cost</code>,
+              <code>ratio</code>), nên demo hiện "Tiền sân 0 ₫". App thật không
+              bị.
+            </td>
+            <td><code>FRONTEND/demo/api.mjs</code></td>
+            <td><span class="badge b-s">Thấp · chỉ demo</span></td>
+            <td>Designer so với API thật</td>
+          </tr>
+        </table>
+      </div>
+      <p class="note">
+        Còn hai giả thuyết cần thử trên điện thoại thật:
+        <code>NumberInput</code> gõ "0,4" trên iPhone vùng Việt Nam có thể ra 0,
+        và khe 8 px giữa thanh "Copy kết quả" và tab ở màn Thuê xe.
+      </p>
+    </main>
+  </body>
+</html>

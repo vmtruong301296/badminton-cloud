@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X } from "./icons";
+import useKeyboardInset from "./useKeyboardInset";
 
 const SIZES = {
   sm: "sm:max-w-sm",
@@ -15,12 +16,20 @@ const FOCUSABLE =
 // Nhiều hộp thoại có thể mở chồng nhau: chỉ mở khóa cuộn khi hộp cuối cùng đóng.
 let openCount = 0;
 let savedOverflow = "";
+// Hộp đang mở theo thứ tự mở; chỉ hộp trên cùng nhận Esc / Tab (mọi hộp nghe cùng document).
+const openStack = [];
 
 /**
  * Hộp thoại dùng chung. Điện thoại: bottom sheet sát đáy; desktop: hộp giữa màn.
  * Bấm nền hoặc Esc thì đóng; focus vào ô nhập đầu tiên khi mở; khóa cuộn trang.
+ * Điện thoại: cao tối đa 90dvh; khi bàn phím ảo bật, cả sheet nâng lên ngay trên bàn phím
+ * (đọc window.visualViewport) để ô đang nhập và chân sheet luôn thấy.
  *
- * Props: isOpen, onClose, title, children, footer (vùng nút dưới đáy), size (sm|md|lg|xl).
+ * Props: isOpen, onClose, title, children, footer (vùng nút dưới đáy), size (sm|md|lg|xl),
+ * initialFocus ("field": focus ô nhập đầu tiên như cũ | "panel": focus khung, không bật bàn
+ * phím — sheet chọn / lọc / menu / tóm tắt), dismissible (false: bấm nền, Esc, nút đóng
+ * không đóng — vd đang xử lý), height ("auto" | "tall": cao cố định ~85dvh, cho sheet chọn
+ * nhiều để danh sách không nhảy chiều cao khi lọc).
  */
 export default function Modal({
   isOpen,
@@ -29,35 +38,51 @@ export default function Modal({
   children,
   footer,
   size = "md",
+  initialFocus = "field",
+  dismissible = true,
+  height = "auto",
 }) {
   const panelRef = useRef(null);
   const bodyRef = useRef(null);
   const onCloseRef = useRef(onClose);
+  const dismissibleRef = useRef(dismissible);
+  const initialFocusRef = useRef(initialFocus);
   const titleId = useId();
+  const { inset: keyboard, viewportHeight } = useKeyboardInset(isOpen);
 
   useEffect(() => {
     onCloseRef.current = onClose;
-  }, [onClose]);
+    dismissibleRef.current = dismissible;
+    initialFocusRef.current = initialFocus;
+  }, [onClose, dismissible, initialFocus]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
     const previouslyFocused = document.activeElement;
+    const entry = { panel: panelRef.current };
+    openStack.push(entry);
 
     if (openCount === 0) savedOverflow = document.body.style.overflow;
     openCount += 1;
     document.body.style.overflow = "hidden";
 
-    // Focus vào ô nhập đầu tiên của phần nội dung; không có thì vào chính hộp.
-    const firstField = bodyRef.current?.querySelector(
-      "input:not([disabled]):not([type='hidden']), select:not([disabled]), textarea:not([disabled])",
-    );
+    // Focus vào ô nhập đầu tiên của phần nội dung; không có (hoặc initialFocus="panel") thì vào chính hộp.
+    const firstField =
+      initialFocusRef.current === "field"
+        ? bodyRef.current?.querySelector(
+            "input:not([disabled]):not([type='hidden']), select:not([disabled]), textarea:not([disabled])",
+          )
+        : null;
     (firstField || panelRef.current)?.focus({ preventScroll: true });
 
     const handleKeyDown = (event) => {
+      // Hộp chồng nhau: Esc chỉ đóng hộp trên cùng, Tab chỉ quay vòng trong hộp trên cùng.
+      if (openStack[openStack.length - 1] !== entry) return;
+
       if (event.key === "Escape") {
         event.stopPropagation();
-        onCloseRef.current?.();
+        if (dismissibleRef.current) onCloseRef.current?.();
         return;
       }
 
@@ -71,7 +96,11 @@ export default function Modal({
       }
       const first = items[0];
       const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!panelRef.current.contains(document.activeElement)) {
+        // Focus đã rơi ra ngoài (vd nút vừa bấm biến mất): đưa về trong hộp.
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -84,19 +113,32 @@ export default function Modal({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      const index = openStack.indexOf(entry);
+      if (index !== -1) openStack.splice(index, 1);
       openCount -= 1;
       if (openCount === 0) document.body.style.overflow = savedOverflow;
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+      // Trả focus cho chỗ mở hộp; chỗ đó đã biến mất thì về hộp còn mở bên dưới (nếu có).
+      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      } else {
+        openStack[openStack.length - 1]?.panel?.focus({ preventScroll: true });
+      }
     };
   }, [isOpen]);
 
   if (!isOpen) return null;
 
+  // Bàn phím đang che: CSS (index.css, chỉ điện thoại) nâng sheet lên bằng phần bị che.
+  const keyboardStyle =
+    keyboard > 0
+      ? { "--kb-inset": `${keyboard}px`, "--vv-h": `${viewportHeight}px` }
+      : undefined;
+
   return createPortal(
     <div
       className="modal-backdrop fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose?.();
+        if (event.target === event.currentTarget && dismissible) onClose?.();
       }}
     >
       <div
@@ -105,7 +147,17 @@ export default function Modal({
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
-        className={`modal-panel flex max-h-[90vh] w-full flex-col rounded-t-2xl bg-white shadow-lg focus:outline-none sm:max-h-[85vh] sm:rounded-2xl ${SIZES[size] || SIZES.md}`}
+        style={keyboardStyle}
+        onFocus={(event) => {
+          // Ô trong thân sheet vừa được focus: đợi bàn phím mở xong rồi cuộn ô vào chỗ thấy.
+          const target = event.target;
+          if (!target.matches?.("input, select, textarea")) return;
+          window.setTimeout(() => {
+            if (document.activeElement === target)
+              target.scrollIntoView({ block: "nearest" });
+          }, 300);
+        }}
+        className={`modal-panel flex w-full flex-col rounded-t-2xl bg-white shadow-lg focus:outline-none sm:max-h-[85vh] sm:rounded-2xl ${height === "tall" ? "modal-panel-tall sm:h-[min(80vh,720px)]" : ""} ${SIZES[size] || SIZES.md}`}
       >
         {title && (
           <div className="flex items-start justify-between gap-3 px-5 pb-2 pt-5">
@@ -118,8 +170,9 @@ export default function Modal({
             <button
               type="button"
               onClick={onClose}
+              disabled={!dismissible}
               aria-label="Đóng"
-              className="-mr-2 -mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:h-9 sm:w-9"
+              className="-mr-2 -mt-1 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:cursor-not-allowed disabled:opacity-40 sm:h-9 sm:w-9"
             >
               <X className="h-5 w-5" />
             </button>

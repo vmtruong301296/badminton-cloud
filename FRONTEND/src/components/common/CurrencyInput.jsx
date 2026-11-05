@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import InputSuffix from "./InputSuffix";
+import selectAllOnFocus from "./selectAllOnFocus";
 
 /** Style mặc định. Màn nào dùng bộ class khác thì truyền baseClassName để thay hẳn,
  *  đừng dồn vào className: hai bộ viền/bo góc chọi nhau thì Tailwind quyết theo thứ tự
@@ -13,6 +15,11 @@ const formatNumber = (num) => {
   return num < 0 ? "-" + formatted : formatted;
 };
 
+/**
+ * Ô tiền VND: gõ số, hiện dấu chấm nghìn, bàn phím số. Tùy chọn (M17, mặc định giữ hành vi cũ):
+ * selectOnFocus — chạm vào ô là bôi đen cả số; suffix — ký hiệu mờ trong ô bên phải (vd "₫"),
+ * aria-hidden, độ rộng truyền qua wrapperClassName.
+ */
 export default function CurrencyInput({
   value,
   onChange,
@@ -20,6 +27,10 @@ export default function CurrencyInput({
   className = "",
   baseClassName = DEFAULT_BASE_CLASS,
   allowNegative = true,
+  selectOnFocus = false,
+  suffix,
+  wrapperClassName = "",
+  onFocus,
   ...props
 }) {
   const [displayValue, setDisplayValue] = useState("");
@@ -65,15 +76,28 @@ export default function CurrencyInput({
     onChange?.(numValue);
   };
 
-  return (
+  const handleFocus = (e) => {
+    if (selectOnFocus) selectAllOnFocus(e);
+    onFocus?.(e);
+  };
+
+  const input = (
     <input
       type="text"
       inputMode="numeric"
       value={displayValue}
       onChange={handleChange}
+      onFocus={handleFocus}
       placeholder={placeholder}
-      className={`${baseClassName} ${className}`}
+      className={`${baseClassName} ${className}${suffix ? " pr-8" : ""}`}
       {...props}
     />
+  );
+
+  if (!suffix) return input;
+  return (
+    <InputSuffix suffix={suffix} className={wrapperClassName}>
+      {input}
+    </InputSuffix>
   );
 }

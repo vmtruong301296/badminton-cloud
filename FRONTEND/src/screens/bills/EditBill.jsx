@@ -8,24 +8,162 @@ import {
   selectableMenus,
   withBillPrices,
 } from "../../utils/menus";
-import CurrencyInput from "../../components/common/CurrencyInput";
-import DatePicker from "../../components/common/DatePicker";
-import PlayerSelector from "../../components/bill/PlayerSelector";
-import ShuttleRow from "../../components/bill/ShuttleRow";
-import PlayerBillCard from "../../components/bill/PlayerBillCard";
-import QuickAddMenu from "../../components/bill/QuickAddMenu";
+import {
+  billFormErrorList,
+  serverErrorMessage,
+  validateBillForm,
+} from "../../utils/billFormErrors";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import BillSummary from "../../components/bill/BillSummary";
+import BillPlayersSection from "../../components/bill/BillPlayersSection";
+import {
+  BillActionBar,
+  BillBasicInfoCard,
+  BillShuttlesCard,
+} from "../../components/bill/BillFormSections";
+import {
+  focusField,
+  focusNextOnEnter,
+} from "../../components/bill/billFormFocus";
+import useConfirmLeave from "../../components/bill/useConfirmLeave";
+import ActionBar from "../../components/ui/ActionBar";
+import AppBar from "../../components/ui/AppBar";
+import EmptyState from "../../components/ui/EmptyState";
 import PageHeader from "../../components/ui/PageHeader";
-import { Check, Loader, Plus } from "../../components/ui/icons";
+import useToast from "../../components/ui/useToast";
+import { Check, CircleAlert, Loader } from "../../components/ui/icons";
+
+const FORM_ID = "bill-form";
+
+/** Bill con: ghi chú chính là nhãn dòng bill sau trong khối "TT + Bill sau" của bill chính. */
+const CHILD_NOTE_HINT = 'Ghi chú hiện ở dòng "TT + Bill sau" của bill chính.';
+
+/**
+ * Xem trước khi sửa: giá cầu theo ngày bill (thiếu thì giá đã lưu), không tính nợ. Tính cả
+ * khi chưa có người để thanh đáy luôn có tổng tiền.
+ */
+const buildEditPreview = (formData, shuttleTypes) => {
+  // Tính tổng tiền cầu từ shuttleTypes hoặc từ giá đã lưu trong formData
+  const shuttlePrices = formData.shuttles
+    .filter((s) => s.shuttle_type_id)
+    .map((s) => {
+      // Ưu tiên lấy giá từ shuttleTypes nếu có, nếu không thì dùng giá đã lưu trong formData
+      const type = shuttleTypes.find((st) => st.id === s.shuttle_type_id);
+      const price = shuttleUnitPrice(type) || s.price || 0;
+      return {
+        price: price,
+        quantity: Number(s.quantity) || 0,
+      };
+    });
+
+  // Tính tổng tiền cầu
+  const totalShuttlePrice = shuttlePrices.reduce(
+    (sum, s) => sum + s.price * s.quantity,
+    0,
+  );
+
+  // Tổng tiền = tiền sân + tiền cầu
+  const totalAmount = Number(formData.court_total || 0) + totalShuttlePrice;
+
+  // Tính tổng mức tính của tất cả người chơi
+  const sumRatios = formData.players.reduce((sum, p) => {
+    const ratio = Number(p.ratio_value ?? p.default_ratio_value ?? 1.0);
+    return sum + ratio;
+  }, 0);
+
+  // Unit price = tổng tiền / tổng mức tính
+  const unitPrice = sumRatios > 0 ? totalAmount / sumRatios : 0;
+
+  // Tính toán cho từng người chơi
+  const playersWithAmounts = formData.players.map((player) => {
+    const ratioValue = player.ratio_value ?? player.default_ratio_value ?? 1.0;
+    const shareAmount = Math.round(ratioValue * unitPrice);
+    const menuTotal = playerExtraTotal(player);
+    const debtAmount = 0; // Không tính debt khi edit
+    const playerTotalAmount = shareAmount + menuTotal + debtAmount;
+
+    return {
+      ...player,
+      share_amount: shareAmount,
+      menu_extra_total: menuTotal,
+      debt_amount: debtAmount,
+      total_amount: playerTotalAmount,
+    };
+  });
+
+  // Tính chênh lệch làm tròn
+  const calculatedShareTotal = playersWithAmounts.reduce(
+    (sum, p) => sum + p.share_amount,
+    0,
+  );
+  const roundingDifference = totalAmount - calculatedShareTotal;
+
+  return {
+    total_shuttle_price: totalShuttlePrice,
+    total_amount: totalAmount,
+    sum_ratios: sumRatios,
+    unit_price: unitPrice,
+    players: playersWithAmounts,
+    rounding_difference: roundingDifference,
+    court_total: formData.court_total,
+  };
+};
+
+/** Khung xương khi đang tải (desktop như cũ; điện thoại có thanh trên + thanh đáy mờ). */
+function EditBillSkeleton({ id }) {
+  return (
+    <div className="px-4 sm:px-0">
+      <AppBar
+        back={{ to: `/bills/${id}`, label: "Về chi tiết Bill" }}
+        title={`Sửa Bill #${id}`}
+      />
+      <div className="mb-6 hidden sm:block">
+        <div className="skeleton h-3 w-24 mb-2" />
+        <div className="skeleton h-8 w-56" />
+      </div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:gap-6">
+        <div className="space-y-4 sm:space-y-6 lg:col-span-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+            <div className="skeleton h-3 w-28 mb-3" />
+            <div className="space-y-3">
+              <div className="skeleton h-10 w-full" />
+              <div className="skeleton h-10 w-full" />
+              <div className="skeleton h-10 w-full" />
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+            <div className="skeleton h-3 w-24 mb-3" />
+            <div className="skeleton h-20 w-full" />
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
+          <div className="skeleton h-3 w-20 mb-3" />
+          <div className="skeleton h-32 w-full" />
+        </div>
+      </div>
+      <ActionBar summary={{ label: "Tổng tiền", value: "—" }}>
+        <button type="button" disabled className="btn btn-primary flex-1">
+          <Check className="h-4 w-4" strokeWidth={2.5} />
+          Lưu thay đổi
+        </button>
+      </ActionBar>
+    </div>
+  );
+}
 
 export default function EditBill() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
   const [billPrices, setBillPrices] = useState({});
+  // Người dùng đã sửa gì chưa (để hỏi lại khi rời màn); đã bấm lưu lần nào chưa (để hiện lỗi M14)
+  const [touched, setTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -36,9 +174,14 @@ export default function EditBill() {
     parent_bill_id: null,
   });
 
-  const [preview, setPreview] = useState(null);
   const [shuttleTypesLoading, setShuttleTypesLoading] = useState(false);
   const skipNextShuttleTypesFetchRef = useRef(true);
+
+  /** Thay đổi do người dùng: cập nhật theo state mới nhất (chọn nhiều người một lúc). */
+  const updateForm = (updater) => {
+    setTouched(true);
+    setFormData(updater);
+  };
 
   /** Tổng số quả theo từng loại trong bill (để tính hoàn tồn khi sửa). */
   const creditByShuttleTypeId = useMemo(() => {
@@ -54,6 +197,7 @@ export default function EditBill() {
   const loadInitialData = useCallback(async () => {
     try {
       setInitialLoading(true);
+      setLoadFailed(false);
       const billRes = await billsApi.getById(id);
       const bill = billRes.data;
       const billDateStr = bill.date
@@ -71,7 +215,7 @@ export default function EditBill() {
         price: s.price_each,
       }));
 
-      // Map players
+      // Map players (is_paid chỉ để hiện "Đã TT" và dải cảnh báo, không gửi lên máy chủ)
       const mappedPlayers = (bill.bill_players || []).map((p) => ({
         user_id: p.user_id,
         name: p.user?.name,
@@ -81,6 +225,7 @@ export default function EditBill() {
         debt_amount: 0,
         debt_date: null,
         include_debt: false,
+        is_paid: Boolean(p.is_paid),
         extra_amount: p.extra_amount || 0,
         extra_note: p.extra_note || "",
         menus: (p.bill_player_menus || []).map((m) => ({
@@ -92,96 +237,25 @@ export default function EditBill() {
         })),
       }));
 
-      const newFormData = {
+      // Set cả shuttleTypes và formData cùng lúc để tránh race condition
+      setShuttleTypes(shuttleTypesData);
+      setFormData({
         date: billDateStr,
         note: bill.note || "",
         court_total: bill.court_total || 0,
         shuttles: mappedShuttles,
         players: mappedPlayers,
         parent_bill_id: bill.parent_bill_id || null,
-      };
-
-      // Set cả shuttleTypes và formData cùng lúc để tránh race condition
-      setShuttleTypes(shuttleTypesData);
-      setFormData(newFormData);
+      });
       setBillPrices(billMenuPrices(bill.bill_players));
-
-      // Tính preview ngay sau khi có đầy đủ dữ liệu
-      if (mappedPlayers.length > 0) {
-        // Tính tổng tiền cầu
-        const shuttlePrices = mappedShuttles
-          .filter((s) => s.shuttle_type_id)
-          .map((s) => {
-            const type = shuttleTypesData.find(
-              (st) => st.id === s.shuttle_type_id,
-            );
-            const price = shuttleUnitPrice(type) || s.price || 0;
-            return {
-              price: price,
-              quantity: s.quantity || 1,
-            };
-          });
-
-        const totalShuttlePrice = shuttlePrices.reduce(
-          (sum, s) => sum + s.price * s.quantity,
-          0,
-        );
-        const totalAmount = (bill.court_total || 0) + totalShuttlePrice;
-
-        // Tính tổng mức tính
-        const sumRatios = mappedPlayers.reduce((sum, p) => {
-          const ratio = p.ratio_value ?? p.default_ratio_value ?? 1.0;
-          return sum + ratio;
-        }, 0);
-
-        // Unit price
-        const unitPrice = sumRatios > 0 ? totalAmount / sumRatios : 0;
-
-        // Tính toán cho từng người chơi
-        const playersWithAmounts = mappedPlayers.map((player) => {
-          const ratioValue =
-            player.ratio_value ?? player.default_ratio_value ?? 1.0;
-          const shareAmount = Math.round(ratioValue * unitPrice);
-          const menuTotal = playerExtraTotal(player);
-          const debtAmount = 0;
-          const playerTotalAmount = shareAmount + menuTotal + debtAmount;
-
-          return {
-            ...player,
-            share_amount: shareAmount,
-            menu_extra_total: menuTotal,
-            debt_amount: debtAmount,
-            total_amount: playerTotalAmount,
-          };
-        });
-
-        // Tính chênh lệch làm tròn
-        const calculatedShareTotal = playersWithAmounts.reduce(
-          (sum, p) => sum + p.share_amount,
-          0,
-        );
-        const roundingDifference = totalAmount - calculatedShareTotal;
-
-        setPreview({
-          total_shuttle_price: totalShuttlePrice,
-          total_amount: totalAmount,
-          sum_ratios: sumRatios,
-          unit_price: unitPrice,
-          players: playersWithAmounts,
-          rounding_difference: roundingDifference,
-          court_total: bill.court_total || 0,
-        });
-      } else {
-        setPreview(null);
-      }
+      setTouched(false);
     } catch (error) {
       console.error("Error loading bill for edit:", error);
-      alert("Không thể tải dữ liệu bill để sửa");
-      navigate("/");
+      setLoadFailed(true);
     } finally {
       setInitialLoading(false);
     }
-  }, [id, navigate]);
+  }, [id]);
 
   useEffect(() => {
     loadInitialData();
@@ -247,164 +321,66 @@ export default function EditBill() {
     };
   }, [formData.date, initialLoading]);
 
-  const updatePreview = useCallback(() => {
-    // Không tính preview nếu chưa có players hoặc đang loading
-    if (initialLoading || formData.players.length === 0) {
-      if (formData.players.length === 0) {
-        setPreview(null);
-      }
-      return;
-    }
+  const fullPreview = useMemo(
+    () => buildEditPreview(formData, shuttleTypes),
+    [formData, shuttleTypes],
+  );
+  const preview = formData.players.length > 0 ? fullPreview : null;
 
-    // Tính tổng tiền cầu từ shuttleTypes hoặc từ giá đã lưu trong formData
-    const shuttlePrices = formData.shuttles
-      .filter((s) => s.shuttle_type_id)
-      .map((s) => {
-        // Ưu tiên lấy giá từ shuttleTypes nếu có, nếu không thì dùng giá đã lưu trong formData
-        const type = shuttleTypes.find((st) => st.id === s.shuttle_type_id);
-        const price = shuttleUnitPrice(type) || s.price || 0;
-        return {
-          price: price,
-          quantity: Number(s.quantity) || 0,
-        };
-      });
+  const errors = useMemo(
+    () => (submitted ? validateBillForm(formData) : null),
+    [submitted, formData],
+  );
 
-    // Tính tổng tiền cầu
-    const totalShuttlePrice = shuttlePrices.reduce(
-      (sum, s) => sum + s.price * s.quantity,
-      0,
-    );
-
-    // Tổng tiền = tiền sân + tiền cầu
-    const totalAmount = Number(formData.court_total || 0) + totalShuttlePrice;
-
-    // Tính tổng mức tính của tất cả người chơi
-    const sumRatios = formData.players.reduce((sum, p) => {
-      const ratio = Number(p.ratio_value ?? p.default_ratio_value ?? 1.0);
-      return sum + ratio;
-    }, 0);
-
-    // Unit price = tổng tiền / tổng mức tính
-    const unitPrice = sumRatios > 0 ? totalAmount / sumRatios : 0;
-
-    // Tính toán cho từng người chơi
-    const playersWithAmounts = formData.players.map((player) => {
-      const ratioValue =
-        player.ratio_value ?? player.default_ratio_value ?? 1.0;
-      const shareAmount = Math.round(ratioValue * unitPrice);
-      const menuTotal = playerExtraTotal(player);
-      const debtAmount = 0; // Không tính debt khi edit
-      const playerTotalAmount = shareAmount + menuTotal + debtAmount;
-
-      return {
-        ...player,
-        share_amount: shareAmount,
-        menu_extra_total: menuTotal,
-        debt_amount: debtAmount,
-        total_amount: playerTotalAmount,
-      };
-    });
-
-    // Tính chênh lệch làm tròn
-    const calculatedShareTotal = playersWithAmounts.reduce(
-      (sum, p) => sum + p.share_amount,
-      0,
-    );
-    const roundingDifference = totalAmount - calculatedShareTotal;
-
-    setPreview({
-      total_shuttle_price: totalShuttlePrice,
-      total_amount: totalAmount,
-      sum_ratios: sumRatios,
-      unit_price: unitPrice,
-      players: playersWithAmounts,
-      rounding_difference: roundingDifference,
-      court_total: formData.court_total,
-    });
-  }, [formData, shuttleTypes, initialLoading]);
-
-  useEffect(() => {
-    // Chỉ update preview khi không phải đang loading ban đầu
-    if (!initialLoading) {
-      updatePreview();
-    }
-  }, [updatePreview, initialLoading]);
+  const handleChange = (patch) => updateForm((prev) => ({ ...prev, ...patch }));
 
   const handleAddShuttle = () => {
-    setFormData({
-      ...formData,
+    updateForm((prev) => ({
+      ...prev,
       shuttles: [
-        ...formData.shuttles,
+        ...prev.shuttles,
         { shuttle_type_id: null, quantity: 1, price: 0 },
       ],
-    });
+    }));
   };
 
   const handleUpdateShuttle = (index, updated) => {
-    const newShuttles = [...formData.shuttles];
-    newShuttles[index] = updated;
-    setFormData({ ...formData, shuttles: newShuttles });
+    updateForm((prev) => ({
+      ...prev,
+      shuttles: prev.shuttles.map((s, i) => (i === index ? updated : s)),
+    }));
   };
 
   const handleRemoveShuttle = (index) => {
-    setFormData({
-      ...formData,
-      shuttles: formData.shuttles.filter((_, i) => i !== index),
-    });
+    updateForm((prev) => ({
+      ...prev,
+      shuttles: prev.shuttles.filter((_, i) => i !== index),
+    }));
   };
 
   const handleSelectPlayer = (player) => {
-    setFormData({
-      ...formData,
-      players: [...formData.players, player],
-    });
+    updateForm((prev) =>
+      prev.players.some((p) => p.user_id === player.user_id)
+        ? prev
+        : { ...prev, players: [...prev.players, player] },
+    );
   };
 
   const handleRemovePlayer = (index) => {
-    setFormData({
-      ...formData,
-      players: formData.players.filter((_, i) => i !== index),
-    });
+    updateForm((prev) => ({
+      ...prev,
+      players: prev.players.filter((_, i) => i !== index),
+    }));
   };
 
   const handleUpdatePlayer = (index, updated) => {
-    const newPlayers = [...formData.players];
-    newPlayers[index] = updated;
-    setFormData({ ...formData, players: newPlayers });
+    updateForm((prev) => ({
+      ...prev,
+      players: prev.players.map((p, i) => (i === index ? updated : p)),
+    }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (formData.players.length === 0) {
-      alert("Vui lòng chọn ít nhất một người chơi");
-      return;
-    }
-
-    const validShuttles = formData.shuttles.filter((s) => s.shuttle_type_id);
-    const courtTotal = Number(formData.court_total) || 0;
-    if (validShuttles.length === 0 && courtTotal <= 0) {
-      alert(
-        "Vui lòng thêm ít nhất một loại cầu hợp lệ hoặc nhập tổng tiền sân lớn hơn 0",
-      );
-      return;
-    }
-
-    // Ô số lượng cho xoá về 0 để nhập lại, nhưng không được lưu dòng 0 quả
-    if (validShuttles.some((s) => !(Number(s.quantity) > 0))) {
-      alert("Số lượng cầu phải lớn hơn 0");
-      return;
-    }
-
-    const sumRatios = formData.players.reduce((sum, p) => {
-      const ratio = p.ratio_value ?? p.default_ratio_value ?? 1.0;
-      return sum + ratio;
-    }, 0);
-    if (sumRatios === 0) {
-      alert("Tổng mức tính phải lớn hơn 0");
-      return;
-    }
-
+  const save = async () => {
     try {
       setLoading(true);
 
@@ -435,241 +411,120 @@ export default function EditBill() {
       navigate(`/bills/${response.data.id}`);
     } catch (error) {
       console.error("Error updating bill:", error);
-      alert(
-        "Có lỗi xảy ra khi cập nhật bill: " +
-          (error.response?.data?.message || error.message),
+      toast.error(
+        "Có lỗi xảy ra khi cập nhật bill: " + serverErrorMessage(error),
+        { onRetry: () => document.getElementById(FORM_ID)?.requestSubmit() },
       );
     } finally {
       setLoading(false);
     }
   };
 
-  if (initialLoading) {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (loading) return;
+
+    // Kiểm hết rồi báo ngay dưới ô sai (M14), cuộn tới và đặt con trỏ vào ô sai đầu tiên
+    setSubmitted(true);
+    const errorList = billFormErrorList(validateBillForm(formData));
+    if (errorList.length > 0) {
+      focusField(errorList[0].field);
+      return;
+    }
+    save();
+  };
+
+  const backTo = `/bills/${id}`;
+  const leave = useConfirmLeave({ when: touched && !loading, backTo });
+
+  if (initialLoading) return <EditBillSkeleton id={id} />;
+
+  if (loadFailed) {
     return (
-      <div className="px-2 sm:px-0">
-        <div className="mb-6">
-          <div className="skeleton h-3 w-24 mb-2" />
-          <div className="skeleton h-8 w-56" />
-        </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 sm:gap-6">
-          <div className="space-y-4 sm:space-y-6 lg:col-span-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-              <div className="skeleton h-3 w-28 mb-3" />
-              <div className="space-y-3">
-                <div className="skeleton h-10 w-full" />
-                <div className="skeleton h-10 w-full" />
-                <div className="skeleton h-10 w-full" />
-              </div>
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-              <div className="skeleton h-3 w-24 mb-3" />
-              <div className="skeleton h-20 w-full" />
-            </div>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card">
-            <div className="skeleton h-3 w-20 mb-3" />
-            <div className="skeleton h-32 w-full" />
-          </div>
-        </div>
+      <div className="px-4 sm:px-0">
+        <PageHeader
+          back={{ to: backTo, label: "Về chi tiết Bill" }}
+          title={`Sửa Bill #${id}`}
+        />
+        <EmptyState
+          tone="error"
+          title="Không thể tải dữ liệu bill để sửa"
+          onRetry={loadInitialData}
+        />
       </div>
     );
   }
 
+  const paidCount = formData.players.filter((p) => p.is_paid).length;
+
   return (
-    <div className="px-4 sm:px-0 pb-24 md:pb-0">
+    <div className="px-4 sm:px-0">
       <PageHeader
-        back={{ to: `/bills/${id}`, label: "Về chi tiết Bill" }}
+        back={{ to: backTo, label: "Về chi tiết Bill", onClick: leave.onBackClick }}
         title={`Sửa Bill #${id}`}
       />
 
-      <form onSubmit={handleSubmit}>
+      {/* Lưu bill hiện đặt lại mọi người về chưa TT (BillController::update) — báo trước */}
+      {paidCount > 0 && (
+        <div
+          role="note"
+          className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 sm:mb-6"
+        >
+          <CircleAlert className="mt-0.5 h-4 w-4 flex-none text-amber-600" />
+          <p>
+            <span className="font-semibold">
+              {paidCount} người đã TT trong bill này.
+            </span>{" "}
+            Lưu thay đổi sẽ đưa họ về Chưa TT.
+          </p>
+        </div>
+      )}
+
+      <form id={FORM_ID} onSubmit={handleSubmit} onKeyDown={focusNextOnEnter}>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Main Form */}
           <div className="space-y-4 sm:space-y-6 lg:col-span-2">
             {/* Basic Info and Shuttles */}
             <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-3 md:items-start">
-              {/* Basic Info */}
-              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-1">
-                <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Thông tin cơ bản
-                  </h2>
-                </div>
-                <div className="p-4 sm:p-5">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label htmlFor="bill-date" className="field-label">
-                        Ngày đánh *
-                      </label>
-                      <DatePicker
-                        id="bill-date"
-                        value={formData.date}
-                        onChange={(value) =>
-                          setFormData({ ...formData, date: value })
-                        }
-                        baseClassName="field-input"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="bill-court-total" className="field-label">
-                        Tổng tiền sân (VND) *
-                      </label>
-                      <CurrencyInput
-                        id="bill-court-total"
-                        value={formData.court_total}
-                        onChange={(value) =>
-                          setFormData({ ...formData, court_total: value })
-                        }
-                        baseClassName="field-input"
-                      />
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {[140000, 280000, 420000].map((amount) => (
-                          <button
-                            key={amount}
-                            type="button"
-                            onClick={() =>
-                              setFormData({ ...formData, court_total: amount })
-                            }
-                            className={`inline-flex h-11 items-center rounded-lg border px-3 text-sm font-semibold transition sm:h-9 ${
-                              Number(formData.court_total) === amount
-                                ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                                : "border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:text-emerald-700"
-                            }`}
-                          >
-                            {amount.toLocaleString("vi-VN")}đ
-                          </button>
-                        ))}
-                        {(() => {
-                          const raw = Number(formData.court_total) || 0;
-                          const suggestion = raw * 1000;
-                          if (
-                            raw <= 0 ||
-                            raw >= 1000 ||
-                            [140000, 280000, 420000].includes(suggestion)
-                          )
-                            return null;
-                          return (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setFormData({
-                                  ...formData,
-                                  court_total: suggestion,
-                                })
-                              }
-                              className="inline-flex h-11 items-center rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 transition hover:border-emerald-500 sm:h-9"
-                            >
-                              → {suggestion.toLocaleString("vi-VN")}đ
-                            </button>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                    <div>
-                      <label htmlFor="bill-note" className="field-label">
-                        Ghi chú
-                      </label>
-                      <textarea
-                        id="bill-note"
-                        value={formData.note}
-                        onChange={(e) =>
-                          setFormData({ ...formData, note: e.target.value })
-                        }
-                        className="field-input !h-auto py-2"
-                        rows={1}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
-
-              {/* Shuttles */}
-              <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-2">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                  <h2 className="text-base font-semibold text-slate-900">
-                    Loại cầu
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={handleAddShuttle}
-                    className="btn btn-primary btn-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Thêm cầu
-                  </button>
-                </div>
-                <div className="space-y-3 p-4 sm:space-y-4 sm:p-5">
-                  {formData.shuttles.map((shuttle, index) => (
-                    <ShuttleRow
-                      key={index}
-                      shuttle={shuttle}
-                      shuttleTypes={shuttleTypes}
-                      typesLoading={shuttleTypesLoading}
-                      restoreCredit={
-                        shuttle.shuttle_type_id
-                          ? creditByShuttleTypeId[shuttle.shuttle_type_id] || 0
-                          : 0
-                      }
-                      onUpdate={(updated) =>
-                        handleUpdateShuttle(index, updated)
-                      }
-                      onRemove={() => handleRemoveShuttle(index)}
-                    />
-                  ))}
-                </div>
-              </section>
+              <BillBasicInfoCard
+                formData={formData}
+                onChange={handleChange}
+                courtError={errors?.court}
+                noteHint={formData.parent_bill_id ? CHILD_NOTE_HINT : undefined}
+              />
+              <BillShuttlesCard
+                shuttles={formData.shuttles}
+                shuttleTypes={shuttleTypes}
+                typesLoading={shuttleTypesLoading}
+                quantityErrors={errors?.shuttleQuantity}
+                restoreCreditFor={(shuttle) =>
+                  shuttle.shuttle_type_id
+                    ? creditByShuttleTypeId[shuttle.shuttle_type_id] || 0
+                    : 0
+                }
+                onAdd={handleAddShuttle}
+                onUpdate={handleUpdateShuttle}
+                onRemove={handleRemoveShuttle}
+              />
             </div>
 
-            {/* Players */}
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-              <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-                <h2 className="text-base font-semibold text-slate-900">
-                  Người chơi
-                </h2>
-                {formData.players.length > 0 && (
-                  <span className="font-tabular text-xs text-slate-500">
-                    {formData.players.length} người
-                  </span>
-                )}
-              </div>
-              <div className="p-4 sm:p-5">
-                <PlayerSelector
-                  selectedPlayers={formData.players}
-                  onSelect={handleSelectPlayer}
-                  onRemove={handleRemovePlayer}
-                />
+            <BillPlayersSection
+              players={formData.players}
+              previewPlayers={fullPreview.players}
+              menus={activeMenus}
+              allMenus={menus}
+              onMenuAdded={handleMenuAdded}
+              onSelect={handleSelectPlayer}
+              onRemove={handleRemovePlayer}
+              onUpdate={handleUpdatePlayer}
+              error={errors?.players}
+            />
 
-                {formData.players.length > 0 && (
-                  <div className="mt-5 border-t border-slate-100 pt-5 sm:mt-6 sm:pt-6">
-                    <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
-                      <h2 className="text-base font-semibold text-slate-900">
-                        Chi tiết người chơi ({formData.players.length})
-                      </h2>
-                      <QuickAddMenu menus={menus} onCreated={handleMenuAdded} />
-                    </div>
-                    <div className="space-y-3 sm:space-y-4">
-                      {formData.players.map((player, index) => (
-                        <PlayerBillCard
-                          key={index}
-                          player={player}
-                          index={index}
-                          menus={activeMenus}
-                          onUpdate={(updated) =>
-                            handleUpdatePlayer(index, updated)
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Submit — desktop only (mobile uses fixed footer below) */}
+            {/* Submit — desktop only (mobile uses ActionBar below) */}
             <div className="hidden sm:flex sm:justify-end sm:gap-3">
               <button
                 type="button"
-                onClick={() => navigate(`/bills/${id}`)}
+                onClick={() => leave.requestLeave()}
                 className="btn btn-secondary"
               >
                 Hủy
@@ -694,44 +549,32 @@ export default function EditBill() {
             </div>
           </div>
 
-          {/* Summary Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Summary Sidebar — điện thoại xem qua sheet Tóm tắt Bill ở thanh đáy */}
+          <div className="hidden sm:block lg:col-span-1">
             <div className="lg:sticky lg:top-20">
               <BillSummary preview={preview} />
             </div>
           </div>
         </div>
-
-        {/* Mobile-only fixed footer */}
-        <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-200 bg-white/95 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur sm:hidden">
-          <div className="mx-auto flex max-w-7xl gap-2">
-            <button
-              type="button"
-              onClick={() => navigate(`/bills/${id}`)}
-              className="btn btn-secondary flex-1"
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn btn-primary flex-1"
-            >
-              {loading ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  Đang lưu…
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" strokeWidth={2.5} />
-                  Lưu thay đổi
-                </>
-              )}
-            </button>
-          </div>
-        </div>
       </form>
+
+      <BillActionBar
+        formId={FORM_ID}
+        preview={fullPreview}
+        playerCount={formData.players.length}
+        loading={loading}
+        label="Lưu thay đổi"
+        busyLabel="Đang lưu…"
+      />
+
+      <ConfirmDialog
+        isOpen={leave.isOpen}
+        onClose={leave.cancel}
+        onConfirm={leave.confirm}
+        title="Bỏ thay đổi?"
+        message="Các thay đổi chưa lưu sẽ mất."
+        confirmLabel="Bỏ thay đổi"
+      />
     </div>
   );
 }

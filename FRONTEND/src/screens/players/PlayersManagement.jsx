@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { playersApi, rolesApi } from '../../services/api';
-import { formatRatio } from '../../utils/formatters';
+import { formatCurrency, formatRatio } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 import NumberInput from '../../components/common/NumberInput';
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import EmptyState from '../../components/ui/EmptyState';
-import { Plus, Search, Users } from '../../components/ui/icons';
+import { Plus, Search, Trash2, Users } from '../../components/ui/icons';
+
+// Màu nhãn giới tính trên thẻ điện thoại, cùng màu với thẻ người chơi ở màn bill (PlayerBillCard)
+const GENDER_BADGE = {
+  male: 'bg-sky-100 text-sky-700',
+  female: 'bg-pink-100 text-pink-700',
+};
 
 export default function PlayersManagement() {
   const [players, setPlayers] = useState([]);
@@ -215,7 +221,7 @@ export default function PlayersManagement() {
   return (
     <div className="px-4 sm:px-0">
       <PageHeader
-        title="Quản lý Người chơi"
+        title="Người chơi"
         actions={
           <>
             <button
@@ -227,7 +233,7 @@ export default function PlayersManagement() {
                   default_ratio: 1,
                 });
               }}
-              className="btn btn-primary"
+              className="btn btn-primary flex-1 sm:flex-none"
             >
               <Plus className="h-4 w-4" />
               Thêm nhanh
@@ -245,7 +251,7 @@ export default function PlayersManagement() {
                   phone: '',
                 });
               }}
-              className="btn btn-secondary"
+              className="btn btn-secondary flex-1 sm:flex-none"
             >
               <Plus className="h-4 w-4" />
               Thêm
@@ -254,10 +260,10 @@ export default function PlayersManagement() {
         }
       />
 
-      {/* Filters */}
-      <div className="card mb-5 !p-4">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
-          <div className="relative">
+      {/* Filters: điện thoại một hàng (ô tìm + ô giới tính), không khung thẻ; từ md giữ thẻ 2 cột */}
+      <div className="mb-4 md:card md:mb-5 md:!p-4">
+        <div className="flex gap-2 md:grid md:grid-cols-2 md:gap-4">
+          <div className="relative min-w-0 flex-1">
             <label htmlFor="player-search" className="sr-only">
               Tìm kiếm tên
             </label>
@@ -279,7 +285,7 @@ export default function PlayersManagement() {
               id="player-gender-filter"
               value={filters.gender}
               onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
-              className="field-input"
+              className="field-input w-auto md:w-full"
             >
               <option value="">Tất cả giới tính</option>
               <option value="male">Nam</option>
@@ -539,31 +545,38 @@ export default function PlayersManagement() {
             </table>
           </div>
 
-          {/* Mobile Card View */}
+          {/* Mobile Card View: tên + mức tính, một hàng nhãn (giới tính, nợ, quyền), một hàng nút */}
           <div className="space-y-3 md:hidden">
             {players.map((player) => (
               <div key={player.id} className="card !p-4">
-                <div className="mb-3">
-                  <h3 className="break-words text-base font-semibold text-slate-900">{player.name}</h3>
-                  {player.email && (
-                    <p className="mt-0.5 break-all text-xs text-slate-500">{player.email}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="min-w-0 break-words text-base font-semibold text-slate-900">{player.name}</h3>
+                  {player.default_ratio ? (
+                    <span className="font-tabular flex-shrink-0 text-sm font-semibold text-slate-900">
+                      ×{formatRatio(player.default_ratio)}
+                    </span>
+                  ) : (
+                    <span className="flex-shrink-0 text-sm text-slate-500">Mặc định</span>
                   )}
                 </div>
-                <div className="mb-3 space-y-2">
-                  <div className="text-sm text-slate-600">
-                    Giới tính: <span className="font-medium text-slate-900">{genderLabel(player.gender)}</span>
+                {(GENDER_BADGE[player.gender] || player.current_debt_amount > 0 || player.roles?.length > 0) && (
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    {GENDER_BADGE[player.gender] && (
+                      <span className={`badge ${GENDER_BADGE[player.gender]}`}>{genderLabel(player.gender)}</span>
+                    )}
+                    {player.current_debt_amount > 0 && (
+                      <span className="font-tabular text-sm font-medium text-rose-600">
+                        Nợ: {formatCurrency(player.current_debt_amount)}
+                      </span>
+                    )}
+                    {player.roles?.map((role) => (
+                      <span key={role.id} className="badge badge-slate">
+                        {role.display_name}
+                      </span>
+                    ))}
                   </div>
-                  <div className="text-sm text-slate-600">
-                    Mức tính: <span className="font-tabular font-medium text-slate-900">{player.default_ratio ? formatRatio(player.default_ratio) : 'Mặc định'}</span>
-                  </div>
-                  <div className="text-sm text-slate-600">
-                    Quyền:
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {renderRoles(player, 'text-xs text-slate-400')}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex gap-2 border-t border-slate-100 pt-3">
+                )}
+                <div className="mt-3 flex gap-2">
                   <button
                     onClick={() => handleEdit(player)}
                     className="btn btn-secondary btn-sm flex-1"
@@ -578,9 +591,10 @@ export default function PlayersManagement() {
                   </button>
                   <button
                     onClick={() => handleDelete(player.id)}
-                    className="btn btn-danger-soft btn-sm flex-1"
+                    className="btn btn-danger-soft btn-sm btn-icon"
+                    aria-label={`Xóa ${player.name}`}
                   >
-                    Xóa
+                    <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>

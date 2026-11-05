@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { calculateBillPreview, formatRatio } from "./formatters";
+import {
+  calculateBillPreview,
+  formatDateShort,
+  formatRatio,
+  formatTimeShort,
+} from "./formatters";
 
 describe("formatRatio", () => {
   it("bỏ sai số cộng số thực khi tổng mức tính", () => {
@@ -46,5 +51,62 @@ describe("calculateBillPreview", () => {
 
     expect(preview.players[0].menu_extra_total).toBe(5000);
     expect(preview.players[0].total_amount).toBe(105000);
+  });
+});
+
+describe("formatDateShort", () => {
+  // Hôm nay = Thứ Năm 05/11/2026 (giờ máy)
+  const now = new Date(2026, 10, 5, 9, 30);
+
+  it("cùng năm: thứ viết tắt + ngày/tháng", () => {
+    expect(formatDateShort("2026-11-05", now)).toBe("T5, 05/11");
+    expect(formatDateShort("2026-11-04", now)).toBe("T4, 04/11");
+    expect(formatDateShort("2026-10-31", now)).toBe("T7, 31/10");
+  });
+
+  it("Chủ nhật in CN", () => {
+    expect(formatDateShort("2026-11-01", now)).toBe("CN, 01/11");
+  });
+
+  it("khác năm (trước hoặc sau): không thứ, có năm", () => {
+    expect(formatDateShort("2025-12-15", now)).toBe("15/12/2025");
+    expect(formatDateShort("2025-11-04", now)).toBe("04/11/2025");
+    expect(formatDateShort("2027-01-02", now)).toBe("02/01/2027");
+  });
+
+  it("chuỗi ngày đọc theo giờ máy, không lệch ngày vì UTC", () => {
+    // Laravel cast date trả nửa đêm UTC: vẫn là ngày 04/11
+    expect(formatDateShort("2026-11-04T00:00:00.000000Z", now)).toBe("T4, 04/11");
+    expect(formatDateShort(new Date(2026, 10, 4, 23, 59), now)).toBe("T4, 04/11");
+  });
+
+  it("không có giá trị hoặc sai thì trả chuỗi rỗng", () => {
+    expect(formatDateShort(null, now)).toBe("");
+    expect(formatDateShort(undefined, now)).toBe("");
+    expect(formatDateShort("", now)).toBe("");
+    expect(formatDateShort("không phải ngày", now)).toBe("");
+  });
+
+  it("mặc định so với ngày hiện tại", () => {
+    const today = new Date();
+    const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    expect(formatDateShort(iso)).toMatch(/^(CN|T[2-7]), \d{2}\/\d{2}$/);
+  });
+});
+
+describe("formatTimeShort", () => {
+  it("giờ:phút theo giờ máy, 24 giờ", () => {
+    expect(formatTimeShort(new Date(2026, 10, 4, 21, 13, 45))).toBe("21:13");
+    expect(formatTimeShort(new Date(2026, 10, 4, 7, 5))).toBe("07:05");
+  });
+
+  it("đọc được chuỗi ISO", () => {
+    const value = new Date(2026, 10, 4, 21, 13).toISOString();
+    expect(formatTimeShort(value)).toBe("21:13");
+  });
+
+  it("không có giá trị hoặc sai thì trả chuỗi rỗng", () => {
+    expect(formatTimeShort(null)).toBe("");
+    expect(formatTimeShort("abc")).toBe("");
   });
 });

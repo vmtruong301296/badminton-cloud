@@ -23,7 +23,8 @@ import TournamentBrackets from "./screens/tournament/TournamentBrackets";
 import CarRentalComparison from "./screens/car-rental/CarRentalComparison";
 import EmptyState from "./components/ui/EmptyState";
 import StatusScreen from "./components/ui/StatusScreen";
-import { Lock, Loader, WifiOff } from "./components/ui/icons";
+import ToastProvider from "./components/ui/ToastProvider";
+import { Lock, Loader, RotateCcw, WifiOff } from "./components/ui/icons";
 
 function HomeRedirect() {
   const { hasPermission } = useAuth();
@@ -44,6 +45,7 @@ function HomeRedirect() {
   return (
     <div className="px-4 sm:px-0">
       <EmptyState
+        compact
         icon={Lock}
         title="Bạn chưa được cấp quyền truy cập bất kỳ chức năng nào."
       />
@@ -57,6 +59,7 @@ function LoginRoute() {
   if (loading) {
     return (
       <StatusScreen
+        brand
         icon={Loader}
         spin
         title="Đang tải..."
@@ -96,6 +99,7 @@ function ConnectionError({ onRetry }) {
       description="Máy chủ phản hồi chậm hoặc không truy cập được. Vui lòng thử lại."
       action={
         <button onClick={onRetry} className="btn btn-primary w-full">
+          <RotateCcw className="h-4 w-4" />
           Thử lại
         </button>
       }
@@ -274,7 +278,9 @@ function App() {
   return (
     <Router>
       <AuthProvider>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </AuthProvider>
     </Router>
   );
