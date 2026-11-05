@@ -1,35 +1,58 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { partyBillsApi, paymentAccountsApi } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   formatCurrencyRounded,
   formatDate,
+  formatDateShort,
   formatRatio,
 } from "../../utils/formatters";
+import {
+  partyCollection,
+  partyDebtLines,
+  partyOldBillIds,
+  participantBillAmount,
+  participantTotalWithDebt,
+  sortPartyParticipants,
+} from "../../utils/partyBillTotals";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import PartyBillExport from "../../components/party/PartyBillExport";
+import PartyBillSummary from "../../components/party/PartyBillSummary";
+import PartyParticipantList from "../../components/party/PartyParticipantList";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
+import ActionBar from "../../components/ui/ActionBar";
+import useToast from "../../components/ui/useToast";
 import {
   Car,
-  Loader,
+  ChevronLeft,
   Pencil,
   Trash2,
   UtensilsCrossed,
   CalendarDays,
-  Check,
-  Circle,
-  Clock,
   Download,
   Send,
 } from "../../components/ui/icons";
-import {
-  nodeToBlob,
-  nodeToPng,
-  waitForImagesReady,
-} from "../../utils/exportImage";
+import { nodeToBlob, waitForImagesReady } from "../../utils/exportImage";
+
+const CLOSED_PAY_OLD_BILLS = {
+  isOpen: false,
+  participantId: null,
+  participantName: "",
+  debtAmount: 0,
+  oldBillIds: [],
+  debtDetails: [],
+  currentAmount: 0,
+  allAmount: 0,
+};
+const CLOSED_UNCHECK = {
+  isOpen: false,
+  participantId: null,
+  participantName: "",
+};
 
 const loadImageAsBase64 = async (url) => {
   try {
@@ -61,29 +84,25 @@ const loadImageAsBase64 = async (url) => {
 export default function PartyBillDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const toast = useToast();
   const [bill, setBill] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [payingIds, setPayingIds] = useState(new Set());
-  const [uncheckPaymentConfirm, setUncheckPaymentConfirm] = useState({
-    isOpen: false,
-    participantId: null,
-    participantName: "",
-  });
-  const [payOldBillsConfirm, setPayOldBillsConfirm] = useState({
-    isOpen: false,
-    participantId: null,
-    participantName: "",
-    debtAmount: 0,
-    oldBillIds: [],
-  });
+  const [uncheckPaymentConfirm, setUncheckPaymentConfirm] =
+    useState(CLOSED_UNCHECK);
+  const [uncheckBusy, setUncheckBusy] = useState(false);
+  const [payOldBillsConfirm, setPayOldBillsConfirm] =
+    useState(CLOSED_PAY_OLD_BILLS);
+  const [payOldBillsBusy, setPayOldBillsBusy] = useState(null); // null | "current" | "all"
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [paymentAccountImages, setPaymentAccountImages] = useState({});
-  const [exporting, setExporting] = useState(false);
-  const [sendingTelegram, setSendingTelegram] = useState(false);
-  const [pendingExportAction, setPendingExportAction] = useState("download");
-  const [selectAccountDialog, setSelectAccountDialog] = useState({
+  // Hộp "Gửi ảnh bill"; primaryAction = nút vừa bấm (desktop) — điện thoại mở bằng "Gửi ảnh".
+  const [imageDialog, setImageDialog] = useState({
     isOpen: false,
+    primaryAction: "telegram",
   });
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const exportRef = useRef(null);
@@ -93,6 +112,9 @@ export default function PartyBillDetail() {
     loadPaymentAccounts();
   }, [id]);
 
+  /**
+   * silent: tải lại sau khi đánh dấu thanh toán (máy chủ tính lại nợ cũ) mà không hiện khung chờ.
+   */
   const loadBill = async ({ silent = false } = {}) => {
     try {
       if (!silent) setLoading(true);
@@ -100,10 +122,8 @@ export default function PartyBillDetail() {
       setBill(res.data);
     } catch (error) {
       console.error("Error loading party bill", error);
-      if (!silent) {
-        alert("Không tìm thấy bill tiệc");
-        navigate("/party-bills");
-      }
+      // Lần tải đầu lỗi: hiện khối "Không tìm thấy bill tiệc" (có Thử lại), không tự quay về.
+      if (!silent) setBill(null);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -159,26 +179,8 @@ export default function PartyBillDetail() {
       return;
     }
 
-    if (
-      isPaid &&
-      participant.debt_amount > 0 &&
-      participant.debt_details &&
-      participant.debt_details.length > 0
-    ) {
-      const currentBillDate = bill.date
-        ? typeof bill.date === "string"
-          ? bill.date.slice(0, 10)
-          : bill.date
-        : null;
-      const oldBillIds = participant.debt_details
-        .filter((debt) => {
-          if (!debt.date || !currentBillDate) return false;
-          const debtDate =
-            typeof debt.date === "string" ? debt.date.slice(0, 10) : debt.date;
-          return debtDate < currentBillDate;
-        })
-        .map((debt) => debt.bill_id)
-        .filter((x) => x);
+    if (participant.debt_amount > 0) {
+      const oldBillIds = partyOldBillIds(participant, bill.date);
       if (oldBillIds.length > 0) {
         setPayOldBillsConfirm({
           isOpen: true,
@@ -186,6 +188,9 @@ export default function PartyBillDetail() {
           participantName: participant.name || "",
           debtAmount: participant.debt_amount,
           oldBillIds,
+          debtDetails: partyDebtLines(participant.debt_details),
+          currentAmount: participantBillAmount(participant),
+          allAmount: participantTotalWithDebt(participant),
         });
         return;
       }
@@ -237,13 +242,19 @@ export default function PartyBillDetail() {
         }
       }
 
-      const updated = bill.participants.map((p) =>
-        p.id === participantId ? res.data.participant : p,
-      );
-      setBill({ ...bill, participants: updated });
+      // Cập nhật ngay hàng vừa đổi (giữ nợ cũ đang có), rồi tải lại để máy chủ tính lại nợ cũ.
+      setBill((prev) => ({
+        ...prev,
+        participants: prev.participants.map((p) =>
+          p.id === participantId ? { ...p, ...res.data.participant } : p,
+        ),
+      }));
+      await loadBill({ silent: true });
     } catch (error) {
       console.error("Mark payment error", error);
-      alert("Không thể cập nhật thanh toán");
+      toast.error("Không thể cập nhật thanh toán", {
+        onRetry: () => executeMarkPayment(participantId, isPaid, oldBillIds),
+      });
     } finally {
       setPayingIds((prev) => {
         const next = new Set(prev);
@@ -254,241 +265,114 @@ export default function PartyBillDetail() {
   };
 
   const handleUncheckPaymentConfirm = async () => {
+    setUncheckBusy(true);
     await executeMarkPayment(uncheckPaymentConfirm.participantId, false);
-    setUncheckPaymentConfirm({
-      isOpen: false,
-      participantId: null,
-      participantName: "",
-    });
+    setUncheckBusy(false);
+    setUncheckPaymentConfirm(CLOSED_UNCHECK);
   };
-  const handleUncheckPaymentCancel = () => {
-    setUncheckPaymentConfirm({
-      isOpen: false,
-      participantId: null,
-      participantName: "",
-    });
-  };
-  const handlePayOldBillsConfirm = async () => {
+
+  const payFromOldBillsDialog = async (choice) => {
+    setPayOldBillsBusy(choice);
     await executeMarkPayment(
       payOldBillsConfirm.participantId,
       true,
-      payOldBillsConfirm.oldBillIds,
+      choice === "all" ? payOldBillsConfirm.oldBillIds : [],
     );
-    setPayOldBillsConfirm({
-      isOpen: false,
-      participantId: null,
-      participantName: "",
-      debtAmount: 0,
-      oldBillIds: [],
-    });
-  };
-  const handlePayCurrentOnly = async () => {
-    await executeMarkPayment(payOldBillsConfirm.participantId, true, []);
-    setPayOldBillsConfirm({
-      isOpen: false,
-      participantId: null,
-      participantName: "",
-      debtAmount: 0,
-      oldBillIds: [],
-    });
-  };
-  const handlePayOldBillsCancel = () => {
-    setPayOldBillsConfirm({
-      isOpen: false,
-      participantId: null,
-      participantName: "",
-      debtAmount: 0,
-      oldBillIds: [],
-    });
+    setPayOldBillsBusy(null);
+    setPayOldBillsConfirm(CLOSED_PAY_OLD_BILLS);
   };
 
   const handleDelete = async () => {
+    setDeleting(true);
     try {
       await partyBillsApi.delete(id);
       navigate("/party-bills");
     } catch (error) {
       console.error("Delete party bill error", error);
-      alert("Không thể xóa tiệc");
       setDeleteConfirm(false);
-    }
-  };
-
-  const handleExportBill = () => {
-    if (!bill) return;
-    setPendingExportAction("download");
-    setSelectAccountDialog({ isOpen: true });
-  };
-  const handleSendTelegramClick = () => {
-    if (!bill) return;
-    setPendingExportAction("telegram");
-    setSelectAccountDialog({ isOpen: true });
-  };
-  const handleSelectAccountConfirm = async (accountId) => {
-    setSelectAccountDialog({ isOpen: false });
-    if (pendingExportAction === "telegram") {
-      await executeSendTelegram(accountId);
-    } else {
-      await executeExportBill(accountId);
-    }
-  };
-  const handleSelectAccountCancel = () => {
-    setSelectAccountDialog({ isOpen: false });
-    setSelectedAccountId(null);
-  };
-
-  const executeExportBill = async (accountId) => {
-    if (!bill) return;
-    setSelectedAccountId(accountId);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    if (!exportRef.current) {
-      setExporting(false);
-      return;
-    }
-
-    try {
-      setExporting(true);
-      const accountsNeedingPreload = paymentAccounts.filter(
-        (acc) =>
-          acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
-      );
-      if (accountsNeedingPreload.length > 0) {
-        const imageMap = { ...paymentAccountImages };
-        await Promise.all(
-          accountsNeedingPreload.map(async (acc) => {
-            try {
-              if (acc.qr_code_image.startsWith("data:image/")) {
-                imageMap[acc.id] = acc.qr_code_image;
-                return;
-              }
-              const imageUrl =
-                acc.qr_code_image_url ||
-                (acc.qr_code_image
-                  ? `${window.location.origin}/storage/${acc.qr_code_image}`
-                  : null);
-              if (imageUrl) {
-                const base64 = await loadImageAsBase64(imageUrl);
-                imageMap[acc.id] = base64;
-              }
-            } catch (error) {
-              console.error("Preload image error", error);
-            }
-          }),
-        );
-        setPaymentAccountImages(imageMap);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      const images = exportRef.current.querySelectorAll(
-        "img.bill-export-image",
-      );
-      await waitForImagesReady(images);
-
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      );
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      const dataUrl = await nodeToPng(exportRef.current, {
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-        cacheBust: true,
-      });
-      const link = document.createElement("a");
-      link.download = `Bill_Tiec_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
-      link.href = dataUrl;
-      link.click();
-    } catch (error) {
-      console.error("Error exporting bill", error);
-      alert("Có lỗi xảy ra khi xuất bill");
+      toast.error("Không thể xóa tiệc");
     } finally {
-      setExporting(false);
+      setDeleting(false);
     }
+  };
+
+  const openImageDialog = (primaryAction) => {
+    if (!bill) return;
+    setImageDialog({ isOpen: true, primaryAction });
+  };
+
+  const closeImageDialog = () => {
+    setImageDialog((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  // Ảnh QR của tài khoản chưa tải xong lúc mở trang thì tải nốt trước khi dựng ảnh.
+  const ensureAccountImages = async () => {
+    const accountsNeedingPreload = paymentAccounts.filter(
+      (acc) =>
+        acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
+    );
+    if (accountsNeedingPreload.length === 0) return;
+
+    const imageMap = { ...paymentAccountImages };
+    await Promise.all(
+      accountsNeedingPreload.map(async (acc) => {
+        try {
+          if (acc.qr_code_image.startsWith("data:image/")) {
+            imageMap[acc.id] = acc.qr_code_image;
+            return;
+          }
+          const imageUrl =
+            acc.qr_code_image_url ||
+            (acc.qr_code_image
+              ? `${window.location.origin}/storage/${acc.qr_code_image}`
+              : null);
+          if (imageUrl) {
+            const base64 = await loadImageAsBase64(imageUrl);
+            imageMap[acc.id] = base64;
+          }
+        } catch (error) {
+          console.error("Preload image error", error);
+        }
+      }),
+    );
+    setPaymentAccountImages(imageMap);
+    await new Promise((resolve) => setTimeout(resolve, 300));
   };
 
   /**
-   * Render party bill via the same canvas pipeline as executeExportBill,
-   * then upload the PNG to backend which forwards it to Telegram.
+   * Dựng ảnh bill tiệc (PNG) với tài khoản đã chọn — cùng các bước của "Xuất Bill" cũ; hộp
+   * "Gửi ảnh bill" gọi khi mở / đổi tài khoản, rồi dùng đúng file này để xem trước, lưu và
+   * gửi Telegram.
    */
-  const executeSendTelegram = async (accountId) => {
-    if (!bill) return;
+  const buildBillImage = async (accountId) => {
     setSelectedAccountId(accountId);
     await new Promise((resolve) => setTimeout(resolve, 300));
+    if (!exportRef.current) throw new Error("Export ref not available");
 
-    if (!exportRef.current) {
-      setSendingTelegram(false);
-      return;
+    await ensureAccountImages();
+
+    const images = exportRef.current.querySelectorAll("img.bill-export-image");
+    await waitForImagesReady(images);
+
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
     }
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
-    try {
-      setSendingTelegram(true);
-      const accountsNeedingPreload = paymentAccounts.filter(
-        (acc) =>
-          acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
-      );
-      if (accountsNeedingPreload.length > 0) {
-        const imageMap = { ...paymentAccountImages };
-        await Promise.all(
-          accountsNeedingPreload.map(async (acc) => {
-            try {
-              if (acc.qr_code_image.startsWith("data:image/")) {
-                imageMap[acc.id] = acc.qr_code_image;
-                return;
-              }
-              const imageUrl =
-                acc.qr_code_image_url ||
-                (acc.qr_code_image
-                  ? `${window.location.origin}/storage/${acc.qr_code_image}`
-                  : null);
-              if (imageUrl) {
-                const base64 = await loadImageAsBase64(imageUrl);
-                imageMap[acc.id] = base64;
-              }
-            } catch (error) {
-              console.error("Preload image error", error);
-            }
-          }),
-        );
-        setPaymentAccountImages(imageMap);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
+    return nodeToBlob(exportRef.current, {
+      backgroundColor: "#ffffff",
+      pixelRatio: 2,
+      cacheBust: true,
+    });
+  };
 
-      const images = exportRef.current.querySelectorAll(
-        "img.bill-export-image",
-      );
-      await waitForImagesReady(images);
-
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      );
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      const blob = await nodeToBlob(exportRef.current, {
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-        cacheBust: true,
-      });
-      if (!blob) throw new Error("Không tạo được file PNG");
-
-      await partyBillsApi.sendTelegram(bill.id, blob);
-      alert("Đã gửi bill tiệc qua Telegram thành công!");
-    } catch (error) {
-      console.error("Error sending party bill to Telegram:", error);
-      const detail =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Lỗi không xác định";
-      alert("Gửi Telegram thất bại: " + detail);
-    } finally {
-      setSendingTelegram(false);
-    }
+  // Backend chuyển ảnh tới nhóm Telegram; lỗi để hộp hiện tại chỗ ("Gửi Telegram thất bại: …").
+  const sendBillToTelegram = async (blob) => {
+    await partyBillsApi.sendTelegram(bill.id, blob);
+    toast.success("Đã gửi bill tiệc qua Telegram thành công!");
   };
 
   if (loading) {
@@ -508,12 +392,14 @@ export default function PartyBillDetail() {
           icon={UtensilsCrossed}
           title="Không tìm thấy bill tiệc"
           description="Bill này có thể đã bị xóa hoặc không tồn tại."
+          onRetry={() => loadBill()}
           action={
             <button
               type="button"
               onClick={() => navigate("/party-bills")}
               className="btn btn-secondary"
             >
+              <ChevronLeft className="h-4 w-4" />
               Quay lại danh sách
             </button>
           }
@@ -541,24 +427,38 @@ export default function PartyBillDetail() {
     totalFoodAmount;
 
   // Sort: unpaid males, unpaid females, paid males, paid females
-  const sortedParticipants = [...participants].sort((a, b) => {
-    const aIsPaid = a.is_paid || false;
-    const bIsPaid = b.is_paid || false;
-    const aGender = a.user?.gender || a.gender || "";
-    const bGender = b.user?.gender || b.gender || "";
-    if (aIsPaid !== bIsPaid) return aIsPaid ? 1 : -1;
-    if (aGender !== bGender) {
-      if (aGender === "male") return -1;
-      if (bGender === "male") return 1;
-    }
-    return 0;
-  });
+  const sortedParticipants = sortPartyParticipants(participants);
+  const collection = partyCollection(participants);
+  // Ẩn nút theo quyền (quyết định 10). Bill tiệc không có quyền đánh dấu riêng: dùng party_bills.update.
+  const canUpdate = hasPermission("party_bills.update");
+  const canDelete = hasPermission("party_bills.delete");
+  const billImageFileName = `Bill_Tiec_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
+
+  // Sheet ⋯ của thanh trên (điện thoại); desktop dùng các nút ở đầu màn.
+  const menu = [
+    canUpdate &&
+      !allPaid && {
+        label: "Sửa bill",
+        icon: Pencil,
+        to: `/party-bills/${id}/edit`,
+      },
+    canDelete && {
+      label: "Xóa bill",
+      icon: Trash2,
+      danger: true,
+      onClick: () => setDeleteConfirm(true),
+    },
+  ];
 
   return (
     <div className="px-4 pb-6 sm:px-0 md:pb-0">
+      {/* Điện thoại: PageHeader chỉ đưa ‹ + tên bill + ⋯ lên thanh trên; khối đầu màn chỉ hiện từ sm */}
       <PageHeader
+        hideOnPhone
         back={{ to: "/party-bills", label: "Danh sách" }}
         title={bill.name || "Bill tiệc"}
+        menuTitle={`Bill tiệc #${bill.id}`}
+        menu={menu}
         description={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <span
@@ -597,41 +497,21 @@ export default function PartyBillDetail() {
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:items-center">
             <button
               type="button"
-              onClick={handleExportBill}
-              disabled={exporting}
+              onClick={() => openImageDialog("download")}
               className="btn btn-primary flex-1 sm:flex-none"
             >
-              {exporting ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  Đang xuất…
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Xuất Bill
-                </>
-              )}
+              <Download className="h-4 w-4" />
+              Xuất Bill
             </button>
             <button
               type="button"
-              onClick={handleSendTelegramClick}
-              disabled={sendingTelegram || exporting}
+              onClick={() => openImageDialog("telegram")}
               className="btn btn-secondary flex-1 sm:flex-none"
             >
-              {sendingTelegram ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  Đang gửi…
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Gửi Telegram
-                </>
-              )}
+              <Send className="h-4 w-4" />
+              Gửi Telegram
             </button>
-            {!allPaid && (
+            {!allPaid && canUpdate && (
               <button
                 type="button"
                 onClick={() => navigate(`/party-bills/${id}/edit`)}
@@ -641,17 +521,33 @@ export default function PartyBillDetail() {
                 Sửa bill
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setDeleteConfirm(true)}
-              aria-label="Xóa bill"
-              className="btn btn-danger-soft btn-icon w-full shrink-0 sm:w-10"
-            >
-              <Trash2 className="h-[18px] w-[18px]" />
-            </button>
+            {canDelete && (
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(true)}
+                aria-label="Xóa bill"
+                className="btn btn-danger-soft btn-icon w-full shrink-0 sm:w-10"
+              >
+                <Trash2 className="h-[18px] w-[18px]" />
+              </button>
+            )}
           </div>
         }
       />
+
+      {/* Điện thoại / máy nhỏ: thẻ tóm tắt + chip lọc + hàng có nút Đã TT; từ md giữ bố cục cũ */}
+      <div className="space-y-3 md:hidden">
+        <PartyBillSummary key={`s-${bill.id}`} bill={bill} collection={collection} />
+        <PartyParticipantList
+          key={`p-${bill.id}`}
+          bill={bill}
+          canMark={canUpdate}
+          payingIds={payingIds}
+          onMarkPayment={handleMarkPayment}
+        />
+      </div>
+
+      <div className="hidden md:block">
 
       {/* Info & Extras */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:mb-6 sm:gap-4 lg:grid-cols-10">
@@ -769,6 +665,7 @@ export default function PartyBillDetail() {
                 <th className="px-2 py-2 text-right">Đã chi</th>
                 <th className="px-2 py-2 text-right">Tiền thêm</th>
                 <th className="px-2 py-2 text-left">Ghi chú</th>
+                <th className="px-2 py-2 text-right">Nợ cũ</th>
                 <th className="px-2 py-2 text-right">Thành tiền</th>
                 <th className="px-2 py-2 text-center">Đã TT</th>
               </tr>
@@ -813,6 +710,26 @@ export default function PartyBillDetail() {
                     <td className="px-2 py-3 text-xs text-slate-500">
                       {p.note || "—"}
                     </td>
+                    <td className="font-tabular px-2 py-3 text-right text-slate-700">
+                      {p.debt_amount > 0 ? (
+                        <>
+                          <div className="font-semibold text-amber-800">
+                            {formatCurrencyRounded(p.debt_amount)}
+                          </div>
+                          {(p.debt_details || []).map((debt, idx) => (
+                            <div
+                              key={debt.bill_id ?? idx}
+                              className="whitespace-nowrap text-xs text-slate-500"
+                            >
+                              {formatDateShort(debt.date)}:{" "}
+                              {formatCurrencyRounded(debt.amount)}
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
                     <td className="font-tabular px-2 py-3 text-right font-semibold text-emerald-700">
                       {formatCurrencyRounded(totalAmount)}
                     </td>
@@ -821,10 +738,10 @@ export default function PartyBillDetail() {
                         <input
                           type="checkbox"
                           checked={p.is_paid || false}
-                          disabled={payingIds.has(p.id)}
+                          disabled={!canUpdate || payingIds.has(p.id)}
                           onChange={() => handleMarkPayment(p)}
                           aria-label={`Đánh dấu ${p.name} đã thanh toán`}
-                          className="h-5 w-5 cursor-pointer accent-emerald-700"
+                          className="h-5 w-5 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed"
                         />
                       </label>
                       {p.paid_at && (
@@ -849,6 +766,7 @@ export default function PartyBillDetail() {
                   {formatCurrencyRounded(totalFoodAmount)}
                 </td>
                 <td></td>
+                <td></td>
                 <td className="font-tabular px-2 py-3 text-right text-emerald-700">
                   {formatCurrencyRounded(
                     participants.reduce(
@@ -867,152 +785,12 @@ export default function PartyBillDetail() {
           </table>
         </div>
 
-        {/* Mobile Card View */}
-        <div className="md:hidden space-y-2.5 p-3">
-          {sortedParticipants.map((p, index) => {
-            const shareAmount = p.share_amount || 0;
-            const foodAmount = p.food_amount || 0;
-            const paidAmount = p.paid_amount || 0;
-            const totalAmount = shareAmount + foodAmount - paidAmount;
-            return (
-              <article
-                key={p.id}
-                className={`overflow-hidden rounded-xl border transition ${
-                  p.is_paid
-                    ? "border-emerald-200 bg-emerald-50/40"
-                    : "border-slate-200 bg-white"
-                }`}
-              >
-                <div className="p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-tabular inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-slate-100 px-1.5 text-[10px] font-semibold text-slate-600">
-                          {index + 1}
-                        </span>
-                        <h4 className="truncate font-semibold text-slate-900">
-                          {p.name}
-                        </h4>
-                        {p.user?.gender === "female" && (
-                          <span className="rounded-full bg-pink-100 px-2 py-0.5 text-xs font-medium text-pink-700">
-                            Nữ
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                        <span>Mức tính</span>
-                        <span className="font-tabular font-medium text-slate-700">
-                          {formatRatio(p.ratio_value)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-display font-tabular text-xl font-semibold text-slate-900">
-                        {formatCurrencyRounded(totalAmount)}
-                      </div>
-                      <label
-                        className={`mt-1.5 inline-flex h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition cursor-pointer select-none active:scale-95 ${
-                          payingIds.has(p.id)
-                            ? "opacity-50 pointer-events-none"
-                            : ""
-                        } has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-100 has-[:checked]:text-emerald-800 border-slate-200 bg-white text-slate-600`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={p.is_paid || false}
-                          disabled={payingIds.has(p.id)}
-                          onChange={() => handleMarkPayment(p)}
-                          className="sr-only"
-                        />
-                        {p.is_paid ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Circle className="h-4 w-4" />
-                        )}
-                        {p.is_paid ? "Đã thanh toán" : "Đánh dấu TT"}
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-3 gap-2 rounded-lg bg-slate-50 p-2.5 text-xs">
-                    <div>
-                      <div className="text-xs text-slate-500">
-                        Chia bill
-                      </div>
-                      <div className="font-tabular mt-0.5 font-semibold text-slate-900">
-                        {formatCurrencyRounded(shareAmount)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500">
-                        Đã chi
-                      </div>
-                      <div className="font-tabular mt-0.5 font-semibold text-slate-900">
-                        {formatCurrencyRounded(paidAmount)}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-slate-500">
-                        Tiền thêm
-                      </div>
-                      <div className="font-tabular mt-0.5 font-semibold text-slate-900">
-                        {formatCurrencyRounded(foodAmount)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {p.note && (
-                    <div className="mt-2 rounded-lg border border-slate-200 bg-white p-2.5 text-xs text-slate-600">
-                      <div className="text-xs font-medium text-slate-500">
-                        Ghi chú
-                      </div>
-                      <div className="mt-0.5">{p.note}</div>
-                    </div>
-                  )}
-
-                  {p.paid_at && (
-                    <div className="mt-2 flex items-center gap-1 text-xs text-emerald-700">
-                      <Clock className="h-3.5 w-3.5" />
-                      {new Date(p.paid_at).toLocaleString("vi-VN")}
-                    </div>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-
-          {participants.length === 0 && (
-            <div className="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">
-              Chưa có người tham gia
-            </div>
-          )}
-
-          {participants.length > 0 && (
-            <div className="mt-2 rounded-xl bg-emerald-50/70 px-3 py-2.5">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-medium text-emerald-700">
-                  Tổng người tham gia
-                </span>
-                <span className="font-display font-tabular text-xl font-semibold text-emerald-700">
-                  {formatCurrencyRounded(
-                    participants.reduce(
-                      (sum, p) =>
-                        sum +
-                        ((p.share_amount || 0) +
-                          (p.food_amount || 0) -
-                          (p.paid_amount || 0)),
-                      0,
-                    ),
-                  )}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+      </div>
       </div>
 
       <ConfirmDialog
         isOpen={deleteConfirm}
+        busy={deleting}
         onClose={() => setDeleteConfirm(false)}
         onConfirm={handleDelete}
         title="Xác nhận xóa bill tiệc"
@@ -1021,26 +799,35 @@ export default function PartyBillDetail() {
 
       <ConfirmDialog
         isOpen={uncheckPaymentConfirm.isOpen}
-        onClose={handleUncheckPaymentCancel}
+        onClose={() => setUncheckPaymentConfirm(CLOSED_UNCHECK)}
         onConfirm={handleUncheckPaymentConfirm}
         title="Xác nhận hủy thanh toán"
         message={`Bạn có chắc chắn muốn hủy trạng thái "Đã thanh toán" cho ${uncheckPaymentConfirm.participantName}?`}
+        confirmLabel="Bỏ đánh dấu"
+        busy={uncheckBusy}
       />
 
       <PayOldBillsDialog
         isOpen={payOldBillsConfirm.isOpen}
-        onClose={handlePayOldBillsCancel}
-        onPayCurrentOnly={handlePayCurrentOnly}
-        onPayAll={handlePayOldBillsConfirm}
+        onClose={() => setPayOldBillsConfirm(CLOSED_PAY_OLD_BILLS)}
+        onPayCurrentOnly={() => payFromOldBillsDialog("current")}
+        onPayAll={() => payFromOldBillsDialog("all")}
         playerName={payOldBillsConfirm.participantName}
         debtAmount={payOldBillsConfirm.debtAmount}
+        debtDetails={payOldBillsConfirm.debtDetails}
+        currentAmount={payOldBillsConfirm.currentAmount}
+        allAmount={payOldBillsConfirm.allAmount}
+        busy={payOldBillsBusy || false}
       />
 
       <SelectPaymentAccountDialog
-        isOpen={selectAccountDialog.isOpen}
-        onClose={handleSelectAccountCancel}
-        onConfirm={handleSelectAccountConfirm}
+        isOpen={imageDialog.isOpen}
+        onClose={closeImageDialog}
         paymentAccounts={paymentAccounts}
+        buildImage={buildBillImage}
+        fileName={billImageFileName}
+        onSendTelegram={sendBillToTelegram}
+        primaryAction={imageDialog.primaryAction}
       />
 
       {/* Always rendered when bill is loaded, positioned off-screen.
@@ -1071,6 +858,38 @@ export default function PartyBillDetail() {
           </div>
         </div>
       )}
+
+      {/* Điện thoại: còn thu bao nhiêu + gửi ảnh bill, luôn trong tầm ngón cái */}
+      <ActionBar
+        summary={{
+          label:
+            collection.unpaid > 0 ? (
+              <>
+                Còn thu ·{" "}
+                <b className="font-semibold text-slate-800">
+                  {collection.unpaid} người
+                </b>
+              </>
+            ) : (
+              <span className="text-emerald-700">Đã thu đủ</span>
+            ),
+          value: formatCurrencyRounded(
+            collection.unpaid > 0
+              ? collection.unpaidAmount
+              : collection.totalAmount,
+          ),
+          tone: collection.unpaid > 0 ? "danger" : "success",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => openImageDialog("telegram")}
+          className="btn btn-primary flex-1"
+        >
+          <Send className="h-4 w-4" />
+          Gửi ảnh
+        </button>
+      </ActionBar>
     </div>
   );
 }
