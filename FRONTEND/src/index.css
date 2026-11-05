@@ -617,11 +617,6 @@ body {
   body:has(.action-bar-over-tab) .toast-region {
     bottom: calc(var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) + 0.5rem);
   }
-  /* Đang mở sheet (Modal): thông báo lên đỉnh màn, không che nút ở chân sheet */
-  body:has(.modal-backdrop) .toast-region {
-    top: calc(env(safe-area-inset-top) + 0.75rem);
-    bottom: auto;
-  }
 
   /* Nội dung tự chừa đáy để hàng cuối kéo lên khỏi FAB / ActionBar */
   .app-main:has(.fab) {
@@ -660,4 +655,11 @@ body {
   .group-head {
     top: 4rem;
   }
+}
+
+/* Đang mở sheet / hộp thoại (Modal): thông báo lên đỉnh màn, không che nút ở chân sheet (điện
+   thoại) hay chân hộp cao giữa màn (desktop). Đặt sau các quy tắc theo tab / FAB / ActionBar để thắng. */
+body:has(.modal-backdrop) .toast-region {
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  bottom: auto;
 }
