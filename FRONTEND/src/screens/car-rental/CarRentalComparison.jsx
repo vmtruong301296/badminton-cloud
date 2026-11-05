@@ -27,7 +27,7 @@ export default function CarRentalComparison() {
   return (
     <div className="max-w-5xl px-4 sm:px-0">
       <PageHeader
-        title="So sánh chi phí thuê xe"
+        title="Thuê xe"
         description="Nhập chuyến đi và các phương án thuê để xem phương án nào rẻ hơn."
       />
 
@@ -57,7 +57,11 @@ export default function CarRentalComparison() {
           onCancelEdit={() => setEditing(null)}
         />
       ) : (
-        <CarRentalHistory reloadKey={reloadKey} onEdit={handleEdit} />
+        <CarRentalHistory
+          reloadKey={reloadKey}
+          onEdit={handleEdit}
+          onNew={() => setTab("calculator")}
+        />
       )}
     </div>
   );

@@ -1,23 +1,41 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { carRentalsApi } from "../../services/api";
 import {
   formatCurrency,
   formatDateDisplay,
+  formatDateShort,
   formatNumber,
 } from "../../utils/formatters";
 import { useAuth } from "../../contexts/AuthContext";
-import OptionBreakdown from "../../components/car-rental/OptionBreakdown";
+import CarRentalHistoryDetail from "../../components/car-rental/CarRentalHistoryDetail";
+import ConfirmDialog from "../../components/common/ConfirmDialog";
 import EmptyState from "../../components/ui/EmptyState";
-import { Car, ChevronDown } from "../../components/ui/icons";
+import Modal from "../../components/ui/Modal";
+import useToast from "../../components/ui/useToast";
+import { Car, ChevronDown, CircleAlert } from "../../components/ui/icons";
 
-export default function CarRentalHistory({ reloadKey, onEdit }) {
+const DELETE_ERROR = "Không xóa được. Thử lại giúp mình.";
+
+const itemTitle = (item) => item.name || `Bản ghi #${item.id}`;
+
+const findCheapest = (item) =>
+  (item.options ?? []).find((option) => option.is_cheapest);
+
+export default function CarRentalHistory({ reloadKey, onEdit, onNew }) {
   const { hasPermission } = useAuth();
+  const toast = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  // Điện thoại: hàng M3 mở sheet chi tiết (thay phần mở rộng tại chỗ của desktop).
+  const [sheetId, setSheetId] = useState(null);
+  const [sheetError, setSheetError] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const canUpdate = hasPermission("car_rentals.update");
+  const canDelete = hasPermission("car_rentals.delete");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,18 +54,27 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
     load();
   }, [load, reloadKey]);
 
-  const handleDelete = async (item) => {
-    const label = item.name || `bản ghi #${item.id}`;
-    if (!window.confirm(`Xóa ${label}?`)) return;
+  const openSheet = (id) => {
+    setSheetError("");
+    setSheetId(id);
+  };
+
+  const handleDelete = async () => {
+    const item = deleteTarget;
+    const fromSheet = sheetId === item.id;
 
     setDeletingId(item.id);
     try {
       await carRentalsApi.delete(item.id);
       setItems((prev) => prev.filter((row) => row.id !== item.id));
+      if (fromSheet) setSheetId(null);
     } catch {
-      setError("Không xóa được. Thử lại giúp mình.");
+      // Sheet đang mở thì báo ngay trong sheet (thông báo M8 nằm dưới lớp nền mờ).
+      if (fromSheet) setSheetError(DELETE_ERROR);
+      else toast.error(DELETE_ERROR);
     } finally {
       setDeletingId(null);
+      setDeleteTarget(null);
     }
   };
 
@@ -72,9 +99,21 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
 
   if (items.length === 0) {
     return (
-      <EmptyState icon={Car} title="Chưa có lần so sánh nào được lưu." />
+      <EmptyState
+        icon={Car}
+        title="Chưa có lần so sánh nào được lưu."
+        action={
+          onNew && (
+            <button type="button" onClick={onNew} className="btn btn-primary">
+              Tính chuyến mới
+            </button>
+          )
+        }
+      />
     );
   }
+
+  const sheetItem = items.find((item) => item.id === sheetId) ?? null;
 
   return (
     <div className="space-y-3">
@@ -87,7 +126,8 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
         return (
           <div
             key={item.id}
-            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
+            // sm trở lên: giữ thẻ mở rộng tại chỗ như cũ (điện thoại dùng hàng M3 bên dưới).
+            className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card sm:block"
           >
             <button
               type="button"
@@ -130,86 +170,11 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
             {expanded && (
               <div className="border-t border-slate-100 px-4 pb-4">
                 <div className="mt-3">
-                  <OptionBreakdown options={item.options ?? []} />
-                </div>
-
-                {item.total_shared_cost > 0 && (
-                  <div className="mt-4">
-                    <h4 className="mb-2 font-semibold text-slate-900">
-                      Tổng chi phí chuyến đi
-                    </h4>
-                    <div className="mb-2 max-w-xs space-y-0.5 text-sm text-slate-600">
-                      {(item.shared_costs ?? []).map((row) => (
-                        <div
-                          key={row.id}
-                          className="flex justify-between gap-3"
-                        >
-                          <span className="min-w-0 break-words">{row.name}</span>
-                          <span className="font-tabular flex-shrink-0">{formatCurrency(row.amount)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between gap-3 border-t border-slate-200 pt-1 font-medium text-slate-900">
-                        <span>Chi phí chung</span>
-                        <span className="font-tabular">{formatCurrency(item.total_shared_cost)}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      {(item.options ?? []).map((option) => (
-                        <div
-                          key={option.id}
-                          className={`flex flex-wrap items-baseline justify-between gap-2 rounded-xl px-3 py-2 ${
-                            option.is_cheapest ? "bg-emerald-50" : ""
-                          }`}
-                        >
-                          <span className="font-medium text-slate-900">
-                            {option.name}
-                            {option.is_cheapest && (
-                              <span className="badge badge-emerald ml-2">Rẻ nhất</span>
-                            )}
-                          </span>
-                          <span className="text-slate-900">
-                            <span className="font-tabular font-semibold">
-                              {formatCurrency(option.trip_total_cost)}
-                            </span>
-                            {item.people_count > 0 && !item.party_bill && (
-                              <span className="font-tabular text-slate-600">
-                                {" · "}
-                                {formatCurrency(option.per_person_cost)}/người
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-3 space-y-1 text-sm text-slate-600">
-                  {item.break_even_km !== null && (
-                    <div>
-                      Điểm hòa vốn: {formatNumber(item.break_even_km)} km
-                    </div>
-                  )}
-                  {item.people_count > 0 && (
-                    <div>Chia {item.people_count} người</div>
-                  )}
-                  {item.note && <div>Ghi chú: {item.note}</div>}
-                  {item.creator && <div>Người tạo: {item.creator.name}</div>}
-                  {item.party_bill && (
-                    <div>
-                      Gắn với bill tiệc:{" "}
-                      <Link
-                        to={`/party-bills/${item.party_bill.id}`}
-                        className="text-sky-700 underline"
-                      >
-                        {item.party_bill.name || `Bill #${item.party_bill.id}`}
-                      </Link>
-                    </div>
-                  )}
+                  <CarRentalHistoryDetail item={item} />
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-3">
-                  {hasPermission("car_rentals.update") && (
+                  {canUpdate && (
                     <button
                       type="button"
                       onClick={() => onEdit?.(item)}
@@ -218,10 +183,10 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
                       Nạp vào máy tính
                     </button>
                   )}
-                  {hasPermission("car_rentals.delete") && (
+                  {canDelete && (
                     <button
                       type="button"
-                      onClick={() => handleDelete(item)}
+                      onClick={() => setDeleteTarget(item)}
                       disabled={deletingId === item.id}
                       className="btn btn-danger-ghost"
                     >
@@ -234,6 +199,120 @@ export default function CarRentalHistory({ reloadKey, onEdit }) {
           </div>
         );
       })}
+
+      {/* Điện thoại: hàng M3 — tên (tối đa 2 dòng), ngày · số ngày · km, phương án rẻ nhất;
+          chạm cả hàng mở sheet chi tiết */}
+      <ul className="list-card !mt-0 sm:hidden">
+        {items.map((item) => {
+          const cheapest = findCheapest(item);
+
+          return (
+            <li key={item.id}>
+              <button
+                type="button"
+                onClick={() => openSheet(item.id)}
+                aria-haspopup="dialog"
+                className="list-row min-h-[72px]"
+              >
+                <div className="list-row-text">
+                  <div className="list-row-title line-clamp-2 whitespace-normal">
+                    {itemTitle(item)}
+                  </div>
+                  <div className="list-row-sub whitespace-normal">
+                    {item.date ? formatDateShort(item.date) : "Không ghi ngày"}
+                    {" · "}
+                    {item.days} ngày · {formatNumber(item.distance_km)} km
+                  </div>
+                  {cheapest && (
+                    <div className="list-row-sub text-emerald-700">
+                      Rẻ nhất: {cheapest.name}
+                    </div>
+                  )}
+                </div>
+                <div className="list-row-end">
+                  {cheapest && (
+                    <span className="amount text-slate-900">
+                      {formatCurrency(cheapest.total_cost)}
+                    </span>
+                  )}
+                  {item.party_bill && (
+                    <span className="badge badge-sky">Bill tiệc</span>
+                  )}
+                </div>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <Modal
+        isOpen={Boolean(sheetItem)}
+        onClose={() => setSheetId(null)}
+        title={sheetItem && itemTitle(sheetItem)}
+        initialFocus="panel"
+        footer={
+          sheetItem &&
+          (canUpdate || canDelete) && (
+            <div className="flex gap-2">
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(sheetItem)}
+                  className={`btn btn-danger-soft ${canUpdate ? "" : "flex-1"}`}
+                >
+                  Xóa
+                </button>
+              )}
+              {canUpdate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSheetId(null);
+                    onEdit?.(sheetItem);
+                  }}
+                  className="btn btn-primary flex-1"
+                >
+                  Nạp vào máy tính
+                </button>
+              )}
+            </div>
+          )
+        }
+      >
+        {sheetItem && (
+          <>
+            <p className="mb-3 text-sm text-slate-500">
+              {sheetItem.date
+                ? formatDateShort(sheetItem.date)
+                : "Không ghi ngày"}
+              {" · "}
+              {sheetItem.days} ngày · {formatNumber(sheetItem.distance_km)} km
+            </p>
+            {sheetError && (
+              <p
+                role="alert"
+                className="mb-3 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
+              >
+                <CircleAlert className="mt-0.5 h-4 w-4 flex-none" />
+                {sheetError}
+              </p>
+            )}
+            <CarRentalHistoryDetail item={sheetItem} />
+          </>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(deleteTarget)}
+        busy={Boolean(deleteTarget) && deletingId === deleteTarget.id}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Xóa lần so sánh"
+        message={
+          deleteTarget &&
+          `Xóa ${deleteTarget.name || `bản ghi #${deleteTarget.id}`}?`
+        }
+      />
     </div>
   );
 }

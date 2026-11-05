@@ -4,7 +4,46 @@ import { playerListsApi, tournamentPlayersApi, bracketsApi } from '../../service
 import PageHeader from '../../components/ui/PageHeader';
 import Modal from '../../components/ui/Modal';
 import EmptyState from '../../components/ui/EmptyState';
-import { Download, Plus, Target, Upload, Users, Trophy } from '../../components/ui/icons';
+import ActionBar from '../../components/ui/ActionBar';
+import useToast from '../../components/ui/useToast';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import BracketsExport from '../../components/tournament/BracketsExport';
+import { formatDateDisplay } from '../../utils/formatters';
+import { nodeToPng } from '../../utils/exportImage';
+import {
+  GENDER_DISTRIBUTION_LABELS,
+  genderLabel,
+  orderBracketPlayers,
+  playerBracketName,
+  sortBrackets,
+} from '../../utils/tournamentBrackets';
+import { Check, CircleAlert, Download, Loader, Plus, Target, Trash2, Upload, Users, Trophy } from '../../components/ui/icons';
+
+const errorText = (error) => error.response?.data?.message || error.message;
+
+const isAssigned = (player) => Boolean(player.brackets && player.brackets.length > 0);
+
+/** Lỗi khi đang mở sheet: hiện ngay trong sheet (thông báo M8 nằm dưới lớp nền mờ). */
+function SheetError({ message }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+      <CircleAlert className="mt-0.5 h-4 w-4 flex-none" />
+      <span className="min-w-0 break-words">{message}</span>
+    </p>
+  );
+}
+
+function AssignedBadge({ player }) {
+  if (!isAssigned(player)) {
+    return <span className="badge badge-amber flex-shrink-0">Chưa xếp</span>;
+  }
+  return (
+    <span className="badge badge-emerald flex-shrink-0">
+      {playerBracketName(player) || 'Đã xếp bảng'}
+    </span>
+  );
+}
 
 export default function TournamentBrackets() {
   const [playerLists, setPlayerLists] = useState([]);
@@ -12,17 +51,34 @@ export default function TournamentBrackets() {
   const [players, setPlayers] = useState([]);
   const [brackets, setBrackets] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [showAddPlayerForm, setShowAddPlayerForm] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showOrganizeModal, setShowOrganizeModal] = useState(false);
+  const [showCreateList, setShowCreateList] = useState(false);
+  const [newListName, setNewListName] = useState('');
   const [activeTab, setActiveTab] = useState('players'); // 'players' or 'brackets'
+  // Lỗi của sheet đang mở (mỗi lúc một sheet) và trạng thái đang gửi của sheet đó.
+  const [sheetError, setSheetError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  // "Thêm VĐV" không đóng sau mỗi người: tên người vừa thêm để biết đã vào danh sách.
+  const [recentlyAdded, setRecentlyAdded] = useState('');
+  // Điện thoại: chạm hàng VĐV mở sheet có nút Xóa.
+  const [selectedPlayerId, setSelectedPlayerId] = useState(null);
+  const [deletePlayerTarget, setDeletePlayerTarget] = useState(null);
+  const [deletingPlayer, setDeletingPlayer] = useState(false);
+  const [confirmDeleteBrackets, setConfirmDeleteBrackets] = useState(false);
+  const [deletingBrackets, setDeletingBrackets] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const [playerFormData, setPlayerFormData] = useState({
     name: '',
     gender: 'male',
     level: '',
   });
-  const bracketsContainerRef = useRef(null);
+  const exportRef = useRef(null);
+  const nameInputRef = useRef(null);
+  const toast = useToast();
   const { hasPermission } = useAuth();
   const canCreateList = hasPermission('tournament_brackets.create_list');
   const canOrganize = hasPermission('tournament_brackets.organize');
@@ -65,12 +121,12 @@ export default function TournamentBrackets() {
           setSelectedListId(newListResponse.data.id);
         } catch (createError) {
           console.error('Error creating default list:', createError);
-          alert('Lỗi khi tạo danh sách mặc định: ' + (createError.response?.data?.message || createError.message));
+          setLoadError('Lỗi khi tạo danh sách mặc định: ' + errorText(createError));
         }
       }
     } catch (error) {
       console.error('Error loading player lists:', error);
-      alert('Lỗi khi tải danh sách: ' + (error.response?.data?.message || error.message));
+      setLoadError('Lỗi khi tải danh sách: ' + errorText(error));
     } finally {
       setLoading(false);
     }
@@ -83,7 +139,7 @@ export default function TournamentBrackets() {
       setPlayers(response.data);
     } catch (error) {
       console.error('Error loading players:', error);
-      alert('Lỗi khi tải VĐV: ' + (error.response?.data?.message || error.message));
+      setLoadError('Lỗi khi tải VĐV: ' + errorText(error));
     }
   };
 
@@ -96,124 +152,145 @@ export default function TournamentBrackets() {
       console.error('Error loading brackets:', error);
       // Don't show error if no brackets exist yet
       if (error.response?.status !== 404) {
-        alert('Lỗi khi tải bảng: ' + (error.response?.data?.message || error.message));
+        setLoadError('Lỗi khi tải bảng: ' + errorText(error));
       }
     }
   };
 
-  const handleCreateList = async () => {
-    const name = prompt('Nhập tên danh sách mới:');
-    if (!name) return;
+  // Lỗi tải trang (M13): tải lại cả danh sách lẫn VĐV / bảng của danh sách đang chọn.
+  const retryLoad = async () => {
+    setLoadError('');
+    await loadPlayerLists();
+    if (selectedListId) {
+      await Promise.all([loadPlayers(), loadBrackets()]);
+    }
+  };
 
+  // Chưa có danh sách nào được chọn: tạo danh sách mặc định trước (như cũ). Lỗi hiện trong sheet.
+  const ensureListId = async (errorPrefix) => {
+    if (selectedListId) return selectedListId;
+    try {
+      const newListResponse = await playerListsApi.create({
+        name: 'Danh sách mặc định',
+        is_default: true
+      });
+      setSelectedListId(newListResponse.data.id);
+      await loadPlayerLists(); // Reload để cập nhật danh sách
+      return newListResponse.data.id;
+    } catch (createError) {
+      setSheetError(errorPrefix + errorText(createError));
+      return null;
+    }
+  };
+
+  const openSheet = (setOpen) => {
+    setSheetError('');
+    setOpen(true);
+  };
+
+  const openCreateList = () => {
+    setNewListName('');
+    openSheet(setShowCreateList);
+  };
+
+  const handleCreateList = async (e) => {
+    e.preventDefault();
+    const name = newListName.trim();
+    if (!name || submitting) return;
+
+    setSubmitting(true);
     try {
       await playerListsApi.create({ name, is_default: false });
+      setShowCreateList(false);
       await loadPlayerLists();
     } catch (error) {
-      alert('Lỗi khi tạo danh sách: ' + (error.response?.data?.message || error.message));
+      setSheetError('Lỗi khi tạo danh sách: ' + errorText(error));
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  const closeAddPlayer = () => {
+    setShowAddPlayerForm(false);
+    setRecentlyAdded('');
+    setPlayerFormData({ name: '', gender: 'male', level: '' });
   };
 
   const handleAddPlayer = async (e) => {
     e.preventDefault();
-    
-    // Đảm bảo có danh sách được chọn
-    let listId = selectedListId;
-    if (!listId) {
-      // Nếu chưa có danh sách, tạo danh sách mặc định
-      try {
-        const newListResponse = await playerListsApi.create({ 
-          name: 'Danh sách mặc định', 
-          is_default: true 
-        });
-        listId = newListResponse.data.id;
-        setSelectedListId(listId);
-        await loadPlayerLists(); // Reload để cập nhật danh sách
-      } catch (createError) {
-        alert('Vui lòng tạo danh sách trước khi thêm VĐV: ' + (createError.response?.data?.message || createError.message));
-        return;
-      }
-    }
+    if (submitting) return;
+    setSheetError('');
 
+    const listId = await ensureListId('Vui lòng tạo danh sách trước khi thêm VĐV: ');
+    if (!listId) return;
+
+    setSubmitting(true);
     try {
       await tournamentPlayersApi.create({
         ...playerFormData,
         player_list_id: listId,
       });
-      setShowAddPlayerForm(false);
-      setPlayerFormData({ name: '', gender: 'male', level: '' });
+      // Không đóng hộp: xóa tên, giữ giới tính + level cho người kế, con trỏ về ô Họ Tên.
+      setRecentlyAdded(playerFormData.name);
+      setPlayerFormData((prev) => ({ ...prev, name: '' }));
+      nameInputRef.current?.focus();
       await loadPlayers();
     } catch (error) {
-      alert('Lỗi khi thêm VĐV: ' + (error.response?.data?.message || error.message));
+      setSheetError('Lỗi khi thêm VĐV: ' + errorText(error));
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleDeletePlayer = async (id) => {
-    if (!confirm('Bạn có chắc muốn xóa VĐV này?')) return;
+  const handleDeletePlayer = async () => {
+    const player = deletePlayerTarget;
+    const fromSheet = selectedPlayerId === player.id;
 
+    setDeletingPlayer(true);
     try {
-      await tournamentPlayersApi.delete(id);
+      await tournamentPlayersApi.delete(player.id);
+      setSelectedPlayerId(null);
       await loadPlayers();
     } catch (error) {
-      alert('Lỗi khi xóa VĐV: ' + (error.response?.data?.message || error.message));
+      const message = 'Lỗi khi xóa VĐV: ' + errorText(error);
+      if (fromSheet) setSheetError(message);
+      else toast.error(message);
+    } finally {
+      setDeletingPlayer(false);
+      setDeletePlayerTarget(null);
     }
   };
 
   const handleImportFile = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setSheetError('');
 
-    // Đảm bảo có danh sách được chọn
-    let listId = selectedListId;
-    if (!listId) {
-      // Nếu chưa có danh sách, tạo danh sách mặc định
-      try {
-        const newListResponse = await playerListsApi.create({ 
-          name: 'Danh sách mặc định', 
-          is_default: true 
-        });
-        listId = newListResponse.data.id;
-        setSelectedListId(listId);
-        await loadPlayerLists(); // Reload để cập nhật danh sách
-      } catch (createError) {
-        alert('Vui lòng tạo danh sách trước khi import VĐV: ' + (createError.response?.data?.message || createError.message));
-        return;
-      }
-    }
+    const listId = await ensureListId('Vui lòng tạo danh sách trước khi import VĐV: ');
+    if (!listId) return;
 
     try {
       const response = await tournamentPlayersApi.import(listId, file);
-      alert(`Đã import ${response.data.imported} VĐV thành công`);
       if (response.data.errors && response.data.errors.length > 0) {
         console.warn('Import errors:', response.data.errors);
       }
       setShowImportModal(false);
+      toast.success(`Đã import ${response.data.imported} VĐV thành công`);
       await loadPlayers();
     } catch (error) {
-      alert('Lỗi khi import: ' + (error.response?.data?.message || error.message));
+      setSheetError('Lỗi khi import: ' + errorText(error));
     }
   };
 
   const handleOrganizeBrackets = async (e) => {
     e.preventDefault();
-    
-    // Đảm bảo có danh sách được chọn
-    let listId = selectedListId;
-    if (!listId) {
-      // Nếu chưa có danh sách, tạo danh sách mặc định
-      try {
-        const newListResponse = await playerListsApi.create({ 
-          name: 'Danh sách mặc định', 
-          is_default: true 
-        });
-        listId = newListResponse.data.id;
-        setSelectedListId(listId);
-        await loadPlayerLists(); // Reload để cập nhật danh sách
-      } catch (createError) {
-        alert('Vui lòng tạo danh sách trước khi xếp bảng: ' + (createError.response?.data?.message || createError.message));
-        return;
-      }
-    }
+    if (submitting) return;
+    setSheetError('');
 
+    const listId = await ensureListId('Vui lòng tạo danh sách trước khi xếp bảng: ');
+    if (!listId) return;
+
+    setSubmitting(true);
     try {
       // Đảm bảo player_list_id được gửi trong body
       const requestData = {
@@ -221,47 +298,60 @@ export default function TournamentBrackets() {
         player_list_id: listId,
       };
       const response = await bracketsApi.organize(listId, requestData);
-      alert(response.data.message);
       setShowOrganizeModal(false);
-      await loadBrackets();
+      toast.success(response.data.message);
+      // Tải lại cả VĐV để nhãn "Bảng n" / "Chưa xếp" và nút Xếp bảng đúng ngay.
+      await Promise.all([loadBrackets(), loadPlayers()]);
       setActiveTab('brackets');
     } catch (error) {
-      alert('Lỗi khi xếp bảng: ' + (error.response?.data?.message || error.message));
+      setSheetError('Lỗi khi xếp bảng: ' + errorText(error));
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleDeleteBrackets = async () => {
-    if (!confirm('Bạn có chắc muốn xóa tất cả các bảng? Điều này sẽ không xóa VĐV.')) return;
-
+    setDeletingBrackets(true);
     try {
       await bracketsApi.deleteAll(selectedListId);
-      await loadBrackets();
+      await Promise.all([loadBrackets(), loadPlayers()]);
     } catch (error) {
-      alert('Lỗi khi xóa bảng: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi xóa bảng: ' + errorText(error));
+    } finally {
+      setDeletingBrackets(false);
+      setConfirmDeleteBrackets(false);
     }
   };
 
+  // Chụp khung ẩn 720 px (BracketsExport) chứ không chụp lưới đang hiện: ảnh giống nhau trên mọi máy.
+  // Dùng nodeToPng (html-to-image, như ảnh bill): html2canvas vẽ chữ lệch xuống so với đường kẻ hàng.
   const handleExportBrackets = async () => {
-    if (!bracketsContainerRef.current) return;
+    if (!exportRef.current || exporting) return;
+    setExporting(true);
     try {
-      const html2canvas = (await import('html2canvas')).default;
-      const canvas = await html2canvas(bracketsContainerRef.current, {
-        scale: 2,
+      if (document.fonts?.ready) await document.fonts.ready;
+      const dataUrl = await nodeToPng(exportRef.current, {
         backgroundColor: '#ffffff',
-        useCORS: true,
+        pixelRatio: 2,
       });
       const link = document.createElement('a');
       link.download = 'bang-thi-dau.png';
-      link.href = canvas.toDataURL('image/png');
+      link.href = dataUrl;
       link.click();
+      toast.success('Đã tải ảnh bảng thi đấu');
     } catch (error) {
       console.error('Export image error', error);
-      alert('Xuất ảnh bảng thi đấu thất bại. Vui lòng thử lại.');
+      toast.error('Xuất ảnh bảng thi đấu thất bại. Vui lòng thử lại.', { onRetry: handleExportBrackets });
+    } finally {
+      setExporting(false);
     }
   };
 
   const availablePlayers = players.filter(p => !p.brackets || p.brackets.length === 0);
   const assignedPlayers = players.filter(p => p.brackets && p.brackets.length > 0);
+  const sortedBrackets = sortBrackets(brackets);
+  const selectedList = playerLists.find(list => list.id === selectedListId);
+  const selectedPlayer = players.find(p => p.id === selectedPlayerId) ?? null;
 
   if (loading) {
     return (
@@ -271,11 +361,26 @@ export default function TournamentBrackets() {
     );
   }
 
+  if (loadError) {
+    return (
+      <div className="px-4 pb-8 sm:px-0">
+        <PageHeader title="Xếp bảng" />
+        <EmptyState tone="error" title={loadError} onRetry={retryLoad} />
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 pb-8 sm:px-0">
       {/* Header */}
       <PageHeader
-        title="Quản lý & Xếp bảng thi đấu"
+        title="Xếp bảng"
+        menuTitle="Thao tác khác"
+        menu={
+          activeTab === 'brackets' && brackets.length > 0 && canDeleteBrackets
+            ? [{ label: 'Xóa tất cả', icon: Trash2, danger: true, onClick: () => setConfirmDeleteBrackets(true) }]
+            : undefined
+        }
         actions={
           <>
             <div className="w-full sm:w-auto">
@@ -304,7 +409,7 @@ export default function TournamentBrackets() {
             </div>
             {canCreateList && (
               <button
-                onClick={handleCreateList}
+                onClick={openCreateList}
                 className="btn btn-secondary w-full sm:w-auto"
               >
                 <Plus className="h-4 w-4" />
@@ -347,14 +452,14 @@ export default function TournamentBrackets() {
           {/* Actions */}
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
-              onClick={() => setShowAddPlayerForm(true)}
+              onClick={() => openSheet(setShowAddPlayerForm)}
               className="btn btn-primary w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
               Thêm VĐV thủ công
             </button>
             <button
-              onClick={() => setShowImportModal(true)}
+              onClick={() => openSheet(setShowImportModal)}
               className="btn btn-secondary w-full sm:w-auto"
             >
               <Upload className="h-4 w-4" />
@@ -429,7 +534,7 @@ export default function TournamentBrackets() {
                         </td>
                         <td className="whitespace-nowrap px-4 py-2 text-right">
                           <button
-                            onClick={() => handleDeletePlayer(player.id)}
+                            onClick={() => setDeletePlayerTarget(player)}
                             disabled={player.brackets && player.brackets.length > 0}
                             className="btn btn-danger-ghost btn-sm"
                           >
@@ -442,44 +547,34 @@ export default function TournamentBrackets() {
                 </table>
               </div>
 
-              {/* Players cards (mobile) */}
-              <div className="space-y-3 md:hidden">
+              {/* Players rows (mobile, M3): cả hàng mở sheet VĐV, Xóa nằm trong sheet */}
+              <ul className="list-card md:hidden">
                 {players.map((player, idx) => (
-                  <div
-                    key={player.id}
-                    className={`card !p-4 ${player.gender === 'male' ? '!bg-sky-50/50' : '!bg-rose-50/40'}`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span className="font-tabular mt-0.5 w-6 flex-shrink-0 text-sm font-semibold text-slate-500">
-                          {idx + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <h3 className="break-words text-base font-semibold text-slate-900">{player.name}</h3>
-                          <p className="mt-0.5 text-sm text-slate-600">
-                            {player.gender === 'male' ? 'Nam' : 'Nữ'} · Level{' '}
-                            <span className="font-tabular">{player.level || '-'}</span>
-                          </p>
+                  <li key={player.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSheetError('');
+                        setSelectedPlayerId(player.id);
+                      }}
+                      aria-haspopup="dialog"
+                      className={`list-row ${player.gender === 'male' ? 'bg-sky-50/50' : 'bg-rose-50/40'}`}
+                    >
+                      <span className="font-tabular w-6 flex-none text-sm font-semibold text-slate-500">
+                        {idx + 1}
+                      </span>
+                      <div className="list-row-text">
+                        <div className="list-row-title line-clamp-2 whitespace-normal">{player.name}</div>
+                        <div className="list-row-sub">
+                          {genderLabel(player.gender)} · Level{' '}
+                          <span className="font-tabular">{player.level || '-'}</span>
                         </div>
                       </div>
-                      {player.brackets && player.brackets.length > 0 ? (
-                        <span className="badge badge-emerald flex-shrink-0">Đã xếp bảng</span>
-                      ) : (
-                        <span className="badge badge-amber flex-shrink-0">Chưa xếp</span>
-                      )}
-                    </div>
-                    <div className="mt-3 border-t border-slate-100 pt-3">
-                      <button
-                        onClick={() => handleDeletePlayer(player.id)}
-                        disabled={player.brackets && player.brackets.length > 0}
-                        className="btn btn-danger-soft btn-sm w-full"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </div>
+                      <AssignedBadge player={player} />
+                    </button>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </>
           )}
         </div>
@@ -488,10 +583,10 @@ export default function TournamentBrackets() {
       {/* Brackets Tab */}
       {activeTab === 'brackets' && (
         <div className="space-y-4">
-          {/* Actions */}
+          {/* Actions — điện thoại: "Xóa tất cả" vào ⋯ trên thanh, "Xuất bảng" ở thanh đáy */}
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <button
-              onClick={() => setShowOrganizeModal(true)}
+              onClick={() => openSheet(setShowOrganizeModal)}
               className="btn btn-primary w-full sm:w-auto"
               disabled={!canOrganize || availablePlayers.length === 0}
             >
@@ -500,8 +595,8 @@ export default function TournamentBrackets() {
             </button>
             {brackets.length > 0 && (
               <button
-                onClick={handleDeleteBrackets}
-                className="btn btn-danger w-full sm:w-auto"
+                onClick={() => setConfirmDeleteBrackets(true)}
+                className="btn btn-danger hidden sm:inline-flex sm:w-auto"
                 disabled={!canDeleteBrackets}
               >
                 Xóa tất cả
@@ -510,21 +605,43 @@ export default function TournamentBrackets() {
             {brackets.length > 0 && (
               <button
                 onClick={handleExportBrackets}
-                className="btn btn-secondary w-full sm:w-auto"
+                disabled={exporting}
+                className="btn btn-secondary hidden sm:inline-flex sm:w-auto"
               >
-                <Download className="h-4 w-4" />
+                {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 Xuất bảng
               </button>
             )}
           </div>
 
+          {/* Brackets (mobile): 1 cột, hàng gọn — tên bên trái, giới tính · level bên phải */}
+          {brackets.length > 0 && (
+            <div className="space-y-3 sm:hidden">
+              {sortedBrackets.map((bracket) => (
+                <div key={bracket.id} className="card !px-4 !py-3">
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <h3 className="min-w-0 break-words text-base font-semibold text-slate-900">{bracket.name}</h3>
+                    <span className="badge badge-sky flex-shrink-0">
+                      {bracket.players.length} VĐV
+                    </span>
+                  </div>
+                  {orderBracketPlayers(bracket.players).map((player) => (
+                    <div key={player.id} className="flex items-baseline justify-between gap-3 border-t border-slate-100 py-2 text-sm">
+                      <span className="min-w-0 break-words text-slate-900">{player.name}</span>
+                      <span className="flex-shrink-0 whitespace-nowrap text-slate-500">
+                        {genderLabel(player.gender)} · Level {player.level || '-'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Brackets Grid */}
           {brackets.length > 0 ? (
-            <div ref={bracketsContainerRef} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {([...brackets].sort((a, b) => {
-                const order = { male_only: 0, female_only: 1, mixed: 2 };
-                return (order[a.gender_distribution] ?? 3) - (order[b.gender_distribution] ?? 3);
-              })).map((bracket) => {
+            <div className="hidden grid-cols-1 gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {sortedBrackets.map((bracket) => {
                 const playersByGender = bracket.players.reduce((acc, p) => {
                   if (!acc[p.gender]) acc[p.gender] = [];
                   acc[p.gender].push(p);
@@ -593,26 +710,105 @@ export default function TournamentBrackets() {
               description={'Hãy bấm "Xếp bảng" để tạo bảng thi đấu.'}
             />
           )}
+
+          {/* Điện thoại (M2): "Xuất bảng" dính đáy, ngay trên thanh tab */}
+          {brackets.length > 0 && (
+            <ActionBar overTab>
+              <button
+                type="button"
+                onClick={handleExportBrackets}
+                disabled={exporting}
+                className="btn btn-primary flex-1"
+              >
+                {exporting ? <Loader className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Xuất bảng
+              </button>
+            </ActionBar>
+          )}
         </div>
       )}
 
-      {/* Add Player Form Modal */}
+      {/* Khung ảnh "Xuất bảng" 720 px, 2 cột — luôn dựng sẵn ngoài màn hình để bấm là chụp được */}
+      {brackets.length > 0 && (
+        <div
+          aria-hidden
+          style={{ position: 'fixed', top: 0, left: '-10000px', pointerEvents: 'none' }}
+        >
+          <div ref={exportRef}>
+            <BracketsExport
+              listName={selectedList?.name}
+              brackets={sortedBrackets}
+              exportDate={formatDateDisplay(new Date())}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Create List Modal (thay prompt) */}
       <Modal
-        isOpen={showAddPlayerForm}
-        onClose={() => setShowAddPlayerForm(false)}
-        title="Thêm VĐV"
+        isOpen={showCreateList}
+        onClose={() => setShowCreateList(false)}
+        title="Tạo danh sách VĐV"
+        dismissible={!submitting}
         footer={
           <div className="flex gap-2 sm:justify-end">
             <button
               type="button"
-              onClick={() => setShowAddPlayerForm(false)}
+              onClick={() => setShowCreateList(false)}
+              disabled={submitting}
               className="btn btn-secondary flex-1 sm:flex-none"
             >
               Hủy
             </button>
             <button
               type="submit"
+              form="create-player-list-form"
+              disabled={submitting || !newListName.trim()}
+              className="btn btn-primary flex-1 sm:flex-none"
+            >
+              {submitting && <Loader className="h-4 w-4 animate-spin" />}
+              Tạo danh sách VĐV
+            </button>
+          </div>
+        }
+      >
+        <form id="create-player-list-form" onSubmit={handleCreateList} className="space-y-4">
+          <div>
+            <label htmlFor="tp-list-name" className="field-label">
+              Tên danh sách
+            </label>
+            <input
+              id="tp-list-name"
+              type="text"
+              value={newListName}
+              onChange={(e) => setNewListName(e.target.value)}
+              className="field-input"
+            />
+          </div>
+          <SheetError message={sheetError} />
+        </form>
+      </Modal>
+
+      {/* Add Player Form Modal — không đóng sau mỗi người, "Xong" để đóng */}
+      <Modal
+        isOpen={showAddPlayerForm}
+        onClose={closeAddPlayer}
+        title="Thêm VĐV"
+        footer={
+          <div className="flex gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={closeAddPlayer}
+              className="btn btn-secondary flex-1 sm:flex-none"
+            >
+              Xong
+            </button>
+            <button
+              type="submit"
               form="add-tournament-player-form"
+              disabled={submitting}
+              // Không lấy focus khỏi ô Họ Tên: bàn phím điện thoại không sập giữa hai người.
+              onMouseDown={(e) => e.preventDefault()}
               className="btn btn-primary flex-1 sm:flex-none"
             >
               Thêm
@@ -627,6 +823,7 @@ export default function TournamentBrackets() {
             </label>
             <input
               id="tp-name"
+              ref={nameInputRef}
               type="text"
               required
               value={playerFormData.name}
@@ -666,6 +863,13 @@ export default function TournamentBrackets() {
               placeholder="Nhập level (1, 2, 3...)"
             />
           </div>
+          {recentlyAdded && (
+            <p role="status" className="flex items-start gap-1.5 text-sm text-slate-600">
+              <Check className="mt-0.5 h-4 w-4 flex-none text-emerald-700" />
+              <span className="min-w-0 break-words">Vừa thêm: {recentlyAdded}</span>
+            </p>
+          )}
+          <SheetError message={sheetError} />
         </form>
       </Modal>
 
@@ -724,6 +928,7 @@ Phạm Thị D,nữ,3
               className="block w-full rounded-xl border border-slate-300 bg-white text-sm text-slate-600 file:mr-3 file:h-11 file:cursor-pointer file:border-0 file:bg-slate-100 file:px-4 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200 sm:file:h-10"
             />
           </div>
+          <SheetError message={sheetError} />
         </div>
       </Modal>
 
@@ -732,11 +937,13 @@ Phạm Thị D,nữ,3
         isOpen={showOrganizeModal}
         onClose={() => setShowOrganizeModal(false)}
         title="Xếp bảng thi đấu"
+        dismissible={!submitting}
         footer={
           <div className="flex gap-2 sm:justify-end">
             <button
               type="button"
               onClick={() => setShowOrganizeModal(false)}
+              disabled={submitting}
               className="btn btn-secondary flex-1 sm:flex-none"
             >
               Hủy
@@ -744,8 +951,10 @@ Phạm Thị D,nữ,3
             <button
               type="submit"
               form="organize-brackets-form"
+              disabled={submitting}
               className="btn btn-primary flex-1 sm:flex-none"
             >
+              {submitting && <Loader className="h-4 w-4 animate-spin" />}
               Xếp bảng
             </button>
           </div>
@@ -779,17 +988,70 @@ Phạm Thị D,nữ,3
               onChange={(e) => setOrganizeFormData({ ...organizeFormData, gender_distribution: e.target.value })}
               className="field-input"
             >
-              <option value="mixed">Chia đều giới tính</option>
-              <option value="male_only">Chỉ nam</option>
-              <option value="female_only">Chỉ nữ</option>
+              {Object.entries(GENDER_DISTRIBUTION_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             <p>Lưu ý: Chỉ các VĐV chưa được xếp bảng mới được xếp vào bảng mới.</p>
             <p className="mt-1">Hiện có {availablePlayers.length} VĐV chưa xếp bảng.</p>
           </div>
+          <SheetError message={sheetError} />
         </form>
       </Modal>
+
+      {/* Player sheet (mobile): thông tin VĐV + Xóa (VĐV đã xếp bảng thì không xóa được, như cũ) */}
+      <Modal
+        isOpen={Boolean(selectedPlayer)}
+        onClose={() => setSelectedPlayerId(null)}
+        title={selectedPlayer?.name}
+        initialFocus="panel"
+        footer={
+          selectedPlayer && (
+            <button
+              type="button"
+              onClick={() => setDeletePlayerTarget(selectedPlayer)}
+              disabled={isAssigned(selectedPlayer)}
+              className="btn btn-danger-soft w-full"
+            >
+              Xóa
+            </button>
+          )
+        }
+      >
+        {selectedPlayer && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-3 text-sm text-slate-600">
+              <span>
+                {genderLabel(selectedPlayer.gender)} · Level{' '}
+                <span className="font-tabular">{selectedPlayer.level || '-'}</span>
+              </span>
+              <AssignedBadge player={selectedPlayer} />
+            </div>
+            <SheetError message={sheetError} />
+          </div>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        isOpen={Boolean(deletePlayerTarget)}
+        busy={deletingPlayer}
+        onClose={() => setDeletePlayerTarget(null)}
+        onConfirm={handleDeletePlayer}
+        title="Xóa VĐV"
+        message="Bạn có chắc muốn xóa VĐV này?"
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDeleteBrackets}
+        busy={deletingBrackets}
+        onClose={() => setConfirmDeleteBrackets(false)}
+        onConfirm={handleDeleteBrackets}
+        title="Xóa tất cả bảng thi đấu"
+        message="Bạn có chắc muốn xóa tất cả các bảng? Điều này sẽ không xóa VĐV."
+        confirmLabel="Xóa tất cả"
+      />
     </div>
   );
 }
