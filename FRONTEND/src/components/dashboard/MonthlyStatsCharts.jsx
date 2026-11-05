@@ -1,14 +1,23 @@
 import { useMemo } from "react";
 import ColumnChart from "../ui/ColumnChart";
 import { monthlyBillStats } from "../../utils/monthlyStats";
+import { formatNumber } from "../../utils/formatters";
 
 /**
  * Biểu đồ số bill và số cầu theo tháng trong modal Thống kê.
  * - mode "year": tháng 1 -> 12 của `year`, mọi cột cùng màu.
  * - mode "month": 12 tháng kết thúc ở `month` ("YYYY-MM"), tháng đó được nhấn.
  * Hai đại lượng khác thang đo nên vẽ hai biểu đồ riêng, không chung trục.
+ * - metric ("bills" | "shuttles"): dưới md chỉ hiện biểu đồ của đại lượng này (chọn bằng ô
+ *   số ở đầu sheet); từ md hiện cả hai cạnh nhau.
  */
-export default function MonthlyStatsCharts({ bills, mode, month, year }) {
+export default function MonthlyStatsCharts({
+  bills,
+  mode,
+  month,
+  year,
+  metric = "bills",
+}) {
   const [endYear, endMonth] =
     mode === "year" ? [year, 12] : month.split("-").map(Number);
   const highlightKey = mode === "year" ? null : month;
@@ -21,7 +30,7 @@ export default function MonthlyStatsCharts({ bills, mode, month, year }) {
   const toPoints = (field) =>
     months.map((m) => ({
       key: m.key,
-      label: `T${m.month}`,
+      label: String(m.month),
       fullLabel: `Tháng ${m.month}/${m.year}`,
       value: m[field],
     }));
@@ -43,11 +52,13 @@ export default function MonthlyStatsCharts({ bills, mode, month, year }) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <figure className="rounded-lg bg-white p-3">
+        <figure
+          className={`rounded-lg bg-white p-3 ${metric === "bills" ? "" : "hidden md:block"}`}
+        >
           <figcaption className="mb-1 flex items-baseline justify-between gap-2">
             <span className="text-sm font-medium text-slate-700">Số bill</span>
             <span className="font-tabular text-xs text-slate-500">
-              Tổng {totalBills} bill
+              Tổng {formatNumber(totalBills)} bill
             </span>
           </figcaption>
           <ColumnChart
@@ -57,13 +68,15 @@ export default function MonthlyStatsCharts({ bills, mode, month, year }) {
           />
         </figure>
 
-        <figure className="rounded-lg bg-white p-3">
+        <figure
+          className={`rounded-lg bg-white p-3 ${metric === "shuttles" ? "" : "hidden md:block"}`}
+        >
           <figcaption className="mb-1 flex items-baseline justify-between gap-2">
             <span className="text-sm font-medium text-slate-700">
               Số cầu (quả)
             </span>
             <span className="font-tabular text-xs text-slate-500">
-              Tổng {totalShuttles} quả
+              Tổng {formatNumber(totalShuttles)} quả
             </span>
           </figcaption>
           <ColumnChart
