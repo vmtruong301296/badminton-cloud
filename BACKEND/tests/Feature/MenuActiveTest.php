@@ -17,7 +17,7 @@ class MenuActiveTest extends TestCase
 
     private function user(): User
     {
-        return User::create(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
+        return $this->adminUser(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
     }
 
     public function test_mon_moi_tao_mac_dinh_bat(): void

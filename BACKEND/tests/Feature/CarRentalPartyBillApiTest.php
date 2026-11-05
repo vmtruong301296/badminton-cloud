@@ -14,7 +14,7 @@ class CarRentalPartyBillApiTest extends TestCase
 
     private function user(): User
     {
-        return User::create(['name' => 'Người test', 'email' => 't@e.test', 'password' => 'secret123']);
+        return $this->adminUser(['name' => 'Người test', 'email' => 't@e.test', 'password' => 'secret123']);
     }
 
     private function bill(string $name = 'Tiệc test'): PartyBill
