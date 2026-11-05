@@ -175,3 +175,12 @@ export const buildPartyBillPayload = (form, { keepPaid = false } = {}) => ({
       is_paid: keepPaid ? p.is_paid || false : false,
     })),
 });
+
+/** Kiểm form trước khi lưu (câu cũ của alert, nay hiện ngay dưới ô — M14). */
+export const partyBillFormErrors = (form) => ({
+  name: (form.name || "").trim() ? null : "Vui lòng nhập tên/nội dung tiệc",
+  participants:
+    (form.participants || []).length === 0
+      ? "Vui lòng nhập ít nhất 1 người"
+      : null,
+});

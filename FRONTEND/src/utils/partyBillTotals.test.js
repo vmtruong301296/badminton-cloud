@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPartyBillPayload,
+  partyBillFormErrors,
   participantBillAmount,
   participantExceptions,
   participantTotalWithDebt,
@@ -258,5 +259,17 @@ describe("buildPartyBillPayload", () => {
   it("màn sửa giữ trạng thái Đã TT", () => {
     const payload = buildPartyBillPayload(form, { keepPaid: true });
     expect(payload.participants[0].is_paid).toBe(true);
+  });
+});
+
+describe("partyBillFormErrors", () => {
+  it("báo thiếu tên (chỉ có khoảng trắng cũng là thiếu) và thiếu người, câu như alert cũ", () => {
+    expect(partyBillFormErrors({ name: "  ", participants: [] })).toEqual({
+      name: "Vui lòng nhập tên/nội dung tiệc",
+      participants: "Vui lòng nhập ít nhất 1 người",
+    });
+    expect(
+      partyBillFormErrors({ name: "Tiệc", participants: [{ name: "An" }] }),
+    ).toEqual({ name: null, participants: null });
   });
 });
