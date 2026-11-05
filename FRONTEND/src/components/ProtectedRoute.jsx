@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import StatusScreen from './ui/StatusScreen';
 import { Lock, Loader } from './ui/icons';
@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children, requiredPermission = null }) 
 	const { user, loading, hasPermission } = useAuth();
 
 	if (loading) {
-		return <StatusScreen icon={Loader} spin title="Đang tải..." />;
+		return <StatusScreen brand icon={Loader} spin title="Đang tải..." />;
 	}
 
 	if (!user) {
@@ -21,6 +21,11 @@ export default function ProtectedRoute({ children, requiredPermission = null }) 
 				tone="rose"
 				title="Không có quyền truy cập"
 				description="Bạn không có quyền để truy cập trang này."
+				action={
+					<Link to="/" className="btn btn-secondary w-full">
+						Về trang chủ
+					</Link>
+				}
 			/>
 		);
 	}
