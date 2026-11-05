@@ -5,12 +5,21 @@ import CurrencyInput from "../../components/common/CurrencyInput";
 import { useAuth } from "../../contexts/AuthContext";
 import Modal from "../../components/ui/Modal";
 import EmptyState from "../../components/ui/EmptyState";
-import { Plus, Inbox, CircleAlert } from "../../components/ui/icons";
+import { Plus, Inbox, CircleAlert, Ellipsis } from "../../components/ui/icons";
+import {
+  BALLS_PER_TUBE,
+  LOW_STOCK_TUBES,
+  LOW_STOCK_BALLS,
+  stockLevel,
+} from "../../utils/shuttleStock";
+import ShuttleActionsSheet from "./ShuttleActionsSheet";
 
-const BALLS_PER_TUBE = 12;
-// Ngưỡng cảnh báo sắp hết cầu: TỔNG tồn dưới 10 ống
-const LOW_STOCK_TUBES = 10;
-const LOW_STOCK_BALLS = LOW_STOCK_TUBES * BALLS_PER_TUBE;
+// Màu số tồn kho trên thẻ điện thoại theo stockLevel (hết / dưới 10 ống / đủ)
+const STOCK_LEVEL_CLASS = {
+  out: "text-rose-600",
+  low: "text-amber-700",
+  ok: "text-slate-900",
+};
 
 function todayInputDate() {
   return new Date().toISOString().split("T")[0];
@@ -29,6 +38,8 @@ export default function ShuttlesManagement() {
   });
 
   const [stockModalShuttle, setStockModalShuttle] = useState(null);
+  // Thẻ điện thoại: loại cầu đang mở sheet thao tác phụ (⋯)
+  const [actionsShuttle, setActionsShuttle] = useState(null);
   const [stockForm, setStockForm] = useState({
     tubes: 0,
     balls: 0,
@@ -223,7 +234,8 @@ export default function ShuttlesManagement() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Không cho nút xuống dòng riêng ở 360 px: tiêu đề tự xuống 2 dòng bên trái nút */}
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">
           Quản lý Loại quả cầu
         </h2>
@@ -534,6 +546,17 @@ export default function ShuttlesManagement() {
         )}
       </Modal>
 
+      <ShuttleActionsSheet
+        shuttle={actionsShuttle}
+        onClose={() => setActionsShuttle(null)}
+        canUpdate={canEditStock}
+        canDelete={hasPermission("shuttles.delete")}
+        onHistory={openHistoryModal}
+        onPrice={openPriceModal}
+        onEdit={handleEdit}
+        onDelete={(shuttle) => handleDelete(shuttle.id)}
+      />
+
       {loading ? (
         <div className="py-8 text-center text-sm text-slate-500">Đang tải...</div>
       ) : (
@@ -554,8 +577,11 @@ export default function ShuttlesManagement() {
                     <strong className="font-tabular">
                       {formatNumber(totalStock)} quả
                     </strong>{" "}
-                    — dưới {LOW_STOCK_TUBES} ống. Vui lòng bấm{" "}
-                    <strong>“Nhập kho”</strong> để bổ sung.
+                    — dưới {LOW_STOCK_TUBES} ống.
+                    {/* Điện thoại: bỏ câu nhắc để banner còn 2 dòng (nút Nhập kho ngay trên thẻ) */}
+                    <span className="hidden md:inline">
+                      {" "}Vui lòng bấm <strong>“Nhập kho”</strong> để bổ sung.
+                    </span>
                   </p>
                 </div>
               </div>
@@ -645,71 +671,54 @@ export default function ShuttlesManagement() {
                 </table>
               </div>
 
+              {/* Thẻ điện thoại: tên + giá, tồn kho tô màu, "Nhập kho" + ⋯ (Lịch sử / Lên giá / Sửa / Xóa) */}
               <div className="space-y-3 md:hidden">
-                {shuttles.map((shuttle) => (
-                  <div key={shuttle.id} className="card !p-4">
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <h3 className="min-w-0 break-words font-semibold text-slate-900">
-                        {shuttle.name}
-                      </h3>
-                      <span className="font-tabular flex-shrink-0 text-lg font-semibold text-slate-900">
-                        {formatCurrency(shuttle.price)}
-                      </span>
-                    </div>
-                    <div className="mb-3 text-sm text-slate-600">
-                      Tồn kho:{" "}
-                      <strong className="font-tabular text-slate-900">
-                        {formatNumber(shuttle.stock_quantity ?? 0)}
-                      </strong>{" "}
-                      quả
-                    </div>
-                    <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                      {canEditStock && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => openStockModal(shuttle)}
-                            className="btn btn-primary btn-sm min-w-[100px] flex-1"
-                          >
-                            Nhập kho
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openHistoryModal(shuttle)}
-                            className="btn btn-secondary btn-sm min-w-[100px] flex-1"
-                          >
-                            Lịch sử
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openPriceModal(shuttle)}
-                            className="btn btn-secondary btn-sm min-w-[100px] flex-1"
-                          >
-                            Lên giá
-                          </button>
-                        </>
-                      )}
-                      {hasPermission("shuttles.update") && (
-                        <button
-                          type="button"
-                          onClick={() => handleEdit(shuttle)}
-                          className="btn btn-secondary btn-sm min-w-[100px] flex-1"
+                {shuttles.map((shuttle) => {
+                  const canDelete = hasPermission("shuttles.delete");
+                  return (
+                    <div key={shuttle.id} className="card !p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <h3 className="min-w-0 break-words font-semibold text-slate-900">
+                          {shuttle.name}
+                        </h3>
+                        <span className="font-tabular flex-shrink-0 font-semibold text-slate-900">
+                          {formatCurrency(shuttle.price)}
+                        </span>
+                      </div>
+                      <div className="mt-1 text-sm text-slate-600">
+                        Tồn kho:{" "}
+                        <strong
+                          className={`font-tabular ${STOCK_LEVEL_CLASS[stockLevel(shuttle.stock_quantity)]}`}
                         >
-                          Sửa
-                        </button>
-                      )}
-                      {hasPermission("shuttles.delete") && (
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(shuttle.id)}
-                          className="btn btn-danger-soft btn-sm min-w-[100px] flex-1"
-                        >
-                          Xóa
-                        </button>
+                          {formatNumber(shuttle.stock_quantity ?? 0)}
+                        </strong>{" "}
+                        quả
+                      </div>
+                      {(canEditStock || canDelete) && (
+                        <div className="mt-3 flex gap-2">
+                          {canEditStock && (
+                            <button
+                              type="button"
+                              onClick={() => openStockModal(shuttle)}
+                              className="btn btn-primary btn-sm flex-1"
+                            >
+                              Nhập kho
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setActionsShuttle(shuttle)}
+                            aria-label={`Thao tác khác: ${shuttle.name}`}
+                            aria-haspopup="dialog"
+                            className="btn btn-secondary btn-sm btn-icon"
+                          >
+                            <Ellipsis className="h-5 w-5" />
+                          </button>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </>
           )}
