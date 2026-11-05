@@ -142,7 +142,8 @@ export default function PaymentAccountsManagement() {
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Không cho nút xuống dòng riêng trên điện thoại: tiêu đề tự xuống 2 dòng bên trái nút */}
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">Quản lý Tài khoản Nhận tiền</h2>
         <button
           type="button"
