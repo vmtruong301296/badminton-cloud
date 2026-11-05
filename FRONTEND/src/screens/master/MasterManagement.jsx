@@ -24,9 +24,10 @@ export default function MasterManagement() {
 
   return (
     <div className="px-4 sm:px-0">
-      <PageHeader title="Quản lý Master" />
+      <PageHeader title="Master" />
 
-      {/* Tabs: khung xám, tab đang chọn nền trắng; cuộn ngang được trên điện thoại */}
+      {/* Tabs: khung xám, tab đang chọn nền trắng; cuộn ngang được trên điện thoại.
+          Dưới 400 px chữ 13 px, đệm 4 px để 4 tab vừa khít 360 px ("TK nhận tiền" không bị cắt). */}
       <div
         role="tablist"
         aria-label="Quản lý Master"
@@ -43,7 +44,7 @@ export default function MasterManagement() {
               aria-selected={isActive}
               aria-controls="master-tabpanel"
               onClick={() => handleTabChange(tab.id)}
-              className="tab"
+              className="tab max-[399px]:px-1 max-[399px]:text-[13px]"
             >
               {tab.label}
             </button>
