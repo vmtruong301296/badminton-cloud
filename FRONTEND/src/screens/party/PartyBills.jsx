@@ -341,7 +341,8 @@ export default function PartyBills() {
                   type="button"
                   onClick={() => changeFilters({ date_from: "", date_to: "" })}
                   aria-label="Bỏ lọc ngày"
-                  className="chip-remove"
+                  // z-10: nằm trên vùng chạm ::after của chip cha (lỗi CSS chung, đã báo PM)
+                  className="chip-remove z-10"
                 >
                   <X className="h-4 w-4" />
                 </button>

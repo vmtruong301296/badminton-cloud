@@ -94,7 +94,8 @@ export default function PartyParticipantSheet({
               </label>
               <NumberInput
                 id="pbs-ratio"
-                value={p.ratio_value}
+                // API trả mức tính dạng chuỗi "1.000": hiện thành số (1) cho khỏi đọc nhầm nghìn
+                value={Number(p.ratio_value)}
                 onChange={(value) => onChange("ratio_value", value)}
                 min={0}
                 step={0.1}
