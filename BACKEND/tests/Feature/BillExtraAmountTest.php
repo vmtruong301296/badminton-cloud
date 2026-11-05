@@ -24,7 +24,7 @@ class BillExtraAmountTest extends TestCase
     {
         parent::setUp();
 
-        $this->user = User::create(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
+        $this->user = $this->adminUser(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
         $this->sting = Menu::create(['name' => 'Sting', 'price' => 15000]);
     }
 

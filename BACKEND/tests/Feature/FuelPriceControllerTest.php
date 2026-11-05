@@ -32,7 +32,7 @@ class FuelPriceControllerTest extends TestCase
 
     private function user(): User
     {
-        return User::create(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
+        return $this->adminUser(['name' => 'Người test', 'email' => 'test@example.com', 'password' => 'secret123']);
     }
 
     public function test_chua_dang_nhap_bi_401(): void

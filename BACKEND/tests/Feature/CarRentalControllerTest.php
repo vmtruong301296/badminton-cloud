@@ -15,7 +15,7 @@ class CarRentalControllerTest extends TestCase
 
     private function user(): User
     {
-        return User::create([
+        return $this->adminUser([
             'name' => 'Người test',
             'email' => 'test@example.com',
             'password' => 'secret123', // cast 'hashed' của User tự băm
