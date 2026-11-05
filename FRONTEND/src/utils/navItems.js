@@ -177,14 +177,50 @@ export function isNavItemActive(item, pathname) {
   );
 }
 
-// Màn "đẩy vào" đã có thanh hành động riêng dưới đáy và nút quay lại, nên ẩn thanh tab điện thoại.
-const TAB_BAR_HIDDEN_PATHS = [
-  /^\/bills\/create$/,
-  /^\/bills\/[^/]+\/edit$/,
-  /^\/party-bills\/create$/,
-  /^\/party-bills\/[^/]+\/edit$/,
+// Màn "đẩy vào" (tạo / sửa / chi tiết bill cầu, bill tiệc): có nút quay lại trên thanh trên và
+// thường có thanh hành động dưới đáy, nên ẩn thanh tab điện thoại. `back` là nút quay lại dự phòng
+// khi màn chưa tự đặt (đang tải, lỗi tải); nhãn dùng lại chữ đang có.
+const PUSHED_SCREENS = [
+  {
+    pattern: /^\/bills\/([^/]+)\/edit$/,
+    back: (id) => ({ to: `/bills/${id}`, label: "Về chi tiết Bill" }),
+  },
+  {
+    pattern: /^\/party-bills\/([^/]+)\/edit$/,
+    back: (id) => ({ to: `/party-bills/${id}`, label: "Về chi tiết" }),
+  },
+  // Gồm cả /bills/create và /party-bills/create.
+  {
+    pattern: /^\/bills\/[^/]+$/,
+    back: () => ({ to: "/", label: "Danh sách bill cầu" }),
+  },
+  {
+    pattern: /^\/party-bills\/[^/]+$/,
+    back: () => ({ to: "/party-bills", label: "Danh sách bill tiệc" }),
+  },
 ];
 
+const findPushedScreen = (pathname) => {
+  for (const screen of PUSHED_SCREENS) {
+    const match = screen.pattern.exec(pathname);
+    if (match) return { screen, match };
+  }
+  return null;
+};
+
 export function hidesTabBar(pathname) {
-  return TAB_BAR_HIDDEN_PATHS.some((pattern) => pattern.test(pathname));
+  return findPushedScreen(pathname) !== null;
+}
+
+/** Nút quay lại dự phòng của màn đẩy vào ({ to, label }); màn gốc trả null. */
+export function pushedBackLink(pathname) {
+  const found = findPushedScreen(pathname);
+  return found ? found.screen.back(found.match[1]) : null;
+}
+
+export const APP_NAME = "Sổ cầu lông";
+
+/** Tiêu đề mặc định của thanh trên: nhãn tab của mục đang mở, không khớp thì tên app. */
+export function screenTitle(items, pathname) {
+  return items.find((item) => isNavItemActive(item, pathname))?.label ?? APP_NAME;
 }

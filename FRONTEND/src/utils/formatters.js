@@ -60,6 +60,41 @@ export const formatDateDisplay = (date) => {
   return `${day}/${month}/${year}`;
 };
 
+const WEEKDAYS_SHORT = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+// "2026-11-04" hoặc nửa đêm UTC "2026-11-04T00:00:00.000000Z" (Laravel cast date) là một ngày lịch:
+// đọc thẳng năm/tháng/ngày, không qua giờ UTC.
+const CALENDAR_DATE = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z)?$/;
+
+const toLocalDate = (value) => {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const match = CALENDAR_DATE.exec(value);
+    if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/**
+ * Ngày ngắn cho danh sách (M6): cùng năm "T4, 04/11"; khác năm "04/11/2025".
+ * `now` để test; mặc định là lúc gọi.
+ */
+export const formatDateShort = (date, now = new Date()) => {
+  const d = toLocalDate(date);
+  if (!d) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  if (d.getFullYear() !== now.getFullYear()) return `${day}/${month}/${d.getFullYear()}`;
+  return `${WEEKDAYS_SHORT[d.getDay()]}, ${day}/${month}`;
+};
+
+/** Giờ ngắn "21:13" (24 giờ, giờ máy), vd giờ đánh dấu đã thanh toán. */
+export const formatTimeShort = (date) => {
+  const d = toLocalDate(date);
+  if (!d) return '';
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+};
+
 /**
  * Format ratio value (remove trailing zeros)
  * Examples: 1.000 -> 1, 0.700 -> 0.7, 1.5 -> 1.5

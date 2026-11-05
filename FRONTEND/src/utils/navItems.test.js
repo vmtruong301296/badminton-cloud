@@ -4,6 +4,8 @@ import {
   filterNavItems,
   hidesTabBar,
   isNavItemActive,
+  pushedBackLink,
+  screenTitle,
   splitNavItems,
   toTabItems,
 } from "./navItems";
@@ -166,28 +168,88 @@ describe("nhóm hạ cấp thành link đơn", () => {
 });
 
 describe("hidesTabBar", () => {
-  it("ẩn ở các màn tạo / sửa bill (đã có thanh hành động riêng dưới đáy)", () => {
+  it("ẩn ở mọi màn đẩy vào: tạo / sửa và chi tiết bill cầu, bill tiệc", () => {
     for (const path of [
       "/bills/create",
       "/bills/12/edit",
+      "/bills/12",
       "/party-bills/create",
       "/party-bills/7/edit",
+      "/party-bills/7",
     ]) {
       expect(hidesTabBar(path)).toBe(true);
     }
   });
 
-  it("hiện ở các màn còn lại, kể cả chi tiết bill và thuê xe", () => {
+  it("hiện ở các màn gốc, kể cả thuê xe", () => {
     for (const path of [
       "/",
-      "/bills/12",
       "/party-bills",
-      "/party-bills/7",
       "/car-rental",
       "/players",
       "/master",
+      "/roles",
+      "/tournament-brackets",
     ]) {
       expect(hidesTabBar(path)).toBe(false);
     }
+  });
+
+  it("không nhầm đường dẫn sâu hơn hoặc gần giống", () => {
+    expect(hidesTabBar("/bills")).toBe(false);
+    expect(hidesTabBar("/bills/12/edit/x")).toBe(false);
+    expect(hidesTabBar("/party-billsx/7")).toBe(false);
+  });
+});
+
+describe("pushedBackLink", () => {
+  it("chi tiết và tạo mới quay về danh sách của mục, nhãn là tên trang danh sách", () => {
+    expect(pushedBackLink("/bills/179")).toEqual({
+      to: "/",
+      label: "Danh sách bill cầu",
+    });
+    expect(pushedBackLink("/bills/create")).toEqual({
+      to: "/",
+      label: "Danh sách bill cầu",
+    });
+    expect(pushedBackLink("/party-bills/7")).toEqual({
+      to: "/party-bills",
+      label: "Danh sách bill tiệc",
+    });
+  });
+
+  it("màn sửa quay về màn chi tiết của chính bill đó", () => {
+    expect(pushedBackLink("/bills/12/edit")).toEqual({
+      to: "/bills/12",
+      label: "Về chi tiết Bill",
+    });
+    expect(pushedBackLink("/party-bills/7/edit")).toEqual({
+      to: "/party-bills/7",
+      label: "Về chi tiết",
+    });
+  });
+
+  it("màn gốc không có nút quay lại", () => {
+    expect(pushedBackLink("/")).toBeNull();
+    expect(pushedBackLink("/players")).toBeNull();
+    expect(pushedBackLink("/party-bills")).toBeNull();
+  });
+});
+
+describe("screenTitle", () => {
+  const items = toTabItems(filterNavItems(NAV_ITEMS, allow(ALL_PERMISSIONS)));
+
+  it("lấy đúng nhãn tab của mục đang mở", () => {
+    expect(screenTitle(items, "/")).toBe("Bill cầu");
+    expect(screenTitle(items, "/bills/179")).toBe("Bill cầu");
+    expect(screenTitle(items, "/party-bills/7")).toBe("Bill tiệc");
+    expect(screenTitle(items, "/players")).toBe("Người chơi");
+    expect(screenTitle(items, "/master")).toBe("Master");
+    expect(screenTitle(items, "/roles")).toBe("Quyền");
+  });
+
+  it("không khớp mục nào thì là tên app", () => {
+    expect(screenTitle(items, "/khong-co")).toBe("Sổ cầu lông");
+    expect(screenTitle([], "/")).toBe("Sổ cầu lông");
   });
 });
