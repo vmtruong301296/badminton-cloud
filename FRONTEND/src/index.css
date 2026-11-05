@@ -331,8 +331,9 @@ body {
   .chip-applied {
     @apply border-sky-200 bg-sky-50 pr-0 text-sky-800;
   }
+  /* z-10: nằm trên vùng chạm .chip::after của chip cha, nếu không bấm ✕ không ăn */
   .chip-remove {
-    @apply relative -my-px flex h-9 w-9 items-center justify-center rounded-full text-sky-700 active:bg-sky-100;
+    @apply relative z-10 -my-px flex h-9 w-9 items-center justify-center rounded-full text-sky-700 active:bg-sky-100;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
   }
   .chip-remove::after {
