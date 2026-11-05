@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { playersApi, rolesApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency, formatRatio } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 import NumberInput from '../../components/common/NumberInput';
@@ -15,6 +16,12 @@ const GENDER_BADGE = {
 };
 
 export default function PlayersManagement() {
+  const { hasPermission } = useAuth();
+  // Ẩn nút theo quyền route backend (routes/api.php); Thêm giữ nguyên vì POST /players nhận cả users.view.
+  const canUpdate = hasPermission('users.update');
+  const canDelete = hasPermission('users.delete');
+  const canAssignRoles = hasPermission('roles.assign');
+  const hasRowActions = canUpdate || canAssignRoles || canDelete;
   const [players, setPlayers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,8 +49,16 @@ export default function PlayersManagement() {
 
   useEffect(() => {
     loadPlayers();
-    loadRoles();
   }, [filters]);
+
+  // Danh sách vai trò chỉ dùng cho hộp gán vai trò; GET /roles cần roles.view hoặc roles.assign.
+  useEffect(() => {
+    if (!canAssignRoles) return;
+    rolesApi
+      .getAll()
+      .then((response) => setRoles(response.data))
+      .catch((error) => console.error('Error loading roles:', error));
+  }, [canAssignRoles]);
 
   const loadPlayers = async () => {
     try {
@@ -58,15 +73,6 @@ export default function PlayersManagement() {
       console.error('Error loading players:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadRoles = async () => {
-    try {
-      const response = await rolesApi.getAll();
-      setRoles(response.data);
-    } catch (error) {
-      console.error('Error loading roles:', error);
     }
   };
 
@@ -494,7 +500,7 @@ export default function PlayersManagement() {
                   <th className="px-6 py-3 font-medium">Giới tính</th>
                   <th className="px-6 py-3 font-medium">Mức tính</th>
                   <th className="px-6 py-3 font-medium">Quyền</th>
-                  <th className="px-6 py-3 font-medium">Thao tác</th>
+                  {hasRowActions && <th className="px-6 py-3 font-medium">Thao tác</th>}
                 </tr>
               </thead>
               <tbody>
@@ -517,28 +523,36 @@ export default function PlayersManagement() {
                         {renderRoles(player, 'text-sm text-slate-400')}
                       </div>
                     </td>
-                    <td className="whitespace-nowrap px-6 py-3">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleEdit(player)}
-                          className="btn btn-ghost btn-sm"
-                        >
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => handleAssignRoles(player)}
-                          className="btn btn-ghost btn-sm"
-                        >
-                          Quyền
-                        </button>
-                        <button
-                          onClick={() => handleDelete(player.id)}
-                          className="btn btn-danger-ghost btn-sm"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
+                    {hasRowActions && (
+                      <td className="whitespace-nowrap px-6 py-3">
+                        <div className="flex items-center gap-1">
+                          {canUpdate && (
+                            <button
+                              onClick={() => handleEdit(player)}
+                              className="btn btn-ghost btn-sm"
+                            >
+                              Sửa
+                            </button>
+                          )}
+                          {canAssignRoles && (
+                            <button
+                              onClick={() => handleAssignRoles(player)}
+                              className="btn btn-ghost btn-sm"
+                            >
+                              Quyền
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(player.id)}
+                              className="btn btn-danger-ghost btn-sm"
+                            >
+                              Xóa
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -576,27 +590,35 @@ export default function PlayersManagement() {
                     ))}
                   </div>
                 )}
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => handleEdit(player)}
-                    className="btn btn-secondary btn-sm flex-1"
-                  >
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => handleAssignRoles(player)}
-                    className="btn btn-secondary btn-sm flex-1"
-                  >
-                    Quyền
-                  </button>
-                  <button
-                    onClick={() => handleDelete(player.id)}
-                    className="btn btn-danger-soft btn-sm btn-icon"
-                    aria-label={`Xóa ${player.name}`}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                {hasRowActions && (
+                  <div className="mt-3 flex gap-2">
+                    {canUpdate && (
+                      <button
+                        onClick={() => handleEdit(player)}
+                        className="btn btn-secondary btn-sm flex-1"
+                      >
+                        Sửa
+                      </button>
+                    )}
+                    {canAssignRoles && (
+                      <button
+                        onClick={() => handleAssignRoles(player)}
+                        className="btn btn-secondary btn-sm flex-1"
+                      >
+                        Quyền
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(player.id)}
+                        className="btn btn-danger-soft btn-sm btn-icon"
+                        aria-label={`Xóa ${player.name}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
