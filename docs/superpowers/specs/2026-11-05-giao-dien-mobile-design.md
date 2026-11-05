@@ -51,6 +51,8 @@ Nguyên tắc: thay đổi chỉ về giao diện thì làm theo đề xuất; t
 - **03**: bill con giữ cách điền sẵn như hiện nay; màn Sửa có dải cảnh báo người đã TT sẽ về "Chưa TT" (đúng hành vi
   backend hiện tại, lỗi backend tách việc riêng); đổi nhãn "Unit price" → "Tiền cho mức 1"; **không** sửa ngày mặc
   định UTC trong đợt này (lỗi ngoài phạm vi, mục 7).
+- **03 (chủ dự án chốt 05/11/2026)**: màn Tạo / Sửa bill, số tiền trên hàng người chơi **không** gồm nợ cũ / nợ ghi
+  tay — giữ như cũ; máy chủ cộng nợ khi lưu (`CreateBill.jsx:182`, `BillController.php:121, :182`).
 - **04**: giữ STT trên hàng người chơi ở điện thoại (khớp cột TT của ảnh xuất).
 - **05**: bỏ chữ "Mức: x" trong sheet chọn người bill tiệc (không đổi cách tính); STT trên màn giữ như hiện nay.
 - **06 (B)**, **07 (B)**: đúng phạm vi phương án B trong đề xuất của nhóm; câu hỏi chỉ thuộc phương án A thì bỏ qua.
