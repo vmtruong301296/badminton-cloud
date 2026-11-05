@@ -1,0 +1,4150 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Đề xuất Bill tiệc</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --s50: #f8fafc;
+        --s100: #f1f5f9;
+        --s200: #e2e8f0;
+        --s300: #cbd5e1;
+        --s400: #94a3b8;
+        --s500: #64748b;
+        --s600: #475569;
+        --s700: #334155;
+        --s800: #1e293b;
+        --s900: #0f172a;
+        --e50: #ecfdf5;
+        --e100: #d1fae5;
+        --e200: #a7f3d0;
+        --e300: #6ee7b7;
+        --e500: #10b981;
+        --e600: #059669;
+        --e700: #047857;
+        --e800: #065f46;
+        --a50: #fffbeb;
+        --a200: #fde68a;
+        --a500: #f59e0b;
+        --a700: #b45309;
+        --a800: #92400e;
+        --r50: #fff1f2;
+        --r100: #ffe4e6;
+        --r200: #fecdd3;
+        --r500: #f43f5e;
+        --r600: #e11d48;
+        --r700: #be123c;
+        --k50: #f0f9ff;
+        --k100: #e0f2fe;
+        --k700: #0369a1;
+        --p100: #fce7f3;
+        --p700: #be185d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: #eceff3;
+        color: var(--s900);
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* ---------- trang đề xuất ---------- */
+      .wrap {
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 56px 40px 140px;
+      }
+      .doc-h {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 16px 40px;
+        border-bottom: 2px solid var(--s900);
+        padding-bottom: 28px;
+      }
+      .doc-h h1 {
+        font-size: 44px;
+        line-height: 1.08;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        margin: 0;
+      }
+      .doc-h .who {
+        font-size: 14px;
+        color: var(--s600);
+        text-align: right;
+        line-height: 1.6;
+      }
+      .doc-h .who b {
+        color: var(--s900);
+      }
+      .state {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 4px 12px;
+        border-radius: 999px;
+        background: var(--a50);
+        color: var(--a800);
+        font-weight: 600;
+        font-size: 13px;
+        border: 1px solid var(--a200);
+      }
+      .lead {
+        font-size: 18px;
+        line-height: 1.6;
+        color: var(--s700);
+        max-width: 820px;
+        margin: 24px 0 0;
+      }
+      .toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 28px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+      .toc a {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid var(--s200);
+        color: var(--s700);
+        text-decoration: none;
+        font-size: 13.5px;
+        font-weight: 500;
+      }
+      .toc a:hover {
+        border-color: var(--s400);
+      }
+      section.d {
+        margin-top: 72px;
+      }
+      h2.d {
+        font-size: 28px;
+        line-height: 1.2;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0 0 10px;
+      }
+      h3.d {
+        font-size: 19px;
+        font-weight: 650;
+        letter-spacing: -0.01em;
+        margin: 44px 0 6px;
+      }
+      p.d,
+      ul.d {
+        max-width: 820px;
+        color: var(--s700);
+        line-height: 1.65;
+        margin: 8px 0;
+      }
+      ul.d li {
+        margin: 4px 0;
+      }
+      .summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 14px;
+        margin-top: 20px;
+      }
+      .summary .it {
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 14px;
+        padding: 16px 18px;
+        line-height: 1.55;
+        color: var(--s700);
+      }
+      .summary .it b {
+        color: var(--s900);
+      }
+      table.t {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 14px;
+        overflow: hidden;
+        font-size: 14px;
+        margin-top: 14px;
+      }
+      table.t th {
+        background: var(--s50);
+        text-align: left;
+        font-weight: 600;
+        color: var(--s600);
+        font-size: 13px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--s200);
+        vertical-align: bottom;
+      }
+      table.t td {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--s100);
+        vertical-align: top;
+        line-height: 1.5;
+      }
+      table.t tr:last-child td {
+        border-bottom: 0;
+      }
+      table.t td.n {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      table.t code,
+      p.d code,
+      li code,
+      figcaption code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12.5px;
+        background: var(--s100);
+        padding: 1px 5px;
+        border-radius: 5px;
+      }
+      .lv {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 12.5px;
+        padding: 2px 9px;
+        border-radius: 999px;
+        white-space: nowrap;
+      }
+      .lv.cao {
+        background: var(--r50);
+        color: var(--r700);
+      }
+      .lv.vua {
+        background: var(--a50);
+        color: var(--a800);
+      }
+      .lv.thap {
+        background: var(--s100);
+        color: var(--s600);
+      }
+      .m {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 12px;
+        padding: 1px 7px;
+        border-radius: 6px;
+        background: var(--e50);
+        color: var(--e800);
+        margin: 1px 2px 1px 0;
+        white-space: nowrap;
+      }
+      .gallery {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 40px 32px;
+        align-items: flex-start;
+        margin-top: 22px;
+      }
+      figure.shot {
+        margin: 0;
+        width: var(--w, 390px);
+      }
+      figcaption {
+        margin-top: 12px;
+        font-size: 13.5px;
+        color: var(--s600);
+        line-height: 1.5;
+      }
+      figcaption b {
+        display: block;
+        color: var(--s900);
+        font-size: 14.5px;
+        margin-bottom: 2px;
+      }
+      .cur img {
+        width: 260px;
+        display: block;
+        border-radius: 18px;
+        border: 1px solid #cdd5df;
+        background: #fff;
+      }
+      .cur {
+        width: 260px;
+      }
+      .export img {
+        max-width: 100%;
+        display: block;
+        border: 1px solid var(--s200);
+        border-radius: 12px;
+        background: #fff;
+      }
+      .note {
+        max-width: 820px;
+        background: #fff;
+        border-left: 4px solid var(--e700);
+        border-radius: 0 12px 12px 0;
+        padding: 14px 18px;
+        color: var(--s700);
+        margin: 16px 0;
+      }
+      .note.warn {
+        border-left-color: var(--a500);
+      }
+      .dots {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 3px;
+        vertical-align: middle;
+        max-width: 340px;
+      }
+      .dots i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--s400);
+        display: inline-block;
+      }
+      .dots i.n {
+        background: var(--e700);
+      }
+      .dots i.k {
+        background: #fff;
+        box-shadow: inset 0 0 0 2px var(--e700);
+      }
+      .dots i.o {
+        background: #fff;
+        box-shadow: inset 0 0 0 2px var(--s400);
+      }
+      .bars {
+        display: flex;
+        gap: 56px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+        align-items: flex-end;
+      }
+      .bargrp {
+        display: flex;
+        gap: 14px;
+        align-items: flex-end;
+      }
+      .bar1 {
+        width: 120px;
+        display: flex;
+        flex-direction: column;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--s300);
+        background: #fff;
+      }
+      .bar1 span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11.5px;
+        color: var(--s700);
+        border-top: 1px solid rgba(255, 255, 255, 0.8);
+        text-align: center;
+        line-height: 1.2;
+        padding: 0 4px;
+        overflow: hidden;
+      }
+      .bar1 span:first-child {
+        border-top: 0;
+      }
+      .barlbl {
+        font-size: 13px;
+        color: var(--s600);
+        margin-top: 8px;
+        text-align: center;
+        line-height: 1.4;
+      }
+      .barlbl b {
+        color: var(--s900);
+        display: block;
+        font-size: 15px;
+      }
+      .key {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: var(--s600);
+        margin-top: 10px;
+      }
+      .key span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      /* ---------- khung điện thoại ---------- */
+      .phone {
+        position: relative;
+        width: var(--w, 390px);
+        height: var(--h, 844px);
+        overflow: hidden;
+        border-radius: 28px;
+        border: 1px solid #c9d1db;
+        background: var(--s50);
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.06),
+          0 16px 36px -16px rgba(15, 23, 42, 0.22);
+      }
+      .app {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        background: var(--s50);
+        color: var(--s900);
+        font-size: 14px;
+        line-height: 1.43;
+        font-family:
+          Inter,
+          -apple-system,
+          sans-serif;
+      }
+      .app * {
+        box-sizing: border-box;
+      }
+      .app button {
+        font: inherit;
+      }
+      .app .ic {
+        display: block;
+        flex: none;
+      }
+      .ah {
+        height: 48px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        background: rgba(255, 255, 255, 0.94);
+        border-bottom: 1px solid var(--s200);
+      }
+      .ah .logo svg {
+        width: 28px;
+        height: 28px;
+        display: block;
+      }
+      .ah-t {
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        font-size: 16px;
+      }
+      .avatar {
+        margin-left: auto;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--e100);
+        color: var(--e800);
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .m1 {
+        height: 56px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 0 6px;
+        background: #fff;
+        border-bottom: 1px solid var(--s200);
+      }
+      .m1-t {
+        flex: 1;
+        min-width: 0;
+        margin: 0 2px;
+        font-size: 17px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        letter-spacing: -0.01em;
+      }
+      .ib {
+        width: 44px;
+        height: 44px;
+        flex: none;
+        border: 0;
+        background: transparent;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--s600);
+        padding: 0;
+      }
+      .ib-sp {
+        width: 44px;
+        flex: none;
+      }
+      .body {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        position: relative;
+      }
+      .scroll {
+        padding: 12px 16px 28px;
+      }
+      .ph h1 {
+        margin: 4px 0 0;
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+      .ph p {
+        margin: 2px 0 12px;
+        font-size: 13px;
+        color: var(--s500);
+      }
+      .ph p b {
+        color: var(--s700);
+        font-weight: 600;
+      }
+      .backlink {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 44px;
+        margin-left: -8px;
+        padding: 0 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--s600);
+      }
+
+      .card {
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 1px 3px rgba(15, 23, 42, 0.06);
+      }
+      .sec {
+        margin-bottom: 12px;
+        overflow: hidden;
+      }
+      .sec-h {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--s100);
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .sec-h .rt {
+        margin-left: auto;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--s500);
+      }
+      .sec-h .rt.v {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--s900);
+      }
+      .sec-b {
+        padding: 12px 16px 16px;
+      }
+      .mt8 {
+        margin-top: 8px;
+      }
+      .mt12 {
+        margin-top: 12px;
+      }
+      .mt16 {
+        margin-top: 16px;
+      }
+      .g2 {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 12px;
+      }
+
+      .btn {
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 0 16px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        white-space: nowrap;
+        border: 1px solid transparent;
+        background: transparent;
+
+        color: var(--s700);      }
+      .btn-p {
+        background: var(--e700);
+        color: #fff;
+      }
+      .btn-s {
+        background: #fff;
+        border-color: var(--s300);
+        color: var(--s700);
+      }
+      .btn-g {
+        color: var(--e700);
+      }
+      .btn-d {
+        background: var(--r600);
+        color: #fff;
+      }
+      .btn-ds {
+        background: #fff;
+        border-color: var(--r200);
+        color: var(--r600);
+      }
+      .btn-dash {
+        border: 1px dashed var(--s300);
+        color: var(--s600);
+        background: var(--s50);
+      }
+      .btn-i {
+        width: 44px;
+        padding: 0;
+      }
+      .btn-w {
+        width: 100%;
+      }
+      .btn.dis {
+        opacity: 0.5;
+      }
+      .row2 {
+        display: flex;
+        gap: 8px;
+      }
+      .row2 .btn {
+        flex: 1;
+      }
+      .col3 {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .fl {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--s700);
+        margin-bottom: 6px;
+      }
+      .fi {
+        height: 44px;
+        width: 100%;
+        border: 1px solid var(--s300);
+        border-radius: 12px;
+        background: #fff;
+        padding: 0 12px;
+        font-size: 16px;
+        color: var(--s900);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+      .fi.ph {
+        color: var(--s400);
+      }
+      .fi.r {
+        justify-content: flex-end;
+      }
+      .fi.focus {
+        border-color: var(--e600);
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
+      }
+      .fi .ic {
+        color: var(--s400);
+      }
+      .fi .sp {
+        flex: 1;
+      }
+      .fi.err {
+        border-color: var(--r500);
+      }
+      .caret {
+        display: inline-block;
+        width: 1.5px;
+        height: 20px;
+        background: var(--e700);
+        margin-left: 1px;
+      }
+
+      .bd {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        line-height: 18px;
+      }
+      .bd .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .bd-e {
+        background: var(--e50);
+        color: var(--e800);
+      }
+      .bd-e .dot {
+        background: var(--e500);
+      }
+      .bd-a {
+        background: var(--a50);
+        color: var(--a800);
+      }
+      .bd-a .dot {
+        background: var(--a500);
+      }
+      .bd-s {
+        background: var(--s100);
+        color: var(--s700);
+      }
+      .bd-s .dot {
+        background: var(--s400);
+      }
+      .bd-r {
+        background: var(--r50);
+        color: var(--r700);
+      }
+      .bd-r .dot {
+        background: var(--r500);
+      }
+      .gb {
+        display: inline-flex;
+        border-radius: 999px;
+        padding: 1px 8px;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 18px;
+        flex: none;
+      }
+      .gb.f {
+        background: var(--p100);
+        color: var(--p700);
+      }
+      .gb.m {
+        background: var(--k100);
+        color: var(--k700);
+      }
+      .gb.ok {
+        background: var(--e100);
+        color: var(--e800);
+      }
+
+      .tabbar {
+        height: 64px;
+        flex: none;
+        display: flex;
+        background: rgba(255, 255, 255, 0.96);
+        border-top: 1px solid var(--s200);
+      }
+      .tab {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: var(--s500);
+      }
+      .tab-ic {
+        width: 56px;
+        height: 28px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tab.on {
+        color: var(--e700);
+      }
+      .tab.on .tab-ic {
+        background: var(--e50);
+      }
+      .tab-l {
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .safe {
+        height: 34px;
+        flex: none;
+        background: rgba(255, 255, 255, 0.96);
+        position: relative;
+      }
+      .safe::after,
+      .safe-in::after {
+        content: "";
+        position: absolute;
+        left: 50%;
+        bottom: 8px;
+        width: 134px;
+        height: 5px;
+        margin-left: -67px;
+        border-radius: 3px;
+        background: var(--s900);
+      }
+      .safe-in {
+        height: 22px;
+        position: relative;
+      }
+
+      .m2 {
+        flex: none;
+        background: #fff;
+        border-top: 1px solid var(--s200);
+        padding: 12px 16px 0;
+      }
+      .m2-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 44px;
+      }
+      .m2-l {
+        flex: 1;
+        min-width: 0;
+      }
+      .m2-k {
+        font-size: 13px;
+        color: var(--s500);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 18px;
+      }
+      .m2-v {
+        font-size: 18px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        line-height: 24px;
+        letter-spacing: -0.01em;
+      }
+      .m2-v.e {
+        color: var(--e700);
+      }
+      .m2-r {
+        display: flex;
+        gap: 8px;
+        flex: none;
+      }
+
+      .fab {
+        position: absolute;
+        right: 16px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--e700);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+          0 12px 24px -4px rgba(5, 150, 105, 0.32),
+          0 6px 12px -4px rgba(15, 23, 42, 0.12);
+      }
+
+      .backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.42);
+      }
+      .sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #fff;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.14);
+      }
+      .sh-head {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 20px 20px 8px;
+      }
+      .sh-head h2 {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        font-size: 18px;
+        line-height: 26px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        overflow-wrap: anywhere;
+      }
+      .sh-head .ib {
+        margin: -9px -12px 0 0;
+      }
+      .sh-body {
+        padding: 8px 20px 16px;
+        overflow: hidden;
+        flex: 1;
+        min-height: 0;
+      }
+      .sh-foot {
+        border-top: 1px solid var(--s100);
+        padding: 12px 20px 12px;
+      }
+      .sh-sub {
+        font-size: 13px;
+        color: var(--s500);
+        margin: -4px 0 4px;
+      }
+
+      .toast {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--s900);
+        color: #fff;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        line-height: 20px;
+        box-shadow: 0 10px 24px -8px rgba(15, 23, 42, 0.45);
+      }
+      .toast .ic {
+        color: var(--e300);
+      }
+      .toast.err .ic {
+        color: #fda4af;
+      }
+
+      /* M4 */
+      .chips {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+        margin: 0 -16px 12px;
+        padding: 0 16px;
+      }
+      .chip {
+        height: 40px;
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 14px;
+        border-radius: 999px;
+        border: 1px solid var(--s200);
+        background: #fff;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--s600);
+        white-space: nowrap;
+      }
+      .chip .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .chip.on-e {
+        border-color: var(--e300);
+        background: var(--e50);
+        color: var(--e800);
+      }
+      .chip.on-a {
+        border-color: #fcd34d;
+        background: var(--a50);
+        color: var(--a800);
+      }
+      .chip.on-s {
+        border-color: var(--s300);
+        background: var(--s100);
+        color: var(--s800);
+      }
+      .chip.filt {
+        color: var(--s700);
+        border-color: var(--s300);
+      }
+      .chip .cnt {
+        min-width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        background: var(--e700);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 6px;
+      }
+      .seg {
+        display: flex;
+        height: 44px;
+        border: 1px solid var(--s300);
+        border-radius: 12px;
+        overflow: hidden;
+      }
+      .seg span {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: var(--s600);
+        border-left: 1px solid var(--s200);
+      }
+      .seg span:first-child {
+        border-left: 0;
+      }
+      .seg span.on {
+        background: var(--e50);
+        color: var(--e800);
+        font-weight: 600;
+      }
+
+      /* M3: hàng bill */
+      .list {
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 1px 3px rgba(15, 23, 42, 0.06);
+      }
+      .lrow {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 16px;
+        min-height: 64px;
+        border-top: 1px solid var(--s100);
+      }
+      .lrow:first-child {
+        border-top: 0;
+      }
+      .lrow.od {
+        background: rgba(255, 241, 242, 0.75);
+      }
+      .lrow.pd {
+        background: rgba(236, 253, 245, 0.5);
+      }
+      .lrow-l {
+        flex: 1;
+        min-width: 0;
+      }
+      .lrow-t {
+        font-size: 15px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 21px;
+      }
+      .lrow-s {
+        font-size: 13px;
+        color: var(--s500);
+        margin-top: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 18px;
+      }
+      .lrow.od .lrow-s {
+        color: var(--r700);
+      }
+      .lrow-r {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 3px;
+        flex: none;
+      }
+      .amt {
+        font-size: 18px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        line-height: 24px;
+        letter-spacing: -0.01em;
+      }
+      .strip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px 10px 16px;
+        min-height: 60px;
+        margin-bottom: 12px;
+      }
+      .strip-l {
+        flex: 1;
+        min-width: 0;
+      }
+      .strip-t {
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 21px;
+      }
+      .strip-s {
+        font-size: 13px;
+        color: var(--s500);
+        line-height: 18px;
+      }
+      .strip-v {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--r600);
+        white-space: nowrap;
+        letter-spacing: -0.01em;
+      }
+      .strip .ic {
+        color: var(--s400);
+      }
+      .urow {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px 0;
+        border-top: 1px solid var(--s100);
+      }
+      .urow:first-child {
+        border-top: 0;
+      }
+      .urow.od {
+        background: rgba(255, 241, 242, 0.75);
+        margin: 0 -20px;
+        padding: 12px 20px;
+      }
+      .urow-l {
+        flex: 1;
+        min-width: 0;
+      }
+      .urow-t {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .urow-t .nm {
+        font-weight: 600;
+        font-size: 15px;
+        line-height: 21px;
+        overflow-wrap: anywhere;
+      }
+      .urow-t .v {
+        font-weight: 600;
+        color: var(--r600);
+        white-space: nowrap;
+        font-size: 15px;
+      }
+      .dch {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .dch span {
+        font-size: 12.5px;
+        line-height: 18px;
+        padding: 2px 6px;
+        border-radius: 8px;
+        background: var(--s100);
+        color: var(--s700);
+        white-space: nowrap;
+      }
+      .urow.od .dch span {
+        background: #fff;
+      }
+
+      /* hàng người (chi tiết) */
+      .grp {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--s500);
+        margin: 16px 4px 8px;
+      }
+      .grp .c {
+        color: var(--s700);
+      }
+      .prow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 6px 8px 12px;
+        min-height: 64px;
+        border-top: 1px solid var(--s100);
+      }
+      .prow:first-child {
+        border-top: 0;
+      }
+      .prow.paid {
+        background: rgba(236, 253, 245, 0.55);
+      }
+      .stt {
+        width: 18px;
+        flex: none;
+        font-size: 12px;
+        line-height: 20px;
+        color: var(--s400);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        line-height: 21px;
+      }
+      .prow-m {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .prow-s .debt {
+        white-space: nowrap;
+      }
+      .prow-l {
+        flex: 1;
+        min-width: 0;
+      }
+      .prow-t,
+      .crow-t {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 21px;
+      }
+      .prow-t .gb,
+      .crow-t .gb {
+        margin-left: 6px;
+        vertical-align: 1px;
+      }
+      .prow-s {
+        font-size: 13px;
+        color: var(--s500);
+        margin-top: 2px;
+        line-height: 18px;
+      }
+      .prow-s .debt {
+        color: var(--r700);
+        font-weight: 500;
+      }
+      .prow-s .tm {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--e700);
+      }
+      .prow-amt {
+        font-size: 17px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        letter-spacing: -0.01em;
+      }
+      .prow.paid .prow-amt {
+        color: var(--s500);
+      }
+      .chk {
+        width: 44px;
+        height: 44px;
+        flex: none;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        background: transparent;
+        padding: 0;
+      }
+      .chk i {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid var(--s300);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+      }
+      .chk.on i {
+        background: var(--e600);
+        border-color: var(--e600);
+        color: #fff;
+      }
+      .chk.busy i {
+        border-color: var(--e200);
+        border-top-color: var(--e600);
+      }
+
+      /* hàng người (tạo/sửa) */
+      .crow {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px 10px 16px;
+        min-height: 56px;
+        border-top: 1px solid var(--s100);
+      }
+      .crow.paid {
+        background: rgba(236, 253, 245, 0.5);
+      }
+      .crow-l {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .crow-s {
+        font-size: 13px;
+        color: var(--s500);
+        line-height: 18px;
+        margin-top: 1px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .crow-amt {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--e700);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .crow .ic {
+        color: var(--s300);
+      }
+      .xrow {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .xrow .fi:first-child {
+        flex: 1;
+        min-width: 0;
+      }
+      .xrow .fi.r {
+        width: 128px;
+        flex: none;
+      }
+      .xrow .ib {
+        color: var(--s400);
+      }
+      .lock {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        border: 1px solid var(--s200);
+        background: var(--s50);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+      .lock-l {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+        color: var(--s700);
+        line-height: 20px;
+      }
+      .lock-l .ic {
+        display: inline-block;
+        vertical-align: -3px;
+        margin-right: 6px;
+        color: var(--s500);
+      }
+      .lock-s {
+        font-size: 13px;
+        color: var(--s500);
+      }
+      .lock b {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .hint {
+        font-size: 13px;
+        color: var(--s500);
+        margin: 4px 0 0;
+        line-height: 18px;
+      }
+      .empty-in {
+        border: 1px dashed var(--s300);
+        border-radius: 12px;
+        background: rgba(248, 250, 252, 0.6);
+        padding: 20px 16px;
+        text-align: center;
+        color: var(--s500);
+        font-size: 14px;
+      }
+
+      /* chọn người */
+      .pk {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 52px;
+        border-top: 1px solid var(--s100);
+        padding: 0 4px;
+      }
+      .pk:first-child {
+        border-top: 0;
+      }
+      .pk.on {
+        background: rgba(236, 253, 245, 0.6);
+      }
+      .cb {
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 2px solid var(--s300);
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #fff;
+      }
+      .cb.on {
+        background: var(--e600);
+        border-color: var(--e600);
+        color: #fff;
+      }
+      .pk-n {
+        flex: 1;
+        min-width: 0;
+        font-size: 15px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .pk-g {
+        font-size: 13px;
+        color: var(--s500);
+        flex: none;
+      }
+      .opt {
+        outline: 2px dashed var(--a500);
+        outline-offset: 3px;
+      }
+      .optlbl {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--a700);
+        margin: 2px 0 6px;
+      }
+
+      /* tóm tắt chi tiết */
+      .sum {
+        padding: 14px 16px 6px;
+        margin-bottom: 4px;
+      }
+      .sum-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px 10px;
+        font-size: 13px;
+        color: var(--s500);
+      }
+      .sum-k {
+        font-size: 13px;
+        color: var(--s500);
+        margin-top: 12px;
+      }
+      .sum-v {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
+        line-height: 28px;
+      }
+      .pbar {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--s100);
+        overflow: hidden;
+        margin-top: 12px;
+      }
+      .pbar span {
+        display: block;
+        height: 100%;
+        background: var(--e600);
+        border-radius: 999px;
+      }
+      .sum-p {
+        font-size: 13px;
+        color: var(--s600);
+        margin-top: 6px;
+      }
+      .sum-p b {
+        color: var(--s900);
+      }
+      .disc {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: calc(100% + 32px);
+        margin: 8px -16px 0;
+        padding: 0 16px;
+        height: 44px;
+        border: 0;
+        border-top: 1px solid var(--s100);
+        background: transparent;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--s700);
+      }
+      .disc .ic {
+        color: var(--s500);
+      }
+      .kv {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 0;
+        font-size: 14px;
+        color: var(--s600);
+      }
+      .kv b {
+        color: var(--s900);
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .kv.sub {
+        padding: 3px 0 3px 14px;
+        font-size: 13px;
+      }
+      .kv.sub b {
+        font-weight: 500;
+        color: var(--s700);
+      }
+      .kv.big {
+        border-top: 1px solid var(--s200);
+        margin-top: 4px;
+        padding-top: 10px;
+      }
+      .kv.big b {
+        font-size: 17px;
+      }
+      .kv a {
+        color: var(--k700);
+        text-decoration: underline;
+        font-size: 12.5px;
+      }
+      .notebox {
+        margin: 8px 0 10px;
+        border: 1px solid var(--a200);
+        background: rgba(255, 251, 235, 0.7);
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: var(--s700);
+      }
+      .notebox div:first-child {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--a700);
+      }
+      .debtbox {
+        border: 1px solid var(--r200);
+        background: rgba(255, 241, 242, 0.6);
+        border-radius: 12px;
+        padding: 8px 12px;
+        margin-top: 8px;
+      }
+      .debtbox .h {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--r700);
+        margin-bottom: 2px;
+      }
+      .debtbox .kv {
+        color: var(--s700);
+        font-size: 13px;
+        padding: 4px 0;
+      }
+      .debtbox .kv span {
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .tot {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        background: rgba(236, 253, 245, 0.8);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-top: 12px;
+        color: var(--e700);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .tot b {
+        font-size: 17px;
+        font-variant-numeric: tabular-nums;
+      }
+      .menu a {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 52px;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--s800);
+        border-top: 1px solid var(--s100);
+      }
+      .menu a:first-child {
+        border-top: 0;
+      }
+      .menu a.danger {
+        color: var(--r600);
+      }
+      .radio {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 56px;
+        border: 1px solid var(--s200);
+        border-radius: 12px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+      .radio.on {
+        border-color: var(--e600);
+        background: var(--e50);
+      }
+      .radio .rd {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2px solid var(--s300);
+        flex: none;
+      }
+      .radio.on .rd {
+        border: 5px solid var(--e700);
+      }
+      .radio .t {
+        font-weight: 500;
+      }
+      .radio .s {
+        font-size: 13px;
+        color: var(--s600);
+      }
+      .msg {
+        font-size: 14px;
+        color: var(--s600);
+        line-height: 21px;
+      }
+      .sk {
+        background: linear-gradient(
+          90deg,
+          rgba(226, 232, 240, 0.5),
+          #e2e8f0,
+          rgba(226, 232, 240, 0.5)
+        );
+        border-radius: 8px;
+      }
+      .estate {
+        background: #fff;
+        border: 1px solid var(--s200);
+        border-radius: 16px;
+        padding: 44px 24px;
+        text-align: center;
+      }
+      .estate .ico {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: var(--s100);
+        color: var(--s500);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+      }
+      .estate h3 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .estate p {
+        margin: 4px 0 0;
+        font-size: 14px;
+        color: var(--s500);
+      }
+      .bcard {
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .bcard-h {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .bcard-h .nm {
+        flex: 1;
+        min-width: 0;
+        font-weight: 600;
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .mini {
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--s600);
+        margin-bottom: 4px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid var(--s200);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--s600);
+        background: #fff;
+        white-space: nowrap;
+      }
+      .pill.on {
+        border-color: var(--e300);
+        background: var(--e100);
+        color: var(--e800);
+      }
+      @media (max-width: 720px) {
+        .wrap {
+          padding: 28px 16px 80px;
+        }
+        .doc-h h1 {
+          font-size: 32px;
+        }
+        .doc-h .who {
+          text-align: left;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="doc-h">
+        <div>
+          <h1>Bill tiệc trên điện thoại</h1>
+        </div>
+        <div class="who">
+          Nhóm <b>05-bill-tiec</b>, đợt thiết kế lại giao diện điện thoại<br />Bước
+          1, ngày 05/11/2026<br /><span class="state">Chờ chủ dự án duyệt</span>
+        </div>
+      </header>
+      <p class="lead">
+        Danh sách, tạo, sửa và chi tiết bill tiệc trên màn 390 px. Bill tiệc
+        dùng cùng mẫu với bill cầu: hàng danh sách M3, thanh đầu M1, thanh hành
+        động dính đáy M2. Ảnh bill xuất giữ nguyên từng điểm ảnh, desktop giữ
+        nguyên, không sửa backend.
+      </p>
+      <ul class="toc">
+        <li><a href="#tom-tat">Tóm tắt</a></li>
+        <li><a href="#vuong">Vướng hiện nay</a></li>
+        <li><a href="#a-ds">A: Danh sách</a></li>
+        <li><a href="#a-tao">A: Tạo / Sửa</a></li>
+        <li><a href="#a-ct">A: Chi tiết</a></li>
+        <li><a href="#anh-xuat">Ảnh xuất</a></li>
+        <li><a href="#be-ngang">360 và 430</a></li>
+        <li><a href="#b">Phương án B</a></li>
+        <li><a href="#cham">Số lần chạm</a></li>
+        <li><a href="#thay-doi">Thay đổi</a></li>
+        <li><a href="#vai-tro">Theo vai trò</a></li>
+        <li><a href="#chu-moi">Chữ mới</a></li>
+        <li><a href="#mau-chung">Mẫu chung</a></li>
+        <li><a href="#phu-thuoc">Phụ thuộc</a></li>
+        <li><a href="#trien-khai">File và công</a></li>
+        <li><a href="#quyet">Cần quyết</a></li>
+        <li><a href="#tham-khao">Tham khảo</a></li>
+      </ul>
+
+      <!-- ====================================================== -->
+      <section class="d" id="tom-tat">
+        <h2 class="d">Phương án A, tóm tắt</h2>
+        <div class="summary">
+          <div class="it">
+            <b>Danh sách gọn.</b> Mỗi bill là một hàng M3 cao 64 px, bấm cả hàng
+            để mở. Bỏ ba nút ›, Sửa, Xóa trên hàng. Ngày in theo M6 ("T2,
+            02/11"), không in "2026-11-02".
+          </div>
+          <div class="it">
+            <b>Ai còn nợ thì thấy ngay.</b> Khối "Chưa thanh toán" đang nằm cuối
+            trang được đưa lên đầu danh sách thành một hàng tóm tắt, bấm vào mở
+            sheet. Đánh dấu "trả hết" phải qua hộp xác nhận (hiện nay một chạm
+            là đổi tất cả bill).
+          </div>
+          <div class="it">
+            <b>Tạo / sửa theo lối "chia đều, chỉ ghi ngoại lệ".</b> Mỗi người là
+            một hàng (tên + số tiền). Mức tính, đã chi, tiền thêm, ghi chú chỉ
+            hiện khi khác mặc định và được sửa trong sheet. Bill 15 người: trang
+            dài ~5.000 px giảm còn ~2.000 px.
+          </div>
+          <div class="it">
+            <b>Chọn người không còn nhảy chỗ.</b> Sheet "Chọn người" có ô tìm,
+            mỗi hàng có ô tích, hàng đã chọn đứng yên. Chi phí thêm mỗi khoản
+            một dòng, Enter nhảy sang ô kế, Enter ở ô tiền cuối thì tự thêm
+            dòng.
+          </div>
+          <div class="it">
+            <b>Thao tác chính trong tầm ngón cái.</b> Chi tiết bill có thanh M2:
+            "Còn thu" + Xuất Bill + Gửi Telegram. Sửa bill và Xóa bill chuyển
+            vào sheet ⋯. Không còn phải cuộn ngược lên đầu một trang dài ~5.700 px.
+          </div>
+          <div class="it">
+            <b>Đánh dấu đã trả một chạm, không nhảy hàng.</b> Nút tròn 44 px
+            ngay trên hàng. Hàng vừa đánh dấu đứng yên tới lần mở sau. Nợ bill
+            cũ hiện ngay trên hàng (hiện nay chỉ có trong ảnh xuất, nên số trên
+            màn khác số trong ảnh).
+          </div>
+          <div class="it">
+            <b>Phản hồi rõ ràng.</b> <code>alert()</code> đổi thành toast M8.
+            Hộp hỏi khi bỏ đánh dấu đang có nút "Xóa", đổi thành "Bỏ đánh dấu".
+          </div>
+          <div class="it">
+            <b>Tùy chọn A+.</b> Nút "Lấy người từ bill cầu" cùng ngày, dùng API
+            có sẵn. Bước chọn 15 người từ 17 chạm còn 1. Chủ dự án quyết có làm
+            hay không.
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="vuong">
+        <h2 class="d">Vướng trên điện thoại hiện nay</h2>
+        <p class="d">
+          Đo trên máy chủ demo ở 390 × 844, chiều cao ước tính cho bill thật suy
+          ra từ số đo của từng thẻ. Ảnh chụp màn hiện tại ở dưới bảng.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Chỗ vướng</th>
+              <th>Ảnh / đo đạc</th>
+              <th style="white-space:nowrap">Mức độ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>
+                Khối "Chưa thanh toán" (ai còn nợ, bao nhiêu) nằm sau toàn bộ
+                danh sách và phân trang
+              </td>
+              <td>
+                Ảnh 1: bắt đầu ở y = 1.050 px khi mới có 2 bill; 10 bill/trang
+                thì ~1.900 px
+              </td>
+              <td><span class="lv cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>
+                Ô tích trong khối đó đánh dấu người chơi đã trả <b>mọi</b> bill
+                tiệc chỉ bằng một chạm, không hỏi lại
+              </td>
+              <td><code>PartyBills.jsx:924–936</code></td>
+              <td><span class="lv cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>
+                Thẻ người đã chọn ở màn tạo chỉ rộng 158 px nhưng cao 385 px, 4
+                ô nhập chồng dọc cho mỗi người
+              </td>
+              <td>
+                Ảnh 3: 15 người ≈ 8 hàng thẻ × 393 px, cả trang ≈ 5.000 px
+              </td>
+              <td><span class="lv cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>
+                Màn chi tiết đặt 4 nút (Xuất Bill, Gửi Telegram, Sửa bill, Xóa)
+                ở đầu trang. Đánh dấu xong người cuối thì phải cuộn ngược lên
+                mới gửi được
+              </td>
+              <td>Ảnh 2: nút ở y = 175; 25 người, trang ≈ 5.700 px</td>
+              <td><span class="lv cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>
+                Thẻ người ở chi tiết cao 180 px, luôn có 3 ô "Chia bill / Đã chi
+                / Tiền thêm" kể cả khi bằng 0
+              </td>
+              <td>Ảnh 2: 25 người ≈ 4.750 px chỉ riêng phần thẻ</td>
+              <td><span class="lv cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>
+                Nợ bill cũ (<code>debt_amount</code>, <code>debt_details</code>)
+                không hiện trên màn, nhưng ảnh xuất có cột "Nợ" và cộng vào
+                "Tổng tiền". Số người thu nhìn trên màn khác số trong ảnh gửi
+                nhóm
+              </td>
+              <td>
+                <code>PartyBillExport.jsx:97–115</code> và
+                <code>PartyBillDetail.jsx</code> (không đọc 2 trường này)
+              </td>
+              <td><span class="lv cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>
+                Mỗi hàng bill có 3 nút biểu tượng (›, Sửa, Xóa), chỉ mũi tên ›
+                mở được chi tiết, cả hàng không bấm được. Nút Xóa nằm sát nút
+                Sửa
+              </td>
+              <td>Ảnh 1: hàng cao 165 px; nút 44 px</td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>
+                Ngày in kiểu ISO "2026-11-03" (danh sách, chi tiết) và
+                "2026/11/03" (khối chưa thanh toán)
+              </td>
+              <td>Ảnh 1, 2</td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>
+                Bộ lọc mặc định ẩn bill đã thanh toán. Khi mọi bill đã trả, màn
+                báo "Chưa có bill tiệc nào" và mời "Tạo bill đầu tiên"
+              </td>
+              <td><code>PartyBills.jsx:539–550</code></td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>
+                Danh sách chọn người nằm trong khung cuộn lồng (cao tối đa 480
+                px). Người vừa chọn biến mất khỏi danh sách, các ô dồn lên ngay
+                dưới ngón tay
+              </td>
+              <td>Ảnh 3</td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>
+                Thanh đáy màn tạo chỉ có Hủy + Tạo, không có tổng tiền. Tổng nằm
+                cuối trang
+              </td>
+              <td>Ảnh 3</td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>12</td>
+              <td>
+                Bỏ đánh dấu đã thanh toán: hộp hỏi lại có nút xác nhận là "Xóa"
+                (giá trị mặc định của <code>ConfirmDialog</code>)
+              </td>
+              <td><code>PartyBillDetail.jsx:1022–1028</code></td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>13</td>
+              <td>
+                Kết quả gửi Telegram, lỗi tải và lỗi lưu đều báo bằng
+                <code>alert()</code>
+              </td>
+              <td>11 chỗ trong 4 file</td>
+              <td><span class="lv vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>14</td>
+              <td>
+                Chi phí thêm: mỗi khoản 2 dòng (tên + nút xóa, rồi số tiền), cao
+                175 px
+              </td>
+              <td>Ảnh 3</td>
+              <td><span class="lv thap">thấp</span></td>
+            </tr>
+            <tr>
+              <td>15</td>
+              <td>
+                Câu trống "Chọn người chơi từ danh sách bên trái" nhưng trên
+                điện thoại danh sách nằm phía trên
+              </td>
+              <td>Ảnh 3 (trước khi chọn)</td>
+              <td><span class="lv thap">thấp</span></td>
+            </tr>
+            <tr>
+              <td>16</td>
+              <td>
+                Danh sách chọn người hiện "Mức: 0.7" cho nữ, nhưng chọn vào thì
+                mức luôn là 1
+              </td>
+              <td><code>CreatePartyBill.jsx:128–143, 453–456</code></td>
+              <td><span class="lv thap">thấp</span></td>
+            </tr>
+            <tr>
+              <td>17</td>
+              <td>
+                Giờ đánh dấu in kiểu "21:40:12 2/11/2026"; STT trên màn (xếp
+                chưa TT, nam, nữ) khác STT trong ảnh (chưa TT, đã TT)
+              </td>
+              <td><code>PartyBillDetail.jsx:544–555, 976</code></td>
+              <td><span class="lv thap">thấp</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="gallery">
+          <figure class="cur">
+            <img
+              src="anh/cu-list.png"
+              alt="Danh sách bill tiệc hiện tại ở 390 px"
+            />
+            <figcaption>
+              <b>Ảnh 1. Danh sách hiện tại</b>Hàng 165 px có 3 nút, ngày ISO,
+              khối "Chưa thanh toán" nằm dưới danh sách.
+            </figcaption>
+          </figure>
+          <figure class="cur">
+            <img
+              src="anh/cu-detail-full.png"
+              alt="Chi tiết bill tiệc hiện tại, cả trang"
+            />
+            <figcaption>
+              <b>Ảnh 2. Chi tiết hiện tại (cả trang, 4 người)</b>4 nút ở đầu
+              trang, thẻ người 180 px. Thanh tab bị chụp đè giữa trang vì là ảnh
+              chụp cả trang.
+            </figcaption>
+          </figure>
+          <figure class="cur">
+            <img
+              src="anh/cu-create-4nguoi-full.png"
+              alt="Tạo bill tiệc hiện tại với 4 người đã chọn"
+            />
+            <figcaption>
+              <b>Ảnh 3. Tạo bill hiện tại (4 người)</b>Thẻ người 158 × 385 px,
+              tổng tiền nằm cuối trang, thanh đáy không có tổng.
+            </figcaption>
+          </figure>
+          <figure class="cur">
+            <img
+              src="anh/cu-detail-chontk.png"
+              alt="Sheet chọn tài khoản hiện tại"
+            />
+            <figcaption>
+              <b>Ảnh 4. Sheet chọn tài khoản (hiện tại)</b>Mở trước khi xuất
+              hoặc gửi. Nút xác nhận chỉ ghi "Xác nhận".
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 class="d">Bố cục cũ và mới, theo chiều cao trang</h3>
+        <p class="d">
+          Mỗi cột là một trang cuộn hết, vẽ theo tỉ lệ 1 : 12. Chiều cao ước
+          tính từ thẻ đo được trên demo.
+        </p>
+        <div class="bars" id="bars"></div>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="a-ds">
+        <h2 class="d">Phương án A: danh sách bill tiệc</h2>
+        <p class="d">
+          <span class="m">M3</span><span class="m">M4</span
+          ><span class="m">M5</span><span class="m">M6</span
+          ><span class="m">M7</span><span class="m">M8</span
+          ><span class="m">M9</span> Bộ lọc trạng thái giữ mặc định (Chưa TT + 1
+          phần). Nút "Lọc" được ghim bên trái để không bị cuộn khuất ở màn 360.
+        </p>
+        <div class="gallery">
+          <figure class="shot">
+            <div class="phone" id="a-list" data-s="listA"></div>
+            <figcaption>
+              <b>A1. Danh sách</b>Hàng 64 px, bấm cả hàng. Bill quá hạn có nền
+              rose, chữ "Quá hạn" nằm trong dòng phụ. Bill năm ngoái in
+              "28/12/2025". Tên bill dài bị cắt "…" thay vì xuống dòng.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-filter" data-s="listFilter"></div>
+            <figcaption>
+              <b>A2. Sheet "Lọc"</b>Ngày, tên tiệc, số bill/trang. Lọc chạy ngay
+              khi chọn, nút chân sheet cho biết còn bao nhiêu bill. Nút "Lọc" ở
+              hàng chip hiện số điều kiện đang bật.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-unpaid" data-s="unpaidSheet"></div>
+            <figcaption>
+              <b>A3. Sheet "Chưa thanh toán"</b>Cùng dữ liệu với khối bên phải
+              trên desktop. Ngày in theo M6, người có khoản quá 7 ngày có nền
+              rose. Nút tròn bên phải để đánh dấu trả hết.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-markall" data-s="markAll"></div>
+            <figcaption>
+              <b>A4. Xác nhận trả hết</b><code>ConfirmDialog</code> có sẵn
+              (<code>confirmVariant="primary"</code>). Nêu số bill và tổng tiền
+              trước khi đổi dữ liệu.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-empty" data-s="listEmpty"></div>
+            <figcaption>
+              <b>A5. Không khớp bộ lọc</b>Khác với "Chưa có bill tiệc nào". Ví
+              dụ: mọi bill đã trả nhưng bộ lọc mặc định đang ẩn bill đã trả.
+              Hàng tóm tắt ẩn khi không còn ai nợ.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-loading" data-s="listLoading"></div>
+            <figcaption>
+              <b>A6. Đang tải và lỗi tải</b>Khung xương có hình giống hàng thật.
+              Tải lỗi thì hiện toast M8 (thay <code>alert</code>), kèm nút "Thử
+              lại" nếu mẫu M8 của nhóm 01 có nút.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="a-tao">
+        <h2 class="d">Phương án A: tạo và sửa bill tiệc</h2>
+        <p class="d">
+          <span class="m">M1</span><span class="m">M2</span
+          ><span class="m">M5</span><span class="m">M8</span> Ví dụ: 15 người,
+          tiền tiệc 4.200.000 ₫, hai khoản thêm (món chung 350.000 ₫, tiền xe
+          600.000 ₫). Đơn giá 343.333 ₫/mức, in ra 343.000 ₫ (làm tròn nghìn như
+          hiện nay). Thanh tab vẫn ẩn như hiện nay. Nút quay lại ở M1 thay cho
+          nút "Hủy".
+        </p>
+        <div class="gallery">
+          <figure class="shot">
+            <div class="phone" id="a-create" data-s="createTop"></div>
+            <figcaption>
+              <b>A7. Tạo bill, phần đầu</b>Tên đứng đầu, Enter đi lần lượt Tên,
+              Tổng tiền tiệc, rồi từng khoản thêm. Khoản thêm một dòng, số tiền
+              canh phải. Tổng cộng luôn nằm ở thanh đáy.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-create2" data-s="createPeople"></div>
+            <figcaption>
+              <b>A8. Tạo bill, cuộn xuống phần người</b>Hàng 56 px. Chỉ người có
+              ngoại lệ mới có dòng phụ: người ứng tiền nhà hàng (số âm), người
+              gọi thêm phần. Thẻ "Tổng kết" giữ ở cuối trang.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-picker" data-s="pickerSheet"></div>
+            <figcaption>
+              <b>A9. Sheet "Chọn người"</b>Chạm là thêm hoặc bỏ, hàng đứng yên.
+              Không còn khung cuộn lồng. Bỏ dòng "Mức: x" vì bill tiệc luôn đặt
+              mức 1. Khung viền đứt màu vàng là nút tùy chọn A+.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-person" data-s="personSheet"></div>
+            <figcaption>
+              <b>A10. Sheet sửa một người</b>4 ô cũ của thẻ người. Xem trước
+              Thành tiền ngay trong sheet. "Xóa khỏi bill" nằm ở đây, không đặt
+              trên hàng. Sheet không tự mở bàn phím khi vừa mở.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-quick" data-s="quickAdd"></div>
+            <figcaption>
+              <b>A11. "Thêm nhanh người chơi"</b>Giữ nguyên chữ và cách lưu. Mở
+              chồng lên sheet chọn người, lưu xong thì người mới được tích sẵn.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-create-err" data-s="createEmpty"></div>
+            <figcaption>
+              <b>A12. Chưa chọn ai mà bấm Tạo</b>Toast M8 dùng lại câu cũ, trang
+              cuộn tới thẻ "Người tham gia". Câu trống lấy câu đã có ở màn Sửa.
+              Ngày đó có bill cầu thì hiện nút A+.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-edit" data-s="editA"></div>
+            <figcaption>
+              <b>A13. Sửa bill có chuyến xe gắn sẵn</b>Dòng xe chỉ đọc, giữ
+              nguyên chữ. Người đã TT có nhãn "Đã TT", mở sheet thì không có
+              "Xóa khỏi bill". Thanh đáy: "Cập nhật".
+            </figcaption>
+          </figure>
+        </div>
+        <p class="d">
+          Bàn phím: ô tiền dùng
+          <code>CurrencyInput</code> (<code>inputMode="numeric"</code>), ô mức
+          dùng <code>NumberInput</code> (<code>inputMode="decimal"</code>). Mọi
+          ô có <code>enterKeyHint="next"</code>; ô tiền của khoản cuối cùng mà
+          nhấn Enter thì thêm một khoản trống và đưa con trỏ vào ô tên. Khoản
+          trống bị bỏ qua khi lưu, đúng như bộ lọc đang có trong
+          <code>handleSubmit</code>.
+        </p>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="a-ct">
+        <h2 class="d">Phương án A: chi tiết bill tiệc</h2>
+        <p class="d">
+          <span class="m">M1</span><span class="m">M2</span
+          ><span class="m">M3*</span><span class="m">M5</span
+          ><span class="m">M6</span><span class="m">M7</span
+          ><span class="m">M8</span> Ví dụ: bill #118, 25 người (3 bé tính mức
+          0.5), có chuyến xe gắn từ màn Thuê xe, tổng 19.400.000 ₫. 2 người còn
+          nợ bill cũ. Thanh tab ẩn ở màn này, xem mục "Đề xuất mẫu chung";
+          phương án B giữ thanh tab.
+        </p>
+        <div class="gallery">
+          <figure class="shot">
+            <div class="phone" id="a-detail" data-s="detailA"></div>
+            <figcaption>
+              <b>A14. Chi tiết, lúc mở</b>Tóm tắt 200 px: trạng thái, ngày,
+              tổng, thanh tiến độ. Người chia hai nhóm Chưa / Đã thanh toán.
+              Dòng phụ chỉ ghi số khác 0. Nợ cũ màu rose. Tên dài xuống tối đa 2
+              dòng.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-detail-info" data-s="detailInfo"></div>
+            <figcaption>
+              <b>A15. "Thông tin Bill" mở ra</b>Tiền tiệc, chi phí thêm (dòng xe
+              có biểu tượng xe và link "xem chuyến xe"), đơn giá, ghi chú. Đóng
+              sẵn để người chơi hiện ngay màn đầu.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-detail-after" data-s="detailAfter"></div>
+            <figcaption>
+              <b>A16. Sau khi đánh dấu 2 người</b>Hàng đứng yên tại chỗ, nút
+              chuyển sang dấu tích xanh, giờ thanh toán hiện ở dòng phụ. "Còn
+              thu" ở thanh đáy giảm ngay. Lần mở sau hai hàng này mới sang nhóm
+              "Đã thanh toán".
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-pp" data-s="personDetail"></div>
+            <figcaption>
+              <b>A17. Sheet một người (bấm vào hàng)</b>Tên đầy đủ, các số, nợ
+              cũ theo từng bill. "Tổng tiền" bằng đúng cột Tổng tiền trong ảnh
+              xuất. Nút chính đánh dấu TT.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-old" data-s="payOld"></div>
+            <figcaption>
+              <b>A18. Người có nợ cũ</b><code>PayOldBillsDialog</code> của nhóm
+              04, giữ nguyên chữ và 3 nút. Chỉ hiện khi người đó có bill tiệc cũ
+              chưa trả.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-more" data-s="moreSheet"></div>
+            <figcaption>
+              <b>A19. Sheet ⋯</b>Sửa bill (ẩn khi đã thanh toán hết, như hiện
+              nay) và Xóa bill. Xóa vẫn qua <code>ConfirmDialog</code> cũ.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-acc" data-s="accountSheet"></div>
+            <figcaption>
+              <b>A20. Chọn tài khoản trước khi gửi</b>Đề xuất cho nhóm 04: nút
+              xác nhận ghi đúng việc ("Gửi Telegram" / "Xuất Bill") thay vì "Xác
+              nhận". Số chạm không đổi.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-sent" data-s="detailSent"></div>
+            <figcaption>
+              <b>A21. Gửi xong</b>Trong lúc gửi, nút đổi thành "Đang gửi…" và
+              khóa lại. Xong thì hiện toast M8 với câu cũ, tự tắt. Lỗi thì toast
+              đỏ "Gửi Telegram thất bại: …".
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-uncheck" data-s="uncheckConfirm"></div>
+            <figcaption>
+              <b>A22. Bỏ đánh dấu</b>Giữ tiêu đề và câu hỏi cũ, nút xác nhận đổi
+              từ "Xóa" thành "Bỏ đánh dấu".
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-del" data-s="deleteConfirm"></div>
+            <figcaption>
+              <b>A23. Xóa bill</b>Hộp cũ, chữ cũ. Mở từ sheet ⋯.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-allpaid" data-s="detailAllPaid"></div>
+            <figcaption>
+              <b>A24. Đã thu đủ</b>Thanh tiến độ đầy, thanh đáy ghi "Đã thu đủ".
+              Vẫn xuất và gửi ảnh được.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="a-dload" data-s="detailLoading"></div>
+            <figcaption>
+              <b>A25. Đang tải chi tiết</b>Khung xương thay cho thẻ chữ "Đang
+              tải bill tiệc…" (câu này giữ lại cho trình đọc màn hình). Không
+              tìm thấy bill thì giữ <code>EmptyState</code> cũ.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="anh-xuat">
+        <h2 class="d">Ảnh bill xuất: giữ nguyên</h2>
+        <p class="d">
+          <code>PartyBillExport.jsx</code> không sửa, nằm ngoài màn hình như
+          hiện nay. Ảnh dưới đây chụp từ máy chủ demo (bill 4 người, chưa chọn
+          tài khoản nên không có cột QR). Phần thay đổi của đề xuất chỉ là
+          <b>màn hình</b> cũng hiện "Nợ cũ" và "Tổng tiền", để số trên màn khớp
+          với cột "Nợ" và "Tổng tiền" trong ảnh.
+        </p>
+        <figure class="export" style="margin: 16px 0 0; max-width: 900px">
+          <img
+            src="anh/anh-xuat-giu-nguyen.png"
+            alt="Ảnh bill tiệc xuất ra, giữ nguyên"
+          />
+        </figure>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="be-ngang">
+        <h2 class="d">Kiểm ở 360 và 430 px</h2>
+        <p class="d">
+          Cùng dữ liệu khó. Ở 360 px, tên người dài xuống 2 dòng, số tiền và nút
+          tròn không bị đẩy ra ngoài, thanh đáy không xuống dòng. Hàng chip cuộn
+          ngang, nút "Lọc" ghim bên trái nên luôn thấy.
+        </p>
+        <div class="gallery">
+          <figure class="shot" style="--w: 360px">
+            <div
+              class="phone"
+              style="--w: 360px; --h: 740px"
+              id="w360-list"
+              data-s="listA"
+            ></div>
+            <figcaption><b>360 × 740: danh sách</b></figcaption>
+          </figure>
+          <figure class="shot" style="--w: 360px">
+            <div
+              class="phone"
+              style="--w: 360px; --h: 740px"
+              id="w360-create"
+              data-s="createPeople"
+            ></div>
+            <figcaption><b>360 × 740: tạo bill</b></figcaption>
+          </figure>
+          <figure class="shot" style="--w: 360px">
+            <div
+              class="phone"
+              style="--w: 360px; --h: 740px"
+              id="w360-detail"
+              data-s="detailA"
+            ></div>
+            <figcaption><b>360 × 740: chi tiết</b></figcaption>
+          </figure>
+          <figure class="shot" style="--w: 430px">
+            <div
+              class="phone"
+              style="--w: 430px; --h: 932px"
+              id="w430-list"
+              data-s="listA"
+            ></div>
+            <figcaption><b>430 × 932: danh sách</b></figcaption>
+          </figure>
+          <figure class="shot" style="--w: 430px">
+            <div
+              class="phone"
+              style="--w: 430px; --h: 932px"
+              id="w430-create"
+              data-s="createPeople"
+            ></div>
+            <figcaption><b>430 × 932: tạo bill</b></figcaption>
+          </figure>
+          <figure class="shot" style="--w: 430px">
+            <div
+              class="phone"
+              style="--w: 430px; --h: 932px"
+              id="w430-detail"
+              data-s="detailA"
+            ></div>
+            <figcaption><b>430 × 932: chi tiết</b></figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="b">
+        <h2 class="d">Phương án B, nhẹ hơn</h2>
+        <p class="d">
+          Không thêm sheet mới, không phụ thuộc việc ẩn thanh tab hay M1 thay
+          thanh "Sổ cầu lông". Ít chữ mới hơn (chỉ "Còn thu", "Nợ cũ", "Bỏ đánh
+          dấu"). Bỏ được các vướng 4, 5, 6, 7, 8, 11, 12, 14. Vướng 1, 2, 3 chỉ
+          giảm một phần.
+        </p>
+        <ul class="d">
+          <li>
+            Danh sách: hàng M3 như A1 nhưng bộ lọc mở tại chỗ như cũ. Khối "Chưa
+            thanh toán" vẫn ở cuối, chỉ sửa ngày theo M6 và thêm hộp xác nhận
+            trả hết.
+          </li>
+          <li>
+            Tạo / sửa: giữ danh sách chọn người tại chỗ, thẻ người thành 1 cột,
+            cao ~190 px (4 ô xếp 2 × 2), chi phí thêm một dòng, M2 có tổng.
+          </li>
+          <li>
+            Chi tiết: thanh M2 nằm <b>trên</b> thanh tab (chiếm 64 + 68 px),
+            hàng người gọn hơn và có nợ cũ, không có sheet một người.
+          </li>
+        </ul>
+        <div class="gallery">
+          <figure class="shot">
+            <div class="phone" id="b-list" data-s="listB"></div>
+            <figcaption><b>B1. Danh sách</b>Hàng M3, bộ lọc cũ.</figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="b-create" data-s="createB"></div>
+            <figcaption>
+              <b>B2. Tạo bill</b>Thẻ người 1 cột, 4 ô 2 × 2. 15 người ≈ 2.900 px
+              chỉ riêng phần thẻ.
+            </figcaption>
+          </figure>
+          <figure class="shot">
+            <div class="phone" id="b-detail" data-s="detailB"></div>
+            <figcaption>
+              <b>B3. Chi tiết</b>M2 chồng trên thanh tab, còn lại ~600 px cho
+              nội dung.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="cham">
+        <h2 class="d">Việc chính: số lần chạm</h2>
+        <p class="d">
+          Tính từ màn danh sách bill tiệc. "Chạm" gồm cả phím Tiếp/Enter trên
+          bàn phím (chấm rỗng). Gõ chữ và số không tính. Chấm xám là luồng cũ,
+          chấm xanh là luồng mới.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th style="width: 24%">Việc</th>
+              <th>Cũ</th>
+              <th>A</th>
+              <th>A+ (tùy chọn)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <b>1. Tạo bill tiệc 15 người</b>, có món chung + tiền xe, rồi
+                lưu
+              </td>
+              <td>
+                <b class="num">23 chạm</b>, 5 ô phải gõ<br /><span
+                  class="dots"
+                  data-d="23"
+                  data-c=""
+                ></span
+                ><br /><span style="font-size: 13px; color: var(--s600)"
+                  >FAB, ô Tổng tiền, ô Tên, ô tiền món chung, "Thêm", ô tên
+                  khoản mới, ô tiền, 15 người, "Tạo". Trang ≈ 5.000 px, khung
+                  cuộn lồng 480 px, ô vừa chọn biến mất làm các ô dồn lên.</span
+                >
+              </td>
+              <td>
+                <b class="num">24 chạm</b> (20 chạm màn + 4 Enter), 5 ô phải
+                gõ<br /><span
+                  class="dots"
+                  data-d="24"
+                  data-c="n"
+                  data-k="3,4,5,6"
+                ></span
+                ><br /><span style="font-size: 13px; color: var(--s600)"
+                  >FAB, ô Tên, Enter ×4 (tự thêm dòng tiền xe), "Chọn người", 15
+                  người, "Xong", "Tạo". Trang ≈ 2.000 px, không khung cuộn lồng,
+                  hàng đứng yên, tổng luôn thấy. Số chạm gần như bằng cũ, cái
+                  lợi nằm ở độ dài trang và việc khỏi chạm nhầm.</span
+                >
+              </td>
+              <td>
+                <b class="num">8 chạm</b>, 5 ô phải gõ<br /><span
+                  class="dots"
+                  data-d="8"
+                  data-c="n"
+                  data-k="3,4,5,6"
+                ></span
+                ><br /><span style="font-size: 13px; color: var(--s600)"
+                  >FAB, ô Tên, Enter ×4, "Lấy người từ bill cầu T5, 05/11",
+                  "Tạo". Thêm 2 chạm cho mỗi người cần bỏ (mở hàng, "Xóa khỏi
+                  bill").</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b
+                  >2. Mở bill tiệc, đánh dấu 2 người đã trả, xuất ảnh gửi
+                  nhóm</b
+                >
+                (Gửi Telegram)
+              </td>
+              <td>
+                <b class="num">6 chạm</b>, thêm 1 cho mỗi người có nợ cũ<br /><span
+                  class="dots"
+                  data-d="6"
+                  data-c=""
+                ></span
+                ><br /><span style="font-size: 13px; color: var(--s600)"
+                  >Mũi tên › trên hàng (cả hàng không bấm được), cuộn xuống, 2 ×
+                  "Đánh dấu TT", cuộn ngược lên đầu trang, "Gửi Telegram", "Xác
+                  nhận", "OK" của alert. Cuộn tổng cộng ~2 × 1.500 px với 25
+                  người.</span
+                >
+              </td>
+              <td>
+                <b class="num">5 chạm</b>, thêm 1 cho mỗi người có nợ cũ<br /><span
+                  class="dots"
+                  data-d="5"
+                  data-c="n"
+                ></span
+                ><br /><span style="font-size: 13px; color: var(--s600)"
+                  >Chạm hàng, 2 nút tròn, "Gửi Telegram" ở thanh đáy, "Gửi
+                  Telegram" trong sheet tài khoản. Toast tự tắt. Cuộn tối đa 1
+                  màn, không cuộn ngược.</span
+                >
+              </td>
+              <td>
+                <b class="num">4 chạm</b> nếu nhóm 04 nhận đề xuất bỏ sheet tài
+                khoản khi chỉ có 1 tài khoản đang bật.<br /><span
+                  class="dots"
+                  data-d="4"
+                  data-c="n"
+                ></span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                2b. Như trên nhưng <b>tải ảnh</b> rồi gửi tay vào nhóm (Xuất
+                Bill)
+              </td>
+              <td>
+                <b class="num">5 chạm</b> + cuộn ngược<br /><span
+                  class="dots"
+                  data-d="5"
+                  data-c=""
+                ></span>
+              </td>
+              <td>
+                <b class="num">5 chạm</b>, không cuộn ngược<br /><span
+                  class="dots"
+                  data-d="5"
+                  data-c="n"
+                ></span>
+              </td>
+              <td>4 chạm (cùng điều kiện như trên)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="thay-doi">
+        <h2 class="d">Thay đổi so với hiện tại</h2>
+        <p class="d">
+          Chỉ đổi trên điện thoại: mọi phần mới nằm sau <code>md:hidden</code> /
+          <code>sm:hidden</code> như bản thẻ hiện nay.
+          <b>Desktop giữ nguyên</b>: bảng, khối "Chưa thanh toán" bên phải, nút
+          ở đầu trang, form 3 cột không đổi.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th style="width: 11%">Màn</th>
+              <th style="width: 34%">Hiện nay</th>
+              <th>Đề xuất A</th>
+              <th style="width: 10%">Mẫu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="6">Danh sách</td>
+              <td>
+                Thẻ 165 px, 3 nút (›, Sửa, Xóa), ngày "2026-11-03", ghi chú 1
+                dòng, nhãn "Quá hạn" một dòng riêng
+              </td>
+              <td>
+                Hàng 64 px bấm cả hàng. Dòng phụ: ngày M6 + số người chưa TT,
+                quá hạn thì cả dòng màu rose. Ghi chú chỉ hiện ở chi tiết
+              </td>
+              <td>
+                <span class="m">M3</span><span class="m">M6</span
+                ><span class="m">M7</span>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                3 chip trạng thái + "Lọc" mở rộng tại chỗ (ngày, tên, số
+                bill/trang, Xóa lọc)
+              </td>
+              <td>
+                "Lọc" ghim trái, có số đếm, + 3 chip cuộn ngang. Phần còn lại
+                trong sheet; chân sheet "Xóa lọc" + "Xem n bill"
+              </td>
+              <td><span class="m">M4</span><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>
+                Khối "Chưa thanh toán" ở cuối trang, ô tích "trả hết" không hỏi
+                lại, ngày "2026/11/03", nhãn "DS ngày thiếu:"
+              </td>
+              <td>
+                Hàng tóm tắt đầu danh sách mở sheet. Ngày in thành nhãn nhỏ theo
+                M6 (bỏ nhãn "DS ngày thiếu:"). Nút tròn mở
+                <code>ConfirmDialog</code>
+              </td>
+              <td>
+                <span class="m">M3</span><span class="m">M5</span
+                ><span class="m">M6</span><span class="m">M8</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Một trạng thái trống cho mọi trường hợp</td>
+              <td>
+                Hai trạng thái: chưa có bill (giữ chữ cũ) / không khớp bộ lọc
+                (chữ mới + "Xóa lọc")
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Tải lỗi: <code>alert</code>. Xóa lỗi: <code>alert</code></td>
+              <td>Toast. Xóa chuyển vào chi tiết</td>
+              <td><span class="m">M8</span></td>
+            </tr>
+            <tr>
+              <td>FAB 48 px</td>
+              <td>Giữ, theo kích thước M9 của nhóm 01</td>
+              <td><span class="m">M9</span></td>
+            </tr>
+            <tr>
+              <td rowspan="7">Tạo / Sửa</td>
+              <td>
+                Link "‹ Danh sách" + tiêu đề, nằm dưới thanh "Sổ cầu lông"
+              </td>
+              <td>Thanh M1: ‹, "Tạo Bill tiệc mới" / "Sửa Bill tiệc #118"</td>
+              <td><span class="m">M1</span></td>
+            </tr>
+            <tr>
+              <td>Ngày + Tổng tiền tiệc ở hàng đầu, Tên ở hàng sau</td>
+              <td>Tên trước, Ngày + Tổng tiền sau. Enter nhảy ô kế</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Mỗi khoản thêm 2 dòng, nút "Thêm" ở đầu thẻ</td>
+              <td>
+                1 dòng mỗi khoản, "Thêm" ở cuối danh sách khoản, Enter ở ô tiền
+                cuối thì thêm dòng. Tổng các khoản ở đầu thẻ
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>
+                Danh sách chọn 2 cột trong khung cuộn 480 px, ô đã chọn biến mất
+              </td>
+              <td>
+                Nút "Chọn người" mở sheet: ô tìm, "Thêm nhanh", hàng có ô tích
+                đứng yên, chân sheet "Xong"
+              </td>
+              <td><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Thẻ 158 × 385 px, 4 ô nhập mỗi người, nút X trên thẻ</td>
+              <td>
+                Hàng 56 px: tên, Nam/Nữ, số tiền. Ngoại lệ ở dòng phụ. Bấm hàng
+                mở sheet 4 ô + "Xóa khỏi bill"
+              </td>
+              <td><span class="m">M3*</span><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Thanh đáy: Hủy + Tạo, không có tổng</td>
+              <td>
+                Tổng cộng + số người bên trái, "Tạo" / "Cập nhật" bên phải. Hủy
+                = nút quay lại ở M1
+              </td>
+              <td><span class="m">M2</span></td>
+            </tr>
+            <tr>
+              <td>
+                Lỗi nhập, lỗi lưu, bill đã thanh toán không sửa được:
+                <code>alert</code>
+              </td>
+              <td>
+                Toast, giữ câu cũ. Thiếu người thì cuộn tới thẻ "Người tham gia"
+              </td>
+              <td><span class="m">M8</span></td>
+            </tr>
+            <tr>
+              <td rowspan="9">Chi tiết</td>
+              <td>Link + tiêu đề + 4 nút 2 × 2 ở đầu trang</td>
+              <td>M1: ‹, tên bill, ⋯ (Sửa bill / Xóa bill)</td>
+              <td><span class="m">M1</span><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Xuất Bill, Gửi Telegram ở đầu trang</td>
+              <td>
+                Thanh đáy: "Còn thu" + số tiền, nút biểu tượng Xuất Bill, nút
+                chính Gửi Telegram
+              </td>
+              <td><span class="m">M2</span></td>
+            </tr>
+            <tr>
+              <td>
+                Thẻ "Thông tin Bill" 480 px luôn mở + thẻ "Chi phí thêm" riêng
+              </td>
+              <td>
+                Tóm tắt 200 px (trạng thái, ngày M6, tổng M7, tiến độ). "Thông
+                tin Bill" là một dòng bấm để mở ra
+              </td>
+              <td><span class="m">M6</span><span class="m">M7</span></td>
+            </tr>
+            <tr>
+              <td>Thẻ người 180 px, luôn có 3 ô số</td>
+              <td>
+                Hàng 64–76 px, chỉ ghi số khác 0. Hai nhóm Chưa / Đã thanh toán
+              </td>
+              <td><span class="m">M3*</span></td>
+            </tr>
+            <tr>
+              <td>
+                Viên "Đánh dấu TT" 44 px, hàng nhảy xuống cuối ngay khi đánh dấu
+              </td>
+              <td>Nút tròn 44 px. Hàng đứng yên tới lần mở sau</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Nợ bill cũ không hiện</td>
+              <td>
+                Dòng phụ "Nợ cũ …" màu rose. Sheet một người liệt kê từng bill
+                và "Tổng tiền" như ảnh xuất
+              </td>
+              <td><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Bỏ đánh dấu: nút "Xóa"</td>
+              <td>Nút "Bỏ đánh dấu"</td>
+              <td><span class="m">M8</span></td>
+            </tr>
+            <tr>
+              <td>
+                Gửi Telegram, lỗi xuất ảnh, lỗi đánh dấu: <code>alert</code>
+              </td>
+              <td>Toast, giữ câu cũ</td>
+              <td><span class="m">M8</span></td>
+            </tr>
+            <tr>
+              <td>Giờ trả "21:40:12 2/11/2026"</td>
+              <td>"21:40, T2 02/11"</td>
+              <td><span class="m">M6</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="d" style="font-size: 13.5px">
+          M3* = hàng theo M3 (cả hàng bấm được, không có nút xóa trên hàng). Chi
+          tiết bill thêm một nút tròn đánh dấu TT ở cuối hàng, xem "Đề xuất mẫu
+          chung".
+        </p>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="vai-tro">
+        <h2 class="d">Theo vai trò</h2>
+        <p class="d">
+          Route đã chặn theo quyền (<code
+            >party_bills.view / create / update</code
+          >), nhưng nút trên màn hiện cho mọi người. Đề xuất ẩn nút theo quyền
+          <b>đã có</b>, không thêm quyền mới.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Nút</th>
+              <th>Quản trị (đủ quyền)</th>
+              <th>"Sắp lịch thi đấu" (view, create, update)</th>
+              <th>Chỉ <code>party_bills.view</code></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>FAB tạo bill</td>
+              <td>có</td>
+              <td>có</td>
+              <td>ẩn (hiện nay: hiện, bấm vào bị route chặn)</td>
+            </tr>
+            <tr>
+              <td>⋯ → Sửa bill</td>
+              <td>có (ẩn khi đã thanh toán hết)</td>
+              <td>có</td>
+              <td>ẩn</td>
+            </tr>
+            <tr>
+              <td>⋯ → Xóa bill</td>
+              <td>có</td>
+              <td>
+                ẩn (hiện nay: hiện và API vẫn cho xóa, xem "Ngoài phạm vi")
+              </td>
+              <td>ẩn</td>
+            </tr>
+            <tr>
+              <td>Nút tròn đánh dấu TT, Xuất Bill, Gửi Telegram</td>
+              <td>có</td>
+              <td>có</td>
+              <td>có (API chỉ cần đăng nhập, giữ như cũ)</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="chu-moi">
+        <h2 class="d">Chữ mới chờ chủ dự án gật</h2>
+        <p class="d">
+          Chữ cũ giữ nguyên. Dưới đây là mọi chữ mới; chữ trong ngoặc nhọn là
+          giá trị thay vào.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Chữ mới</th>
+              <th>Ở đâu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>"Xem {n} bill"</td>
+              <td>Nút chân sheet Lọc</td>
+            </tr>
+            <tr>
+              <td>"Không có bill nào khớp bộ lọc"</td>
+              <td>Trạng thái trống khi đang lọc (nút "Xóa lọc" là chữ cũ)</td>
+            </tr>
+            <tr>
+              <td>"Xem người chưa thanh toán"</td>
+              <td><code>aria-label</code> của hàng tóm tắt</td>
+            </tr>
+            <tr>
+              <td>"Đánh dấu {tên} đã thanh toán {n} bill tiệc ({tổng})?"</td>
+              <td>
+                Câu hỏi khi đánh dấu trả hết. Tiêu đề "Xác nhận thanh toán" và
+                nút "Đã thanh toán" là chữ cũ
+              </td>
+            </tr>
+            <tr>
+              <td>"Xong"</td>
+              <td>Chân sheet "Chọn người" và sheet sửa một người</td>
+            </tr>
+            <tr>
+              <td>"Xóa khỏi bill"</td>
+              <td>Sheet sửa một người (tạo / sửa)</td>
+            </tr>
+            <tr>
+              <td>"Còn thu" · "{n} người"</td>
+              <td>Thanh đáy chi tiết</td>
+            </tr>
+            <tr>
+              <td>"Đã thu đủ"</td>
+              <td>Thanh đáy chi tiết khi mọi người đã TT</td>
+            </tr>
+            <tr>
+              <td>"Đã thanh toán {x}/{y} người"</td>
+              <td>Dưới thanh tiến độ ở tóm tắt</td>
+            </tr>
+            <tr>
+              <td>"Nợ cũ"</td>
+              <td>Dòng phụ của hàng người, đề mục trong sheet một người</td>
+            </tr>
+            <tr>
+              <td>"Bỏ đánh dấu"</td>
+              <td>
+                Nút xác nhận hủy thanh toán (thay "Xóa") và nút trong sheet của
+                người đã TT
+              </td>
+            </tr>
+            <tr>
+              <td>"Thao tác khác"</td>
+              <td>
+                <code>aria-label</code> nút ⋯ (nếu mẫu M1 của nhóm 01 chưa đặt)
+              </td>
+            </tr>
+            <tr>
+              <td>
+                A+: "Lấy người từ bill cầu {T5, 05/11}" và "Ngày này chưa có
+                bill cầu"
+              </td>
+              <td>Sheet chọn người, thẻ người tham gia khi còn trống</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="d">
+          Chữ cũ dùng lại ở chỗ mới: "Chưa thanh toán", "Đã thanh toán", "Thông
+          tin Bill", "Tổng cộng", "Thành tiền", "Tổng tiền", "Chia bill", "Đánh
+          dấu TT", "Chưa có người tham gia." (của màn Sửa, thay câu "…danh sách
+          bên trái…" ở màn Tạo), "Bill tiệc #{id}", "Lọc", "Xóa lọc", "Chọn
+          người", "Thêm nhanh", "Tạo", "Cập nhật". Chữ bỏ trên điện thoại: "DS
+          ngày thiếu:", nút "Hủy" ở thanh đáy màn tạo / sửa.
+        </p>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="mau-chung">
+        <h2 class="d">Đề xuất mẫu chung</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th style="width: 26%">Đề xuất</th>
+              <th>Lý do</th>
+              <th style="width: 22%">Ai làm</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>M3 có nút nhanh ở cuối hàng</b> (tạm gọi M3b)</td>
+              <td>
+                Hàng người trong chi tiết bill: nút tròn 44 px đánh dấu TT ở
+                cuối hàng, phần còn lại của hàng mở sheet. Bill cầu (nhóm 04) có
+                cùng việc đánh dấu từng người, nên chốt chung một kiểu.
+              </td>
+              <td>01 vẽ, 04 + 05 dùng</td>
+            </tr>
+            <tr>
+              <td><b>Màn chi tiết ẩn thanh tab</b> giống màn tạo / sửa</td>
+              <td>
+                M2 cộng thanh tab chiếm 166 px (gần 20% màn 844). Màn chi tiết
+                là màn "đẩy vào", có nút quay lại. Thêm
+                <code>/party-bills/:id</code> (và <code>/bills/:id</code> nếu 04
+                đồng ý) vào <code>TAB_BAR_HIDDEN_PATHS</code>.
+              </td>
+              <td>01 (<code>utils/navItems.js</code>)</td>
+            </tr>
+            <tr>
+              <td><b>M1 thay thanh "Sổ cầu lông"</b> trên màn đẩy vào</td>
+              <td>
+                Không để 2 thanh chồng nhau (48 + 56 px). Mockup A vẽ theo giả
+                định này.
+              </td>
+              <td>01 (<code>Layout.jsx</code>)</td>
+            </tr>
+            <tr>
+              <td>
+                <b>Sheet chọn tài khoản nhận <code>confirmLabel</code></b>
+              </td>
+              <td>
+                Nút xác nhận ghi đúng việc ("Gửi Telegram" / "Xuất Bill"). Tùy
+                chọn: chỉ có 1 tài khoản đang bật thì bỏ qua sheet, bớt 1 chạm
+                cho cả bill cầu lẫn bill tiệc.
+              </td>
+              <td>04 (<code>SelectPaymentAccountDialog</code>)</td>
+            </tr>
+            <tr>
+              <td><b>Hàng "chia đều, chỉ ghi ngoại lệ"</b></td>
+              <td>
+                Một hàng cho mỗi người, dòng phụ chỉ có khi khác mặc định, sửa
+                trong sheet. Nhóm 03 có thể dùng cùng ý cho thẻ người chơi bill
+                cầu.
+              </td>
+              <td>03 xem xét</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="phu-thuoc">
+        <h2 class="d">Phụ thuộc nhóm khác</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th style="width: 14%">Nhóm</th>
+              <th>Cần có trước khi triển khai bill tiệc</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>01-khung-app</td>
+              <td>
+                Component M1 (thanh đầu + nút ⋯), M2, toast M8 (hàm gọi dùng
+                chung), mẫu M4 (chip + nút Lọc + sheet).
+                <code>navItems.js</code>: ẩn thanh tab ở chi tiết.
+                <code>Layout.jsx</code>: ẩn thanh "Sổ cầu lông" khi màn có M1.
+                <code>Modal</code> và <code>ConfirmDialog</code> dùng như hiện
+                nay.
+              </td>
+            </tr>
+            <tr>
+              <td>03-bill-cau-tao-sua</td>
+              <td>
+                Cách chọn người. Bill tiệc theo cùng kiểu với bill cầu; nếu nhóm
+                03 chọn kiểu khác sheet thì A9 đổi theo.
+              </td>
+            </tr>
+            <tr>
+              <td>04-bill-cau-chi-tiet</td>
+              <td>
+                <code>SelectPaymentAccountDialog</code>
+                (<code>confirmLabel</code>, tùy chọn bỏ qua khi 1 tài khoản).
+                <code>PayOldBillsDialog</code> dùng nguyên. Mẫu hàng M3b.
+              </td>
+            </tr>
+            <tr>
+              <td>02-bill-cau-danh-sach</td>
+              <td>
+                Kiểu hàng bill M3 và hàng chip M4 của Dashboard. Nếu nhóm 02
+                tách component hàng bill dùng chung thì bill tiệc dùng luôn.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="trien-khai">
+        <h2 class="d">Backend, file sẽ sửa, ước lượng công</h2>
+        <p class="d">
+          <b>Backend: không cần.</b> Mọi số đã có trong API:
+          <code>GET /party-bills</code>, <code>GET /party-bills/{id}</code> (có
+          <code>debt_amount</code>, <code>debt_details</code> kèm tên bill),
+          <code>POST …/participants/{id}/pay</code>,
+          <code>POST …/send-telegram</code>. A+ dùng
+          <code>GET /bills?date=…&amp;main_only=1</code> (đã trả
+          <code>bill_players.user</code>). "Còn thu" là tổng của
+          <code>share_amount + food_amount − paid_amount</code> các người chưa
+          TT, đúng phép cộng màn đang dùng cho "Tổng người tham gia".
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Màn</th>
+              <th>Ước lượng</th>
+              <th>File</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Danh sách</td>
+              <td><span class="lv vua">M</span> ½–1 ngày</td>
+              <td>
+                sửa <code>src/screens/party/PartyBills.jsx</code>; mới
+                <code>src/components/party/PartyUnpaidSheet.jsx</code>
+              </td>
+            </tr>
+            <tr>
+              <td>Tạo + Sửa</td>
+              <td><span class="lv cao">L</span> ~1,5 ngày</td>
+              <td>
+                sửa <code>CreatePartyBill.jsx</code>,
+                <code>EditPartyBill.jsx</code> (hai file đang trùng ~85% và dài
+                778 / 882 dòng, phần chung tách ra component); mới
+                <code>src/components/party/PartyExtrasEditor.jsx</code> (khoản
+                thêm 1 dòng + Enter),
+                <code>PartyParticipantList.jsx</code> (hàng + sheet sửa một
+                người), <code>PartyPlayerPicker.jsx</code> (sheet chọn người)
+              </td>
+            </tr>
+            <tr>
+              <td>Chi tiết</td>
+              <td><span class="lv cao">L</span> ~1 ngày+</td>
+              <td>
+                sửa <code>src/screens/party/PartyBillDetail.jsx</code> (1.076
+                dòng, phần thẻ người điện thoại tách ra); mới
+                <code>src/components/party/PartyParticipantRow.jsx</code> +
+                sheet một người
+              </td>
+            </tr>
+            <tr>
+              <td>Hàm thuần + test</td>
+              <td>trong các mục trên</td>
+              <td>
+                mới <code>src/utils/partyBillSummary.js</code> +
+                <code>partyBillSummary.test.js</code>: trạng thái bill, còn thu,
+                chia nhóm chưa / đã TT, dòng phụ ngoại lệ, gộp nợ theo người
+                (đang viết trong <code>PartyBills.jsx</code>), định dạng ngày M6
+                nếu nhóm 01 chưa thêm vào <code>formatters.js</code>
+              </td>
+            </tr>
+            <tr>
+              <td>A+ (tùy chọn)</td>
+              <td><span class="lv thap">S</span> &lt; ½ ngày</td>
+              <td>
+                <code>PartyPlayerPicker.jsx</code> +
+                <code>billsApi.getAll</code> có sẵn
+              </td>
+            </tr>
+            <tr>
+              <td>Không sửa</td>
+              <td>—</td>
+              <td>
+                <code>PartyBillExport.jsx</code>, mọi file backend. Phụ thuộc:
+                <code>utils/navItems.js</code> (01),
+                <code>common/SelectPaymentAccountDialog.jsx</code> (04)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="d">
+          Tổng A ≈ 3,5 ngày, thêm A+ ≈ 4 ngày. Phương án B ≈ 2 ngày (danh sách
+          S, tạo / sửa M, chi tiết M).
+        </p>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="quyet">
+        <h2 class="d">Điều cần chủ dự án quyết</h2>
+        <ol
+          class="d"
+          style="max-width: 820px; color: var(--s700); line-height: 1.65"
+        >
+          <li>
+            <b>Chọn A hay B.</b> A cần nhóm 01 ẩn thanh tab ở màn chi tiết và
+            cho M1 thay thanh "Sổ cầu lông".
+          </li>
+          <li>
+            <b>Có làm A+ không</b> ("Lấy người từ bill cầu" cùng ngày)? Chỉ sửa
+            frontend, dùng API có sẵn, nhưng là tính năng mới.
+          </li>
+          <li>
+            <b>Hàng vừa đánh dấu TT</b> đứng yên tới lần mở sau (đề xuất, tránh
+            chạm nhầm người kế tiếp) hay nhảy xuống nhóm "Đã thanh toán" ngay
+            (như hiện nay)?
+          </li>
+          <li>
+            <b>Ẩn nút theo quyền</b> (FAB, Sửa bill, Xóa bill) như bảng "Theo
+            vai trò"?
+          </li>
+          <li>
+            <b>Mức tính khi chọn người:</b> bill tiệc luôn đặt 1, không theo mức
+            mặc định nam/nữ như bill cầu. Đề xuất giữ nguyên cách tính, chỉ bỏ
+            chữ "Mức: x" trong sheet chọn để khỏi hiểu nhầm.
+          </li>
+          <li>
+            <b>STT</b> trên màn (chưa TT, nam, nữ) khác STT trong ảnh (chưa TT,
+            đã TT). Giữ như cũ, hay cho màn xếp giống ảnh để nói "số 5" là cùng
+            một người?
+          </li>
+        </ol>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="tham-khao">
+        <h2 class="d">Tham khảo</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th style="width: 22%">Nguồn</th>
+              <th>Lấy gì</th>
+              <th>Không lấy gì</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Splitwise:
+                <a
+                  href="https://kb.splitwise.com/balances-and-expenses/what-are-different-ways-i-can-split-an-expense"
+                  >What are different ways I can split an expense?</a
+                >
+              </td>
+              <td>
+                Mặc định chia đều; chỉ chỉnh người khác mặc định ("by shares",
+                "by adjustment"); bấm tên để bỏ người khỏi lần chia. Thành hàng
+                "chỉ ghi ngoại lệ" và sheet chọn có ô tích.
+              </td>
+              <td>
+                Màn chọn kiểu chia riêng (bill tiệc chỉ có một kiểu: theo mức),
+                màu, phông, component.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Tricount:
+                <a
+                  href="https://help.tricount.com/articles/how-can-i-manage-my-tricounts-and-expenses"
+                  >How can I manage my tricounts and expenses?</a
+                >
+              </td>
+              <td>
+                Chỉnh phần của từng người ngay trong vùng chia của form, không
+                sang màn khác. Thành sheet sửa một người mở ngay trên form.
+              </td>
+              <td>Bàn phím máy tính (chỉ iOS), giao diện.</td>
+            </tr>
+            <tr>
+              <td>
+                GitHub Primer:
+                <a
+                  href="https://primer.style/product/ui-patterns/progressive-disclosure/"
+                  >Progressive disclosure</a
+                >
+              </td>
+              <td>
+                Ẩn có chủ đích và dùng ít; mũi tên luôn đi kèm chữ mô tả. Thành
+                dòng "Thông tin Bill ˅" ở chi tiết.
+              </td>
+              <td>Component Primer, biểu tượng Octicons.</td>
+            </tr>
+            <tr>
+              <td>
+                Material 3:
+                <a href="https://m3.material.io/components/lists/specs"
+                  >Lists, specs</a
+                >
+              </td>
+              <td>
+                Không dùng: trang chính thức dựng bằng JavaScript, công cụ đọc
+                không lấy được nội dung. Chiều cao hàng lấy theo M3 của brief
+                (60–76 px).
+              </td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ====================================================== -->
+      <section class="d" id="ngoai">
+        <h2 class="d">Ngoài phạm vi: đã thấy, không vẽ</h2>
+        <ul class="d">
+          <li>
+            <code>BACKEND/routes/api.php:65</code>:
+            <code>DELETE /party-bills/{id}</code> chỉ cần đăng nhập. Vai trò
+            "Sắp lịch thi đấu" không có <code>party_bills.delete</code> nhưng
+            vẫn xóa được, vì nút Xóa hiện cho mọi người.
+          </li>
+          <li>
+            <code>PartyBills.jsx:247–288</code>: đánh dấu trả hết gọi
+            <code>markPayment</code> song song cho từng bill. Một bill lỗi thì
+            các bill khác đã đổi nhưng giao diện báo lỗi chung và không cập
+            nhật.
+          </li>
+          <li>
+            <code>PartyBillExport.jsx:56</code>: cột "Chi phí thêm" trong ảnh là
+            <code>food_amount</code>, màn hình gọi là "Tiền thêm". Ảnh giữ
+            nguyên nên chỉ ghi lại.
+          </li>
+          <li>
+            Demo (<code>localhost:3001</code>) trả bill tiệc thiếu
+            <code>base_amount</code>, <code>unit_price</code>, nên ảnh hiện tại
+            có "0 ₫". Không ảnh hưởng máy chủ thật.
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <script>
+      /* ======== biểu tượng (đường vẽ Lucide, như components/ui/icons.jsx) ======== */
+      const I = {
+        chevL: '<path d="m15 18-6-6 6-6"/>',
+        chevR: '<path d="m9 18 6-6-6-6"/>',
+        chevD: '<path d="m6 9 6 6 6-6"/>',
+        chevU: '<path d="m18 15-6-6-6 6"/>',
+        more: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        send: '<path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/>',
+        download:
+          '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        pencil:
+          '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+        trash:
+          '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+        car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+        clock:
+          '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+        cal: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+        utensils:
+          '<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/>',
+        receipt:
+          '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        trophy:
+          '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+        inbox:
+          '<polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>',
+        alert:
+          '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        circle: '<circle cx="12" cy="12" r="10"/>',
+      };
+      const ic = (n, s = 20, w = 1.75) =>
+        `<svg class="ic" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+      const VND = new Intl.NumberFormat("vi-VN", {
+        style: "currency",
+        currency: "VND",
+        maximumFractionDigits: 0,
+      });
+      const money = (v) =>
+        VND.format(Math.round(Number(v) / 1000) * 1000).replace("-", "−");
+      const FAV =
+        '<svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#047857"/><path d="M25 42 L14 12 L50 12 L39 42 Z" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M32 12 L32 42 M23 12 L28.5 42 M41 12 L35.5 42 M17.3 21 L46.7 21" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M24 41 L40 41 L40 46 A8 8 0 0 1 24 46 Z" fill="#fff"/></svg>';
+
+      /* ======== dữ liệu mẫu (đúng hình dạng API) ======== */
+      const BILLS = [
+        {
+          name: "Ăn tối sau buổi cầu",
+          date: "T5, 05/11",
+          total: 5150000,
+          unpaid: 15,
+          st: "unpaid",
+          od: false,
+        },
+        {
+          name: "Liên hoan tổng kết giải mùa thu 2026",
+          date: "T2, 02/11",
+          total: 19400000,
+          unpaid: 13,
+          st: "partial",
+          od: false,
+        },
+        {
+          name: "Giao lưu cuối tuần cùng CLB Cầu lông Phú Nhuận mở rộng",
+          date: "T4, 28/10",
+          total: 3640000,
+          unpaid: 3,
+          st: "partial",
+          od: true,
+        },
+        {
+          name: "Sinh nhật chị Thu Hà",
+          date: "T2, 12/10",
+          total: 2180000,
+          unpaid: 1,
+          st: "partial",
+          od: true,
+        },
+        {
+          name: "Tất niên 2025",
+          date: "28/12/2025",
+          total: 12760000,
+          unpaid: 2,
+          st: "partial",
+          od: true,
+        },
+      ];
+      const UNPAID = [
+        {
+          name: "Hoàng Nam",
+          total: 1702000,
+          od: true,
+          d: [
+            ["T5, 05/11", 343000],
+            ["T2, 02/11", 819000],
+            ["T4, 28/10", 300000],
+            ["T2, 12/10", 240000],
+          ],
+        },
+        {
+          name: "Đỗ Thu Hà",
+          total: 1457000,
+          od: true,
+          d: [
+            ["T2, 02/11", 819000],
+            ["28/12/2025", 638000],
+          ],
+        },
+        {
+          name: "Nguyễn Thị Phương Thảo Nguyên",
+          total: 1312000,
+          od: false,
+          d: [
+            ["T5, 05/11", 343000],
+            ["T2, 02/11", 969000],
+          ],
+        },
+        {
+          name: "Trần Hoàng Bảo Long (Long Bé)",
+          total: 1162000,
+          od: false,
+          d: [
+            ["T5, 05/11", 343000],
+            ["T2, 02/11", 819000],
+          ],
+        },
+        {
+          name: "Lê Minh Khang",
+          total: 1162000,
+          od: false,
+          d: [
+            ["T5, 05/11", 343000],
+            ["T2, 02/11", 819000],
+          ],
+        },
+        {
+          name: "Bé Su (con anh Bảo)",
+          total: 410000,
+          od: false,
+          d: [["T2, 02/11", 410000]],
+        },
+      ];
+      const U = 819149,
+        U5 = 409575;
+      const DP = [
+        // chi tiết bill #118: chưa TT nam, chưa TT nữ, đã TT nam, đã TT nữ (cách xếp hiện nay)
+        { n: "Hoàng Nam", a: U, debt: 540000, dn: 2 },
+        { n: "Trần Hoàng Bảo Long (Long Bé)", a: U },
+        { n: "Lê Minh Khang", a: U },
+        { n: "Vũ Đức Anh", a: U },
+        { n: "Bùi Thanh Tùng", a: U },
+        { n: "Ngô Gia Huy", a: U },
+        { n: "Phan Văn Lộc", a: U },
+        { n: "Bé Su (con anh Bảo)", a: U5, r: "0.5" },
+        {
+          n: "Nguyễn Thị Phương Thảo Nguyên",
+          a: U + 150000,
+          f: 1,
+          food: 150000,
+          note: "Thêm phần lẩu",
+        },
+        { n: "Đỗ Thu Hà", a: U, f: 1, debt: 638000, dn: 1 },
+        { n: "Đặng Mỹ Linh", a: U, f: 1 },
+        { n: "Hồ Ngọc Trâm", a: U, f: 1 },
+        { n: "Bé Na", a: U5, f: 1, r: "0.5" },
+        {
+          n: "Phạm Quốc Bảo",
+          a: U - 5000000,
+          paid: 1,
+          spent: 5000000,
+          t: "21:40, T2 02/11",
+        },
+        { n: "Lý Hải Đăng", a: U, paid: 1, t: "21:52, T2 02/11" },
+        { n: "Mai Anh Tuấn", a: U, paid: 1, t: "22:05, T2 02/11" },
+        { n: "Trịnh Công Sơn Tùng", a: U, paid: 1, t: "08:14, T3 03/11" },
+        { n: "Châu Minh Quân", a: U, paid: 1, t: "08:30, T3 03/11" },
+        { n: "Tạ Đình Phong", a: U, paid: 1, t: "12:02, T3 03/11" },
+        { n: "Kiều Văn Dũng", a: U, paid: 1, t: "19:45, T4 04/11" },
+        { n: "Lâm Bích Ngọc", a: U, f: 1, paid: 1, t: "21:41, T2 02/11" },
+        { n: "Tôn Nữ Thanh Thủy", a: U, f: 1, paid: 1, t: "21:58, T2 02/11" },
+        { n: "Quách Ngọc Ánh", a: U, f: 1, paid: 1, t: "09:10, T3 03/11" },
+        { n: "Huỳnh Kim Chi", a: U, f: 1, paid: 1, t: "18:20, T4 04/11" },
+        { n: "Dương Thùy Dung", a: U, f: 1, paid: 1, t: "07:55, T5 05/11" },
+      ];
+      const CP = [
+        // tạo bill 15 người, đơn giá 343.333
+        { n: "Phạm Quốc Bảo", a: 343333 - 2000000, spent: 2000000 },
+        {
+          n: "Nguyễn Thị Phương Thảo Nguyên",
+          f: 1,
+          a: 343333 + 150000,
+          food: 150000,
+        },
+        { n: "Hoàng Nam", a: 343333 },
+        { n: "Trần Hoàng Bảo Long (Long Bé)", a: 343333 },
+        { n: "Lê Minh Khang", a: 343333 },
+        { n: "Đỗ Thu Hà", f: 1, a: 343333 },
+        { n: "Vũ Đức Anh", a: 343333 },
+        { n: "Đặng Mỹ Linh", f: 1, a: 343333 },
+        { n: "Bùi Thanh Tùng", a: 343333 },
+        { n: "Hồ Ngọc Trâm", f: 1, a: 343333 },
+        { n: "Ngô Gia Huy", a: 343333 },
+        { n: "Phan Văn Lộc", a: 343333 },
+        { n: "Lý Hải Đăng", a: 343333 },
+        { n: "Mai Anh Tuấn", a: 343333 },
+        { n: "Lâm Bích Ngọc", f: 1, a: 343333 },
+      ];
+      const PLAYERS = [
+        "Bùi Thanh Tùng",
+        "Châu Minh Quân",
+        "Dương Thùy Dung",
+        "Đặng Mỹ Linh",
+        "Đỗ Thu Hà",
+        "Hồ Ngọc Trâm",
+        "Hoàng Nam",
+        "Huỳnh Kim Chi",
+        "Kiều Văn Dũng",
+        "Lâm Bích Ngọc",
+        "Lê Minh Khang",
+        "Lý Hải Đăng",
+        "Mai Anh Tuấn",
+        "Ngô Gia Huy",
+      ];
+      const FEM = new Set([
+        "Dương Thùy Dung",
+        "Đặng Mỹ Linh",
+        "Đỗ Thu Hà",
+        "Hồ Ngọc Trâm",
+        "Huỳnh Kim Chi",
+        "Lâm Bích Ngọc",
+      ]);
+      const PICKED = new Set([
+        "Bùi Thanh Tùng",
+        "Đặng Mỹ Linh",
+        "Đỗ Thu Hà",
+        "Hồ Ngọc Trâm",
+        "Hoàng Nam",
+        "Lâm Bích Ngọc",
+        "Lê Minh Khang",
+        "Lý Hải Đăng",
+        "Mai Anh Tuấn",
+        "Ngô Gia Huy",
+      ]);
+
+      /* ======== khối dùng chung ======== */
+      const appHeader = () =>
+        `<header class="ah"><span class="logo">${FAV}</span><span class="ah-t">Sổ cầu lông</span><span class="avatar">T</span></header>`;
+      const m1 = (t, more = true) =>
+        `<header class="m1"><button class="ib" aria-label="Quay lại">${ic("chevL", 24)}</button><h1 class="m1-t">${t}</h1>${more ? `<button class="ib" aria-label="Thao tác khác">${ic("more", 24)}</button>` : '<span class="ib-sp"></span>'}</header>`;
+      const tabBar = () =>
+        `<nav class="tabbar">${[
+          ["receipt", "Bill cầu"],
+          ["utensils", "Bill tiệc", 1],
+          ["users", "Người chơi"],
+          ["trophy", "Xếp bảng"],
+          ["more", "Thêm"],
+        ]
+          .map(
+            ([i, l, on]) =>
+              `<a class="tab ${on ? "on" : ""}"><span class="tab-ic">${ic(i, 22)}</span><span class="tab-l">${l}</span></a>`,
+          )
+          .join("")}</nav><div class="safe"></div>`;
+      const m2 = (l, r) =>
+        `<div class="m2"><div class="m2-row"><div class="m2-l">${l}</div><div class="m2-r">${r}</div></div><div style="height:12px"></div></div><div class="safe" style="background:#fff"></div>`;
+      const frame = ({
+        top = "",
+        body = "",
+        bottom = "",
+        overlay = "",
+        off = 0,
+      }) =>
+        `<div class="app">${top}<div class="body"><div class="scroll" style="transform:translateY(-${off}px)">${body}</div></div>${bottom}${overlay}</div>`;
+      const sheet = ({ title, sub = "", body, foot = "", h = "" }) =>
+        `<div class="backdrop"></div><div class="sheet" style="${h ? `height:${h}` : "max-height:90%"}"><div class="sh-head"><h2>${title}</h2><button class="ib" aria-label="Đóng">${ic("x", 20)}</button></div><div class="sh-body">${sub}${body}</div>${foot ? `<div class="sh-foot">${foot}<div class="safe-in"></div></div>` : '<div class="safe-in"></div>'}</div>`;
+      const toast = (t, b, err) =>
+        `<div class="toast ${err ? "err" : ""}" style="bottom:${b}px" role="status">${ic(err ? "alert" : "check", 20, 2)}<span>${t}</span></div>`;
+      const fab = (b) =>
+        `<a class="fab" style="bottom:${b}px" aria-label="Tạo Bill tiệc mới">${ic("plus", 26, 2.25)}</a>`;
+      const BOT_TAB = 64 + 34,
+        BOT_M2 = 12 + 44 + 12 + 34 + 1;
+
+      const badge = (st) =>
+        st === "paid"
+          ? `<span class="bd bd-e"><span class="dot"></span>Đã TT</span>`
+          : st === "partial"
+            ? `<span class="bd bd-a"><span class="dot"></span>TT 1 phần</span>`
+            : `<span class="bd bd-s"><span class="dot"></span>Chưa TT</span>`;
+      const billRow = (b) =>
+        `<a class="lrow ${b.od ? "od" : ""}"><div class="lrow-l"><div class="lrow-t">${b.name}</div><div class="lrow-s">${b.date} · ${b.unpaid} người chưa TT</div></div><div class="lrow-r"><div class="amt">${money(b.total)}</div>${b.od ? '<span class="bd bd-r"><span class="dot"></span>Quá hạn</span>' : badge(b.st)}</div></a>`;
+      const chip = (l, c, on, cls) =>
+        `<button class="chip ${on ? cls : ""}" aria-pressed="${on}"><span class="dot" style="background:${c}"></span>${l}</button>`;
+      const chips = (n = 0) =>
+        `<div class="chips"><button class="chip filt">Lọc${n ? `<span class="cnt">${n}</span>` : ""}</button>${chip("Đã TT", "#10b981", 0, "on-e")}${chip("1 phần", "#f59e0b", 1, "on-a")}${chip("Chưa TT", "#94a3b8", 1, "on-s")}</div>`;
+      const strip = () =>
+        `<a class="card strip" aria-label="Xem người chưa thanh toán"><div class="strip-l"><div class="strip-t">Chưa thanh toán</div><div class="strip-s"><span class="num">27</span> người</div></div><div class="strip-v num">${money(18026000)}</div>${ic("chevR", 20)}</a>`;
+      const listHead = (n = 5) =>
+        `<div class="ph"><h1>Danh sách Bills tiệc</h1><p><b class="num">${n}</b> bill hiển thị</p></div>`;
+      const listBody = () =>
+        `${listHead()}${chips()}${strip()}<div class="list">${BILLS.map(billRow).join("")}</div>`;
+
+      /* hàng người ở chi tiết */
+      function pSub(p) {
+        const parts = [];
+        if (p.r) parts.push(`Mức ${p.r}`);
+        if (p.spent) parts.push(`Đã chi ${money(p.spent)}`);
+        if (p.food) parts.push(`Tiền thêm ${money(p.food)}`);
+        if (p.note) parts.push(p.note);
+        let html = parts.join(" · ");
+        if (p.debt)
+          html +=
+            (html ? " · " : "") +
+            `<span class="debt">Nợ cũ ${money(p.debt)} (${p.dn} bill)</span>`;
+        if (p.paid && p.t)
+          html +=
+            (html ? "<br>" : "") +
+            `<span class="tm">${ic("clock", 13, 2)}${p.t}</span>`;
+        return html ? `<div class="prow-s">${html}</div>` : "";
+      }
+      const pRow = (p, i, state) => {
+        const paid = state === "paid" || (state !== "unpaid" && p.paid);
+        return `<div class="prow ${paid ? "paid" : ""}"><div class="prow-m"><span class="stt">${i}</span><div class="prow-l"><div class="prow-t"><span class="nm">${p.n}</span>${p.f ? '<span class="gb f">Nữ</span>' : ""}</div>${pSub({ ...p, paid })}</div></div><div class="prow-amt">${money(p.a)}</div><button class="chk ${paid ? "on" : ""}" aria-label="Đánh dấu ${p.n} đã thanh toán"><i>${paid ? ic("check", 16, 3) : ""}</i></button></div>`;
+      };
+      function sumCard({
+        paid = 12,
+        total = 25,
+        st = "partial",
+        open = false,
+      } = {}) {
+        const b =
+          st === "paid"
+            ? '<span class="bd bd-e"><span class="dot"></span>Đã thanh toán</span>'
+            : '<span class="bd bd-a"><span class="dot"></span>Thanh toán 1 phần</span>';
+        const info = open
+          ? `<div style="padding:2px 0 8px">
+    <div class="kv"><span>Tiền tiệc</span><b>${money(14800000)}</b></div>
+    <div class="kv"><span>Chi phí thêm</span><b>${money(4450000)}</b></div>
+    <div class="kv sub"><span>Bia + nước</span><b>${money(1250000)}</b></div>
+    <div class="kv sub"><span style="display:flex;gap:6px;align-items:flex-start">${ic("car", 15)}<span>Chuyến xe Vũng Tàu 16 chỗ<br><a>xem chuyến xe</a></span></span><b>${money(3200000)}</b></div>
+    <div class="kv"><span>Tiền thêm</span><b>${money(150000)}</b></div>
+    <div class="kv"><span>Đơn giá / mức</span><b>${money(819149)}</b></div>
+    <div class="notebox"><div>Ghi chú</div><div>Nhà hàng Hải sản Bờ Kè, bàn 3–5. Anh Bảo ứng trước 5 triệu.</div></div></div>`
+          : "";
+        return `<section class="card sum"><div class="sum-meta">${b}<span>T2, 02/11</span><span>Bill tiệc #118</span></div>
+  <div class="sum-k">Tổng tiệc</div><div class="sum-v num">${money(19400000)}</div>
+  <div class="pbar"><span style="width:${(paid / total) * 100}%"></span></div>
+  <div class="sum-p">Đã thanh toán <b class="num">${paid}/${total}</b> người</div>
+  <button class="disc" aria-expanded="${open}">Thông tin Bill ${ic(open ? "chevU" : "chevD", 20)}</button>${info}</section>`;
+      }
+      const detailM2 = (n = 13, v = 9979789, sending = false) =>
+        m2(
+          `<div class="m2-k">Còn thu · ${n} người</div><div class="m2-v">${money(v)}</div>`,
+          `<button class="btn btn-s btn-i" aria-label="Xuất Bill">${ic("download", 20)}</button><button class="btn btn-p ${sending ? "dis" : ""}">${sending ? `<span style="width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;display:block"></span>Đang gửi…` : `${ic("send", 18)}Gửi Telegram`}</button>`,
+        );
+      const unpaidList = (marked = []) =>
+        DP.filter((p) => !p.paid)
+          .map((p, i) =>
+            pRow(
+              marked.includes(p.n)
+                ? { ...p, t: marked.includes(p.n) ? "10:12, T5 05/11" : p.t }
+                : p,
+              i + 1,
+              marked.includes(p.n) ? "paid" : "unpaid",
+            ),
+          )
+          .join("");
+      const paidList = () =>
+        DP.filter((p) => p.paid)
+          .map((p, i) => pRow(p, i + 14, "paid"))
+          .join("");
+      const detailBody = (o = {}) =>
+        `${sumCard(o)}<div class="grp">Chưa thanh toán <span class="c num">${o.unpaidCount ?? 13}</span></div><div class="list">${unpaidList(o.marked || [])}</div><div class="grp">Đã thanh toán <span class="c num">12</span></div><div class="list">${paidList()}</div><div class="tot"><span>Tổng người tham gia</span><b>${money(14400000)}</b></div>`;
+
+      /* hàng người ở tạo / sửa */
+      function cSub(p) {
+        const a = [];
+        if (p.r) a.push(`Mức ${p.r}`);
+        if (p.spent) a.push(`Đã chi ${money(p.spent)}`);
+        if (p.food) a.push(`Tiền thêm ${money(p.food)}`);
+        if (p.note) a.push(p.note);
+        return a.length ? `<div class="crow-s">${a.join(" · ")}</div>` : "";
+      }
+      const cRow = (p) =>
+        `<a class="crow ${p.paid ? "paid" : ""}"><div class="crow-l"><div class="crow-t"><span class="nm">${p.n}</span>${p.f ? '<span class="gb f">Nữ</span>' : '<span class="gb m">Nam</span>'}${p.paid ? '<span class="gb ok">Đã TT</span>' : ""}</div>${cSub(p)}</div><div class="crow-amt">${money(p.a)}</div>${ic("chevR", 18)}</a>`;
+      const infoCard =
+        () => `<section class="card sec"><div class="sec-h">Thông tin cơ bản</div><div class="sec-b">
+ <label class="fl">Tên/Nội dung *</label><div class="fi">Ăn tối sau buổi cầu</div>
+ <div class="g2 mt12"><div><label class="fl">Ngày *</label><div class="fi">05/11/2026<span class="sp"></span>${ic("cal", 18)}</div></div><div><label class="fl">Tổng tiền tiệc *</label><div class="fi num">4.200.000</div></div></div>
+ <div class="mt12"><label class="fl">Ghi chú</label><div class="fi ph"></div></div></div></section>`;
+      const extrasCard = (
+        focus = true,
+      ) => `<section class="card sec"><div class="sec-h">Chi phí thêm<span class="rt v num">${money(950000)}</span></div><div class="sec-b">
+ <div class="xrow"><div class="fi">Bánh + Tôm</div><div class="fi r num">350.000</div><button class="ib" aria-label="Xóa chi phí">${ic("x", 18)}</button></div>
+ <div class="xrow"><div class="fi">Tiền xe</div><div class="fi r num ${focus ? "focus" : ""}">600.000${focus ? '<span class="caret"></span>' : ""}</div><button class="ib" aria-label="Xóa chi phí">${ic("x", 18)}</button></div>
+ <button class="btn btn-dash btn-w">${ic("plus", 18)}Thêm</button></div></section>`;
+      const peopleCard = (rows, n = 15) =>
+        `<section class="card sec"><div class="sec-h">Người tham gia<span class="rt num">${n} người</span></div><div class="sec-b" style="padding-bottom:12px"><button class="btn btn-s btn-w">${ic("users", 18)}Chọn người</button></div>${rows}</section>`;
+      const tongKet =
+        () => `<section class="card sec"><div class="sec-h" style="color:var(--e700)">Tổng kết</div><div class="sec-b">
+ <div class="kv"><span>Tổng tiền tiệc</span><b>${money(4200000)}</b></div><div class="kv"><span>Tổng chi phí thêm</span><b>${money(950000)}</b></div>
+ <div class="kv big" style="font-size:14px"><span>SUM mức tính</span><b>15</b></div><div class="kv"><span>Đơn giá / mức</span><b>${money(343333)}</b></div>
+ <div class="tot" style="margin-top:10px"><span>Tổng cộng</span><b>${money(5150000)}</b></div></div></section>`;
+      const createM2 = (label = "Tạo", n = 15, v = 5150000) =>
+        m2(
+          `<div class="m2-k">Tổng cộng · ${n} người</div><div class="m2-v e">${money(v)}</div>`,
+          `<button class="btn btn-p" style="min-width:128px">${ic("check", 18, 2.5)}${label}</button>`,
+        );
+
+      /* ======== các màn ======== */
+      const S = {};
+      S.listA = () =>
+        frame({
+          top: appHeader(),
+          body: listBody(),
+          bottom: tabBar(),
+          overlay: fab(BOT_TAB + 16),
+        });
+      S.listFilter = () =>
+        frame({
+          top: appHeader(),
+          body: listBody(),
+          bottom: tabBar(),
+          overlay: sheet({
+            title: "Lọc",
+            body: `
+  <div class="g2"><div><label class="fl">Từ ngày</label><div class="fi">01/10/2026</div></div><div><label class="fl">Đến ngày</label><div class="fi ph">dd/mm/yyyy</div></div></div>
+  <div class="mt12"><label class="fl">Tên tiệc</label><div class="fi ph">Tìm theo tên/nội dung tiệc...</div></div>
+  <div class="mt12"><span class="fl">Số bill / trang</span><div class="seg"><span class="on">10</span><span>20</span><span>30</span><span>50</span></div></div>`,
+            foot: `<div class="row2"><button class="btn btn-s">Xóa lọc</button><button class="btn btn-p">Xem 4 bill</button></div>`,
+          }),
+        });
+      const uRow = (u) =>
+        `<div class="urow ${u.od ? "od" : ""}"><div class="urow-l"><div class="urow-t"><span class="nm">${u.name}</span><span class="v num">${money(u.total)}</span></div><div class="dch">${u.d.map(([d, a]) => `<span class="num">${d}: ${money(a)}</span>`).join("")}</div></div><button class="chk" aria-label="Đánh dấu ${u.name} đã thanh toán tất cả bills"><i></i></button></div>`;
+      const unpaidSheet = () =>
+        sheet({
+          title: "Chưa thanh toán",
+          h: "84%",
+          sub: `<div class="sh-sub"><span class="num" style="font-weight:600;color:var(--s700)">27</span> người · Tổng: <b class="num" style="color:var(--r600)">${money(18026000)}</b></div>`,
+          body: `<div>${UNPAID.map(uRow).join("")}</div>`,
+        });
+      S.unpaidSheet = () =>
+        frame({
+          top: appHeader(),
+          body: listBody(),
+          bottom: tabBar(),
+          overlay: unpaidSheet(),
+        });
+      S.markAll = () =>
+        frame({
+          top: appHeader(),
+          body: listBody(),
+          bottom: tabBar(),
+          overlay:
+            unpaidSheet() +
+            sheet({
+              title: "Xác nhận thanh toán",
+              body: `<p class="msg" style="margin:0">Đánh dấu Hoàng Nam đã thanh toán 4 bill tiệc (${money(1702000)})?</p>`,
+              foot: `<div class="row2"><button class="btn btn-s">Hủy</button><button class="btn btn-p">Đã thanh toán</button></div>`,
+            }),
+        });
+      S.listEmpty = () =>
+        frame({
+          top: appHeader(),
+          body: `${listHead(0)}${chips()}<div class="estate"><div class="ico">${ic("utensils", 24)}</div><h3>Không có bill nào khớp bộ lọc</h3><div style="margin-top:20px"><button class="btn btn-s">Xóa lọc</button></div></div>`,
+          bottom: tabBar(),
+          overlay: fab(BOT_TAB + 16),
+        });
+      const skRow = () =>
+        `<div class="lrow"><div class="lrow-l"><div class="sk" style="height:15px;width:70%"></div><div class="sk" style="height:12px;width:45%;margin-top:8px"></div></div><div class="lrow-r"><div class="sk" style="height:18px;width:96px"></div><div class="sk" style="height:16px;width:64px;border-radius:999px"></div></div></div>`;
+      S.listLoading = () =>
+        frame({
+          top: appHeader(),
+          body: `<div class="ph"><h1>Danh sách Bills tiệc</h1><p><span class="sk" style="display:inline-block;width:96px;height:12px;vertical-align:middle"></span></p></div>${chips()}<div class="list">${skRow() + skRow() + skRow() + skRow() + skRow()}</div>`,
+          bottom: tabBar(),
+          overlay: toast("Không tải được danh sách tiệc", BOT_TAB + 12, true),
+        });
+
+      S.createTop = () =>
+        frame({
+          top: m1("Tạo Bill tiệc mới", false),
+          body: `${infoCard()}${extrasCard()}${peopleCard(CP.slice(0, 4).map(cRow).join(""))}`,
+          bottom: createM2(),
+        });
+      S.createPeople = () =>
+        frame({
+          top: m1("Tạo Bill tiệc mới", false),
+          off: 610,
+          body: `${infoCard()}${extrasCard(false)}${peopleCard(CP.map(cRow).join(""))}${tongKet()}`,
+          bottom: createM2(),
+        });
+      const pk = (n) =>
+        `<div class="pk ${PICKED.has(n) ? "on" : ""}"><span class="cb ${PICKED.has(n) ? "on" : ""}">${PICKED.has(n) ? ic("check", 14, 3) : ""}</span><span class="pk-n">${n}</span><span class="pk-g">${FEM.has(n) ? "Nữ" : "Nam"}</span></div>`;
+      S.pickerSheet = () =>
+        frame({
+          top: m1("Tạo Bill tiệc mới", false),
+          body: `${infoCard()}${extrasCard(false)}`,
+          bottom: createM2("Tạo", 10, 5150000),
+          overlay: sheet({
+            title: "Chọn người",
+            h: "90%",
+            body: `
+  <div class="fi ph">${ic("search", 18)}Tìm tên...</div>
+  <div class="optlbl" style="margin-top:12px">Tùy chọn A+</div>
+  <button class="btn btn-s btn-w opt" style="justify-content:flex-start">${ic("receipt", 18)}<span>Lấy người từ bill cầu T5, 05/11</span><span style="margin-left:auto;color:var(--s500);font-weight:500">15 người</span></button>
+  <div style="display:flex;justify-content:flex-end;margin:8px -8px 2px"><button class="btn btn-g">${ic("plus", 18)}Thêm nhanh</button></div>
+  <div>${PLAYERS.map(pk).join("")}</div>`,
+            foot: `<div class="m2-row"><div class="m2-l" style="font-size:14px;color:var(--s600)"><b class="num" style="color:var(--s900)">10</b> người</div><button class="btn btn-p" style="min-width:140px">Xong</button></div>`,
+          }),
+        });
+      S.personSheet = () =>
+        frame({
+          top: m1("Tạo Bill tiệc mới", false),
+          off: 610,
+          body: `${infoCard()}${extrasCard(false)}${peopleCard(CP.map(cRow).join(""))}`,
+          bottom: createM2(),
+          overlay: sheet({
+            title: "Phạm Quốc Bảo",
+            body: `
+  <div style="margin:-4px 0 12px"><span class="gb m">Nam</span></div>
+  <div class="g2"><div><label class="fl">Mức tính</label><div class="fi num">1</div></div><div><label class="fl">Đã chi</label><div class="fi num focus">2.000.000<span class="caret"></span></div></div></div>
+  <div class="g2 mt12"><div><label class="fl">Tiền thêm</label><div class="fi num">0</div></div><div><label class="fl">Ghi chú</label><div class="fi">Ứng tiền nhà hàng</div></div></div>
+  <div class="mt12"><div class="kv"><span>Chia bill</span><b>${money(343333)}</b></div><div class="kv big"><span>Thành tiền</span><b style="color:var(--e700)">${money(343333 - 2000000)}</b></div></div>`,
+            foot: `<div class="row2"><button class="btn btn-ds">${ic("trash", 18)}Xóa khỏi bill</button><button class="btn btn-p">Xong</button></div>`,
+          }),
+        });
+      S.quickAdd = () =>
+        frame({
+          top: m1("Tạo Bill tiệc mới", false),
+          body: `${infoCard()}${extrasCard(false)}`,
+          bottom: createM2("Tạo", 10, 5150000),
+          overlay:
+            sheet({
+              title: "Chọn người",
+              h: "90%",
+              body: `<div class="fi">${ic("search", 18)}Thảo</div><div style="padding:24px 0;text-align:center;color:var(--s500)">Không tìm thấy</div>`,
+            }) +
+            sheet({
+              title: "Thêm nhanh người chơi",
+              body: `
+  <label class="fl">Tên</label><div class="fi focus">Nguyễn Thị Phương Thảo Nguyên<span class="caret"></span></div>
+  <div class="g2 mt16"><div><label class="fl">Giới tính</label><div class="fi">Nữ<span class="sp"></span>${ic("chevD", 18)}</div></div><div><label class="fl">Mức tính</label><div class="fi num">0.7</div></div></div>`,
+              foot: `<div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn btn-s">Hủy</button><button class="btn btn-p">Lưu</button></div>`,
+            }),
+        });
+      S.createEmpty = () =>
+        frame({
+          top: m1("Tạo Bill tiệc mới", false),
+          off: 420,
+          body: `${infoCard()}${extrasCard(false)}<section class="card sec" style="border-color:var(--r200)"><div class="sec-h">Người tham gia</div><div class="sec-b">
+  <div class="empty-in">Chưa có người tham gia.</div>
+  <div class="mt12" style="display:flex;flex-direction:column;gap:8px"><button class="btn btn-s btn-w">${ic("users", 18)}Chọn người</button><div class="optlbl" style="margin:6px 0 0">Tùy chọn A+</div><button class="btn btn-s btn-w opt">${ic("receipt", 18)}Lấy người từ bill cầu T5, 05/11</button></div></div></section>`,
+          bottom: createM2("Tạo", 0, 5150000),
+          overlay: toast("Vui lòng nhập ít nhất 1 người", BOT_M2 + 12, true),
+        });
+      S.editA = () =>
+        frame({
+          top: m1("Sửa Bill tiệc #118", false),
+          off: 396,
+          body: `<section class="card sec"><div class="sec-h">Thông tin cơ bản</div><div class="sec-b">
+  <label class="fl">Tên/Nội dung *</label><div class="fi">Liên hoan tổng kết giải mùa thu 2026</div>
+  <div class="g2 mt12"><div><label class="fl">Ngày *</label><div class="fi">02/11/2026<span class="sp"></span>${ic("cal", 18)}</div></div><div><label class="fl">Tổng tiền tiệc *</label><div class="fi num">14.800.000</div></div></div>
+  <div class="mt12"><label class="fl">Ghi chú</label><div class="fi">Nhà hàng Hải sản Bờ Kè, bàn 3–5…</div></div></div></section>
+  <section class="card sec"><div class="sec-h">Chi phí thêm<span class="rt v num">${money(4450000)}</span></div><div class="sec-b">
+  <div class="xrow"><div class="fi">Bia + nước</div><div class="fi r num">1.250.000</div><button class="ib" aria-label="Xóa chi phí">${ic("x", 18)}</button></div>
+  <div class="lock"><div class="lock-l">${ic("car", 16)}Chuyến xe Vũng Tàu 16 chỗ<div class="lock-s">đến từ màn Thuê xe</div></div><b>${money(3200000)}</b></div>
+  <p class="hint">Sửa các khoản này ở màn Thuê xe. Chúng vẫn được tính vào tổng.</p>
+  <button class="btn btn-dash btn-w mt12">${ic("plus", 18)}Thêm</button></div></section>
+  ${peopleCard(
+    [DP[13], DP[0], DP[8], DP[7], DP[14], DP[1], DP[2]]
+      .map((p) => cRow({ ...p, a: p.a }))
+      .join(""),
+    25,
+  )}`,
+          bottom: createM2("Cập nhật", 25, 19250000),
+        });
+
+      S.detailA = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody(),
+          bottom: detailM2(),
+        });
+      S.detailInfo = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody({ open: true }),
+          bottom: detailM2(),
+        });
+      S.detailAfter = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          off: 150,
+          body: detailBody({
+            paid: 14,
+            marked: ["Lê Minh Khang", "Vũ Đức Anh"],
+            unpaidCount: 11,
+          }),
+          bottom: detailM2(11, 9979789 - 2 * U),
+        });
+      S.personDetail = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody(),
+          bottom: detailM2(),
+          overlay: sheet({
+            title: "Hoàng Nam",
+            body: `
+  <div class="kv"><span>Mức tính</span><b>1</b></div>
+  <div class="kv"><span>Chia bill</span><b>${money(U)}</b></div>
+  <div class="kv"><span>Đã chi</span><b>${money(0)}</b></div>
+  <div class="kv"><span>Tiền thêm</span><b>${money(0)}</b></div>
+  <div class="kv big"><span>Thành tiền</span><b>${money(U)}</b></div>
+  <div class="debtbox"><div class="h">Nợ cũ</div>
+   <div class="kv"><span>T4, 28/10 · Giao lưu cuối tuần cùng CLB Cầu lông Phú Nhuận mở rộng</span><b>${money(300000)}</b></div>
+   <div class="kv"><span>T2, 12/10 · Sinh nhật chị Thu Hà</span><b>${money(240000)}</b></div></div>
+  <div class="kv big" style="border-top:0"><span>Tổng tiền</span><b>${money(U + 540000)}</b></div>`,
+            foot: `<button class="btn btn-p btn-w">${ic("circle", 18)}Đánh dấu TT</button>`,
+          }),
+        });
+      S.payOld = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody(),
+          bottom: detailM2(),
+          overlay: sheet({
+            title: "Xác nhận thanh toán",
+            body: `<p class="msg" style="margin:0 0 12px">Hoàng Nam có tiền nợ: <b style="color:var(--r600)">${money(540000)}</b></p><p class="msg" style="margin:0;color:var(--s700)">Bạn có muốn thanh toán cho các bill đã nợ trước đó không?</p>`,
+            foot: `<div class="col3"><button class="btn btn-s">Chỉ bill hiện tại</button><button class="btn btn-p">Cả bill cũ</button><button class="btn" style="color:var(--s600)">Hủy</button></div>`,
+          }),
+        });
+      S.moreSheet = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody(),
+          bottom: detailM2(),
+          overlay: sheet({
+            title: "Bill tiệc #118",
+            body: `<div class="menu"><a>${ic("pencil", 20)}Sửa bill</a><a class="danger">${ic("trash", 20)}Xóa bill</a></div>`,
+          }),
+        });
+      S.accountSheet = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody(),
+          bottom: detailM2(),
+          overlay: sheet({
+            title: "Chọn tài khoản thanh toán",
+            body: `
+  <div class="radio on"><span class="rd"></span><div><div class="t">VPBank</div><div class="s num">Số tài khoản: 0123 456 789</div></div></div>
+  <div class="radio"><span class="rd"></span><div><div class="t">Techcombank</div><div class="s num">Số tài khoản: 1903 5555 0001</div><div class="s" style="font-size:12px;color:var(--s500)">Tài khoản phụ, dùng khi VPBank bảo trì</div></div></div>`,
+            foot: `<div class="row2"><button class="btn btn-s">Hủy</button><button class="btn btn-p">${ic("send", 18)}Gửi Telegram</button></div>`,
+          }),
+        });
+      S.detailSent = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          off: 150,
+          body: detailBody({
+            paid: 14,
+            marked: ["Lê Minh Khang", "Vũ Đức Anh"],
+            unpaidCount: 11,
+          }),
+          bottom: detailM2(11, 9979789 - 2 * U),
+          overlay: toast(
+            "Đã gửi bill tiệc qua Telegram thành công!",
+            BOT_M2 + 12,
+          ),
+        });
+      S.uncheckConfirm = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          off: 900,
+          body: detailBody(),
+          bottom: detailM2(),
+          overlay: sheet({
+            title: "Xác nhận hủy thanh toán",
+            body: `<p class="msg" style="margin:0">Bạn có chắc chắn muốn hủy trạng thái "Đã thanh toán" cho Lý Hải Đăng?</p>`,
+            foot: `<div class="row2"><button class="btn btn-s">Hủy</button><button class="btn btn-d">Bỏ đánh dấu</button></div>`,
+          }),
+        });
+      S.deleteConfirm = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: detailBody(),
+          bottom: detailM2(),
+          overlay: sheet({
+            title: "Xác nhận xóa bill tiệc",
+            body: `<p class="msg" style="margin:0">Bạn có chắc chắn muốn xóa bill tiệc này? Hành động không thể hoàn tác.</p>`,
+            foot: `<div class="row2"><button class="btn btn-s">Hủy</button><button class="btn btn-d">Xóa</button></div>`,
+          }),
+        });
+      S.detailAllPaid = () =>
+        frame({
+          top: m1("Liên hoan tổng kết giải mùa thu 2026"),
+          body: `${sumCard({ paid: 25, st: "paid" })}<div class="grp">Đã thanh toán <span class="c num">25</span></div><div class="list">${DP.slice(
+            13,
+          )
+            .concat(DP.slice(0, 6))
+            .map((p, i) =>
+              pRow({ ...p, t: p.t || "20:15, T5 05/11" }, i + 1, "paid"),
+            )
+            .join("")}</div>`,
+          bottom: m2(
+            `<div class="m2-k">25/25 người</div><div class="m2-v e">Đã thu đủ</div>`,
+            `<button class="btn btn-s btn-i" aria-label="Xuất Bill">${ic("download", 20)}</button><button class="btn btn-p">${ic("send", 18)}Gửi Telegram</button>`,
+          ),
+        });
+      const skP = () =>
+        `<div class="prow"><span class="stt"></span><div class="prow-l"><div class="sk" style="height:15px;width:62%"></div><div class="sk" style="height:12px;width:38%;margin-top:8px"></div></div><div class="sk" style="height:18px;width:84px"></div><span style="width:44px"></span></div>`;
+      S.detailLoading = () =>
+        frame({
+          top: m1("", true),
+          body: `<section class="card sum"><div class="sk" style="height:18px;width:60%"></div><div class="sk" style="height:12px;width:30%;margin-top:18px"></div><div class="sk" style="height:24px;width:52%;margin-top:8px"></div><div class="sk" style="height:8px;margin-top:16px"></div><div class="sk" style="height:12px;width:40%;margin:10px 0 16px"></div></section><div style="height:36px"></div><div class="list">${skP() + skP() + skP() + skP() + skP() + skP()}</div>`,
+          bottom: m2(
+            `<div class="sk" style="height:12px;width:60%"></div><div class="sk" style="height:18px;width:80%;margin-top:6px"></div>`,
+            `<button class="btn btn-s btn-i dis">${ic("download", 20)}</button><button class="btn btn-p dis">${ic("send", 18)}Gửi Telegram</button>`,
+          ),
+        });
+
+      /* phương án B */
+      S.listB = () =>
+        frame({
+          top: appHeader(),
+          body: `${listHead()}<div class="card" style="padding:8px;margin-bottom:12px"><div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:4px">
+  <button class="chip" style="border-radius:8px;justify-content:center;height:44px;padding:0 4px;font-size:12px"><span class="dot" style="background:#10b981"></span>Đã TT</button>
+  <button class="chip on-a" style="border-radius:8px;justify-content:center;height:44px;padding:0 4px;font-size:12px"><span class="dot" style="background:#f59e0b"></span>1 phần</button>
+  <button class="chip on-s" style="border-radius:8px;justify-content:center;height:44px;padding:0 4px;font-size:12px"><span class="dot" style="background:#94a3b8"></span>Chưa TT</button>
+  <button class="btn" style="padding:0 8px;font-size:12px;color:var(--s600)">Lọc ${ic("chevD", 14)}</button></div></div>
+  <div class="list">${BILLS.map(billRow).join("")}</div>
+  <div class="card" style="margin-top:12px;padding:12px 16px"><div style="font-size:12px;color:var(--s500);font-weight:500">Chưa thanh toán</div><div style="font-size:18px;font-weight:600">27 người</div><div class="num" style="color:var(--r600);font-weight:600;font-size:14px">Tổng: ${money(18026000)}</div></div>`,
+          bottom: tabBar(),
+          overlay: fab(BOT_TAB + 16),
+        });
+      const bCard = (
+        p,
+      ) => `<div class="card bcard"><div class="bcard-h"><span class="nm">${p.n}</span>${p.f ? '<span class="gb f">Nữ</span>' : '<span class="gb m">Nam</span>'}<span class="num" style="font-weight:600;color:var(--e700)">${money(p.a)}</span><button class="ib" style="width:40px;height:40px;border:1px solid var(--s200);border-radius:10px" aria-label="Xóa ${p.n}">${ic("x", 16)}</button></div>
+  <div class="g2" style="margin-top:8px;gap:8px"><div><div class="mini">Mức tính</div><div class="fi num">1</div></div><div><div class="mini">Đã chi</div><div class="fi num">${p.spent ? "2.000.000" : "0"}</div></div><div><div class="mini">Tiền thêm</div><div class="fi num">${p.food ? "150.000" : "0"}</div></div><div><div class="mini">Ghi chú</div><div class="fi ph">—</div></div></div></div>`;
+      S.createB = () =>
+        frame({
+          top: appHeader(),
+          off: 860,
+          body: `<a class="backlink">${ic("chevL", 16)}Danh sách</a><div class="ph"><h1>Tạo Bill tiệc mới</h1></div>${infoCard()}${extrasCard(false)}<section class="card sec"><div class="sec-h">Người tham gia<span class="rt num">15 người</span></div><div class="sec-b"><div class="fi ph">Tìm tên...</div><div style="color:var(--s500);font-size:13px;margin-top:8px">(danh sách chọn tại chỗ như cũ)</div></div></section>${CP.slice(0, 4).map(bCard).join("")}`,
+          bottom: createM2(),
+        });
+      const bP = (p, i) =>
+        `<div class="card" style="padding:10px 12px;margin-bottom:8px;${p.paid ? "background:rgba(236,253,245,.5);border-color:var(--e200)" : ""}"><div style="display:flex;gap:10px;align-items:flex-start"><div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center"><span class="stt" style="margin:0">${i}</span><span style="font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.n}</span>${p.f ? '<span class="gb f">Nữ</span>' : ""}</div>${pSub(p)}</div><div style="text-align:right"><div class="prow-amt">${money(p.a)}</div><span class="pill ${p.paid ? "on" : ""}" style="margin-top:4px">${ic(p.paid ? "check" : "circle", 16)}${p.paid ? "Đã thanh toán" : "Đánh dấu TT"}</span></div></div></div>`;
+      S.detailB = () =>
+        frame({
+          top: appHeader(),
+          body: `<a class="backlink">${ic("chevL", 16)}Danh sách</a><div class="ph"><h1 style="font-size:20px">Liên hoan tổng kết giải mùa thu 2026</h1><p style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="bd bd-a"><span class="dot"></span>Thanh toán 1 phần</span>Bill tiệc #118 · T2, 02/11</p></div>${DP.slice(
+            0,
+            5,
+          )
+            .map((p, i) => bP(p, i + 1))
+            .join("")}`,
+          bottom:
+            m2(
+              `<div class="m2-k">Còn thu · 13 người</div><div class="m2-v">${money(9979789)}</div>`,
+              `<button class="btn btn-s btn-i" aria-label="Xuất Bill">${ic("download", 20)}</button><button class="btn btn-p">${ic("send", 18)}Gửi Telegram</button>`,
+            ).replace('<div class="safe" style="background:#fff"></div>', "") +
+            tabBar(),
+        });
+
+      /* ======== dựng ======== */
+      document.querySelectorAll(".phone[data-s]").forEach((el) => {
+        const f = S[el.dataset.s];
+        el.innerHTML = f
+          ? f()
+          : '<p style="padding:20px">Thiếu màn ' + el.dataset.s + "</p>";
+      });
+      document.querySelectorAll(".dots").forEach((el) => {
+        const n = +el.dataset.d,
+          c = el.dataset.c,
+          k = (el.dataset.k || "").split(",").filter(Boolean).map(Number);
+        let h = "";
+        for (let i = 1; i <= n; i++) {
+          h += `<i class="${k.includes(i) ? (c ? "k" : "o") : c}"></i>`;
+        }
+        el.innerHTML = h;
+      });
+      /* sơ đồ chiều cao (tỉ lệ 1:12) */
+      const BARS = [
+        {
+          t: "Tạo bill, 15 người",
+          cols: [
+            {
+              l: "Cũ ≈ 5.000 px",
+              seg: [
+                ["Thông tin", 520, "#e2e8f0"],
+                ["Chi phí thêm", 360, "#e2e8f0"],
+                ["Chọn người (khung 480)", 580, "#fde68a"],
+                ["8 hàng thẻ người × 393", 3144, "#fecdd3"],
+                ["Tổng kết", 480, "#e2e8f0"],
+              ],
+            },
+            {
+              l: "A ≈ 2.000 px",
+              seg: [
+                ["M1", 56, "#a7f3d0"],
+                ["Thông tin", 300, "#e2e8f0"],
+                ["Chi phí thêm", 230, "#e2e8f0"],
+                ["15 hàng × 60", 1010, "#bbf7d0"],
+                ["Tổng kết", 260, "#e2e8f0"],
+                ["M2", 102, "#a7f3d0"],
+              ],
+            },
+          ],
+        },
+        {
+          t: "Chi tiết, 25 người",
+          cols: [
+            {
+              l: "Cũ ≈ 5.700 px",
+              seg: [
+                ["Đầu + 4 nút", 300, "#fde68a"],
+                ["Thông tin Bill", 460, "#e2e8f0"],
+                ["Chi phí thêm", 150, "#e2e8f0"],
+                ["25 thẻ người × 190", 4750, "#fecdd3"],
+              ],
+            },
+            {
+              l: "A ≈ 2.150 px",
+              seg: [
+                ["M1", 56, "#a7f3d0"],
+                ["Tóm tắt", 210, "#e2e8f0"],
+                ["25 hàng × 66 + 2 nhóm", 1720, "#bbf7d0"],
+                ["M2", 102, "#a7f3d0"],
+              ],
+            },
+          ],
+        },
+      ];
+      document.getElementById("bars").innerHTML =
+        BARS.map(
+          (b) =>
+            `<div><div style="font-weight:600;margin-bottom:10px">${b.t}</div><div class="bargrp">${b.cols.map((c) => `<div><div class="bar1">${c.seg.map(([n, h, col]) => `<span style="height:${Math.max(h / 12, 4)}px;background:${col}">${h / 12 >= 18 ? n : ""}</span>`).join("")}</div><div class="barlbl"><b>${c.l}</b></div></div>`).join("")}</div></div>`,
+        ).join("") +
+        `<div class="key"><span><i style="width:12px;height:12px;background:#fecdd3;display:inline-block;border-radius:3px"></i>phần người, cũ</span><span><i style="width:12px;height:12px;background:#bbf7d0;display:inline-block;border-radius:3px"></i>phần người, mới</span><span><i style="width:12px;height:12px;background:#a7f3d0;display:inline-block;border-radius:3px"></i>thanh dính M1 / M2</span><span><i style="width:12px;height:12px;background:#fde68a;display:inline-block;border-radius:3px"></i>chỗ vướng khác</span></div>`;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,3450 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Thuê xe, xếp bảng</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ===== Tài liệu ===== */
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        background: #f8fafc;
+        color: #0f172a;
+        font-family:
+          Inter,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        font-size: 15px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap {
+        max-width: 1260px;
+        margin: 0 auto;
+        padding: 0 20px 80px;
+      }
+      .top {
+        padding: 36px 0 20px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 8px;
+      }
+      .top h1 {
+        font-size: 30px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        font-weight: 600;
+      }
+      .meta {
+        color: #64748b;
+        font-size: 14px;
+      }
+      .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        margin-top: 14px;
+        font-size: 14px;
+      }
+      .nav a {
+        color: #047857;
+        text-decoration: none;
+      }
+      .nav a:hover {
+        text-decoration: underline;
+      }
+      section.doc {
+        padding: 36px 0 8px;
+      }
+      section.doc > h2 {
+        font-size: 23px;
+        letter-spacing: -0.015em;
+        margin: 0 0 6px;
+        font-weight: 600;
+      }
+      section.doc > p.lead {
+        color: #475569;
+        margin: 0 0 18px;
+        max-width: 78ch;
+      }
+      h3.sub {
+        font-size: 17px;
+        margin: 28px 0 10px;
+        font-weight: 600;
+      }
+      p,
+      li {
+        max-width: 80ch;
+      }
+      ul.tight {
+        margin: 6px 0 0;
+        padding-left: 20px;
+      }
+      ul.tight li {
+        margin: 3px 0;
+      }
+      table.t {
+        border-collapse: collapse;
+        width: 100%;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        overflow: hidden;
+        font-size: 14px;
+      }
+      table.t th,
+      table.t td {
+        text-align: left;
+        vertical-align: top;
+        padding: 9px 12px;
+        border-top: 1px solid #f1f5f9;
+      }
+      table.t th {
+        background: #f1f5f9;
+        color: #334155;
+        font-weight: 600;
+        border-top: 0;
+      }
+      table.t td.n,
+      table.t th.n {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .lvl {
+        display: inline-block;
+        border-radius: 999px;
+        padding: 1px 9px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .lvl.cao {
+        background: #fff1f2;
+        color: #be123c;
+      }
+      .lvl.vua {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .lvl.thap {
+        background: #f1f5f9;
+        color: #475569;
+      }
+      .code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+        background: #f1f5f9;
+        border-radius: 6px;
+        padding: 1px 5px;
+      }
+      .m {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #065f46;
+        background: #d1fae5;
+        border-radius: 6px;
+        padding: 0 6px;
+        margin-right: 2px;
+      }
+      .box {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px 18px;
+      }
+      .grid2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 16px;
+      }
+      .frames {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 36px 28px;
+        align-items: flex-start;
+        margin-top: 14px;
+      }
+      figure.f {
+        margin: 0;
+        width: 390px;
+      }
+      figure.f.w360 {
+        width: 360px;
+      }
+      figure.f.w430 {
+        width: 430px;
+      }
+      figure.f figcaption {
+        font-size: 13.5px;
+        color: #475569;
+        margin-top: 10px;
+        line-height: 1.5;
+      }
+      figure.f figcaption b {
+        color: #0f172a;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .shots {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .shots figure {
+        margin: 0;
+      }
+      .shots img {
+        display: block;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+      }
+      .shots figcaption {
+        font-size: 13px;
+        color: #475569;
+        margin-top: 6px;
+        max-width: 260px;
+      }
+      .roles {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 6px 0 4px;
+      }
+      .roles button {
+        font: inherit;
+        font-size: 14px;
+        height: 40px;
+        padding: 0 14px;
+        border-radius: 10px;
+        border: 1px solid #cbd5e1;
+        background: #fff;
+        color: #334155;
+        cursor: pointer;
+      }
+      .roles button[aria-pressed="true"] {
+        background: #047857;
+        border-color: #047857;
+        color: #fff;
+      }
+      .note {
+        font-size: 13.5px;
+        color: #64748b;
+      }
+      .scheme {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .col {
+        width: 180px;
+      }
+      .col h4 {
+        font-size: 13px;
+        margin: 0 0 6px;
+        color: #334155;
+        font-weight: 600;
+      }
+      .bar {
+        position: relative;
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .blk {
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        border-radius: 5px;
+        font-size: 11.5px;
+        line-height: 1.25;
+        padding: 3px 6px;
+        color: #334155;
+        overflow: hidden;
+      }
+      .vp {
+        position: absolute;
+        left: 0;
+        right: 0;
+        border: 2px dashed #e11d48;
+        border-radius: 6px;
+        pointer-events: none;
+      }
+      .vp span {
+        position: absolute;
+        right: 4px;
+        bottom: 2px;
+        font-size: 11px;
+        color: #be123c;
+        background: #fff;
+        padding: 0 3px;
+        border-radius: 4px;
+      }
+
+      /* ===== Khung điện thoại (mô phỏng class Tailwind của app) ===== */
+      .phone {
+        --w: 390px;
+        width: var(--w);
+        height: 844px;
+        position: relative;
+        overflow: hidden;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 30px;
+        box-shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.25);
+        font-size: 14px;
+        line-height: 1.45;
+        color: #0f172a;
+      }
+      .phone.w360 {
+        --w: 360px;
+      }
+      .phone.w430 {
+        --w: 430px;
+      }
+      .phone.half {
+        height: 520px;
+      }
+      .phone.mid {
+        height: 640px;
+      }
+      .p-hd {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 48px;
+        background: rgba(255, 255, 255, 0.92);
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 12px;
+        z-index: 5;
+      }
+      .p-hd .brand {
+        font-weight: 600;
+        font-size: 16px;
+        letter-spacing: -0.01em;
+      }
+      .p-hd .av {
+        margin-left: auto;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #d1fae5;
+        color: #065f46;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+      .p-bd {
+        position: absolute;
+        top: 48px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 12px 16px 0;
+        overflow: hidden;
+      }
+      .p-tabs {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 64px;
+        padding-bottom: 8px;
+        background: #fff;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        z-index: 6;
+      }
+      .p-tabs a {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 500;
+        text-decoration: none;
+      }
+      .p-tabs a .pill {
+        width: 56px;
+        height: 28px;
+        border-radius: 999px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .p-tabs a.on {
+        color: #047857;
+      }
+      .p-tabs a.on .pill {
+        background: #ecfdf5;
+      }
+      .m2 {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 64px;
+        background: #fff;
+        border-top: 1px solid #e2e8f0;
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 6;
+      }
+      .m2.nobar {
+        bottom: 0;
+        padding-bottom: 16px;
+      }
+      .m2 .sum {
+        min-width: 0;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 44px;
+        border-radius: 10px;
+      }
+      .m2 .sum .t1 {
+        font-size: 13px;
+        color: #475569;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .m2 .sum .t2 {
+        font-size: 18px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+      }
+      .fab {
+        position: absolute;
+        right: 16px;
+        bottom: 80px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: #047857;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+          0 12px 24px -4px rgba(5, 150, 105, 0.32),
+          0 6px 12px -4px rgba(15, 23, 42, 0.12);
+        z-index: 7;
+      }
+      .toast {
+        position: absolute;
+        left: 16px;
+        right: 16px;
+        background: #0f172a;
+        color: #fff;
+        border-radius: 12px;
+        padding: 11px 14px;
+        font-size: 14px;
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        z-index: 8;
+        box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.4);
+      }
+      .toast.err {
+        background: #9f1239;
+      }
+      .toast .x {
+        margin-left: auto;
+        opacity: 0.8;
+        flex-shrink: 0;
+      }
+      .h1 {
+        font-size: 20px;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        margin: 0 0 12px;
+        line-height: 1.3;
+      }
+      .tl {
+        display: flex;
+        gap: 4px;
+        background: #f1f5f9;
+        border-radius: 12px;
+        padding: 4px;
+        margin-bottom: 12px;
+      }
+      .tl span {
+        flex: 1;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 500;
+        color: #475569;
+        white-space: nowrap;
+      }
+      .tl span.on {
+        background: #fff;
+        color: #0f172a;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+      }
+      .card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow:
+          0 1px 2px rgba(15, 23, 42, 0.04),
+          0 1px 3px rgba(15, 23, 42, 0.06);
+        margin-bottom: 12px;
+      }
+      .card h5 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 10px;
+      }
+      .row2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .fld {
+        margin-bottom: 12px;
+        min-width: 0;
+      }
+      .lbl {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #334155;
+        margin-bottom: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .inp {
+        height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+        padding: 0 12px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
+        overflow: hidden;
+        color: #0f172a;
+        font-variant-numeric: tabular-nums;
+      }
+      .inp .sfx {
+        margin-left: auto;
+        padding-left: 6px;
+        color: #64748b;
+        font-size: 14px;
+      }
+      .inp.ph {
+        color: #94a3b8;
+      }
+      .inp.focus {
+        border-color: #059669;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
+      }
+      .inp.bad {
+        border-color: #e11d48;
+        box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15);
+      }
+      .inp.sel {
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .inp.sel span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .caret {
+        display: inline-block;
+        width: 1.5px;
+        height: 20px;
+        background: #059669;
+        margin-left: 1px;
+      }
+      .hint {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 4px;
+        line-height: 1.35;
+      }
+      .err-t {
+        font-size: 13px;
+        color: #be123c;
+        margin-top: 4px;
+      }
+      .step {
+        display: flex;
+        align-items: center;
+        height: 44px;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        background: #fff;
+        overflow: hidden;
+      }
+      .step b {
+        flex: 1;
+        text-align: center;
+        font-size: 16px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .step i {
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #334155;
+        font-style: normal;
+        flex-shrink: 0;
+      }
+      .step i:first-child {
+        border-right: 1px solid #e2e8f0;
+      }
+      .step i:last-child {
+        border-left: 1px solid #e2e8f0;
+      }
+      .seg {
+        display: flex;
+        gap: 4px;
+        background: #f1f5f9;
+        border-radius: 12px;
+        padding: 4px;
+      }
+      .seg span {
+        flex: 1;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 500;
+        color: #475569;
+        white-space: nowrap;
+      }
+      .seg span.on {
+        background: #fff;
+        color: #0f172a;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
+      }
+      .btn {
+        height: 44px;
+        border-radius: 12px;
+        padding: 0 16px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        white-space: nowrap;
+        border: 1px solid transparent;
+      }
+      .btn.sm {
+        height: 36px;
+        padding: 0 12px;
+      }
+      .btn.p {
+        background: #047857;
+        color: #fff;
+      }
+      .btn.s {
+        background: #fff;
+        color: #334155;
+        border-color: #cbd5e1;
+      }
+      .btn.g {
+        color: #475569;
+      }
+      .btn.dg {
+        color: #e11d48;
+      }
+      .btn.ds {
+        background: #fff;
+        color: #e11d48;
+        border-color: #fecdd3;
+      }
+      .btn.d {
+        background: #e11d48;
+        color: #fff;
+      }
+      .btn.dash {
+        border-style: dashed;
+      }
+      .btn.full {
+        width: 100%;
+      }
+      .btn.off {
+        opacity: 0.5;
+      }
+      .ib {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #475569;
+        flex-shrink: 0;
+      }
+      .ib.bd {
+        border: 1px solid #cbd5e1;
+        background: #fff;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 2px 9px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      .b-em {
+        background: #ecfdf5;
+        color: #065f46;
+      }
+      .b-am {
+        background: #fffbeb;
+        color: #92400e;
+      }
+      .b-sky {
+        background: #f0f9ff;
+        color: #075985;
+      }
+      .b-sl {
+        background: #f1f5f9;
+        color: #334155;
+      }
+      .b-solid {
+        background: #047857;
+        color: #fff;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+      }
+      .muted {
+        color: #64748b;
+      }
+      .list {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        overflow: hidden;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      }
+      .lr {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        min-height: 60px;
+        border-top: 1px solid #f1f5f9;
+      }
+      .lr:first-child {
+        border-top: 0;
+      }
+      .lr .mn {
+        min-width: 0;
+        flex: 1;
+      }
+      .lr .tt {
+        font-size: 15px;
+        font-weight: 600;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .lr .st {
+        font-size: 13px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+      .lr .rt {
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .lr .amt {
+        font-size: 16px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .lr.g-m {
+        background: rgba(240, 249, 255, 0.6);
+      }
+      .lr.g-f {
+        background: rgba(255, 241, 242, 0.5);
+      }
+      .lr.new {
+        background: #ecfdf5;
+      }
+      .stt {
+        width: 22px;
+        flex-shrink: 0;
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        font-variant-numeric: tabular-nums;
+      }
+      .scrim {
+        position: absolute;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.42);
+        z-index: 20;
+      }
+      .sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #fff;
+        border-radius: 16px 16px 0 0;
+        z-index: 21;
+        display: flex;
+        flex-direction: column;
+      }
+      .sh-h {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 18px 20px 6px;
+      }
+      .sh-h h4 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.35;
+        min-width: 0;
+      }
+      .sh-h .ib {
+        margin: -8px -10px 0 0;
+      }
+      .sh-b {
+        padding: 6px 20px 14px;
+        overflow: hidden;
+        flex: 1;
+        min-height: 0;
+      }
+      .sh-f {
+        border-top: 1px solid #f1f5f9;
+        padding: 12px 20px 20px;
+        display: flex;
+        gap: 8px;
+      }
+      .sh-f .btn {
+        flex: 1;
+      }
+      .kbd {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 262px;
+        background: #d1d5db;
+        z-index: 22;
+        padding: 8px 3px 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .kbd .kr {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        flex: 1;
+      }
+      .kbd .k {
+        flex: 1;
+        max-width: 33px;
+        background: #fff;
+        border-radius: 5px;
+        box-shadow: 0 1px 0 #9ca3af;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: #111827;
+      }
+      .kbd .k.w {
+        max-width: none;
+        flex: 5;
+      }
+      .kbd .k.g {
+        background: #adb3bc;
+        max-width: 44px;
+      }
+      .kbd .k.go {
+        background: #047857;
+        color: #fff;
+        max-width: 88px;
+        flex: 2;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .bk-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .bk {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 10px 10px 8px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+        min-width: 0;
+      }
+      .bk .bh {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .bk .bh b {
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .bk .bs {
+        font-size: 12.5px;
+        color: #64748b;
+        margin: 1px 0 4px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .bk .pr {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 3px 0 3px 7px;
+        border-left: 3px solid #38bdf8;
+        margin: 4px 0;
+        font-size: 14px;
+        line-height: 1.3;
+      }
+      .bk .pr.g-f {
+        border-left-color: #fb7185;
+      }
+      .bk .pr span:first-child {
+        flex: 1;
+        min-width: 0;
+      }
+      .bk .pr .lv {
+        font-weight: 600;
+        color: #334155;
+        font-variant-numeric: tabular-nums;
+        width: 14px;
+        text-align: right;
+      }
+      .bk .empty {
+        font-size: 13px;
+        color: #92400e;
+        background: #fffbeb;
+        border-radius: 10px;
+        padding: 10px;
+        margin-top: 4px;
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        font-size: 12.5px;
+        color: #475569;
+        align-items: center;
+      }
+      .legend i {
+        display: inline-block;
+        width: 3px;
+        height: 14px;
+        border-radius: 2px;
+        margin-right: 5px;
+        vertical-align: -2px;
+      }
+      .chips {
+        display: flex;
+        gap: 8px;
+        overflow: hidden;
+        margin-bottom: 10px;
+      }
+      .ob {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 12px;
+        margin-bottom: 10px;
+      }
+      .ob.win {
+        border-color: #6ee7b7;
+        background: #ecfdf5;
+      }
+      .ob .on {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+        font-weight: 500;
+      }
+      .ob .big {
+        font-size: 20px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        margin-top: 2px;
+        letter-spacing: -0.01em;
+      }
+      .ob dl {
+        margin: 8px 0 0;
+        padding-top: 8px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 14px;
+      }
+      .ob dl div {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 1px 0;
+      }
+      .ob dt {
+        color: #64748b;
+      }
+      .ob dd {
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+      }
+      .ob .trip {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #a7f3d0;
+      }
+      .ob:not(.win) .trip {
+        border-top-color: #e2e8f0;
+      }
+      .ob .trip div {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .disc {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 48px;
+        border-top: 1px solid #f1f5f9;
+        margin: 0 -12px -12px;
+        padding: 0 12px;
+        font-size: 14px;
+      }
+      .disc .v {
+        margin-left: auto;
+        color: #64748b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 55%;
+      }
+      .banner {
+        border-radius: 12px;
+        padding: 10px 12px;
+        font-size: 14px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .banner.am {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        color: #92400e;
+      }
+      .banner.sky {
+        background: #f0f9ff;
+        color: #075985;
+      }
+      .sk {
+        background: linear-gradient(
+          90deg,
+          rgba(226, 232, 240, 0.5),
+          #e2e8f0,
+          rgba(226, 232, 240, 0.5)
+        );
+        border-radius: 8px;
+      }
+      .radio {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 52px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 0 12px;
+        margin-bottom: 8px;
+        font-size: 15px;
+      }
+      .radio .dot {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #94a3b8;
+        flex-shrink: 0;
+      }
+      .radio.on {
+        border-color: #059669;
+        background: #ecfdf5;
+      }
+      .radio.on .dot {
+        border: 6px solid #047857;
+      }
+      .radio .c {
+        margin-left: auto;
+        color: #64748b;
+        font-size: 13px;
+        font-variant-numeric: tabular-nums;
+      }
+      .sr {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+      .tag {
+        position: absolute;
+        z-index: 30;
+        background: #7c3aed;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 1px 5px;
+        letter-spacing: 0.02em;
+      }
+      [data-role="viewer"] .need-create,
+      [data-role="viewer"] .need-organize,
+      [data-role="viewer"] .need-delete,
+      [data-role="sched"] .need-delete {
+        display: none !important;
+      }
+      [data-role="viewer"] .only-viewer {
+        display: flex !important;
+      }
+      .only-viewer {
+        display: none !important;
+      }
+      [data-carrole="view"] .need-save {
+        display: none !important;
+      }
+      [data-carrole="view"] .only-view {
+        display: inline-flex !important;
+      }
+      .only-view {
+        display: none !important;
+      }
+      /* ảnh xuất bảng */
+      .exp {
+        width: 720px;
+        background: #fff;
+        padding: 28px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        color: #0f172a;
+      }
+      .exp .eh {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .exp .eh h6 {
+        font-size: 24px;
+        margin: 0;
+        font-weight: 600;
+        letter-spacing: -0.015em;
+      }
+      .exp .eh .d {
+        margin-left: auto;
+        text-align: right;
+        font-size: 14px;
+        color: #475569;
+      }
+      .exp .eg {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+      .exp .ec {
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 12px 14px;
+      }
+      .exp .ec .t {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .exp .ec .t small {
+        font-size: 13px;
+        color: #64748b;
+        font-weight: 500;
+      }
+      .exp .er {
+        display: grid;
+        grid-template-columns: 1fr 44px 64px;
+        gap: 8px;
+        padding: 6px 0;
+        border-top: 1px solid #f1f5f9;
+        font-size: 15px;
+      }
+      .exp .er span:nth-child(2),
+      .exp .er span:nth-child(3) {
+        color: #475569;
+        font-size: 14px;
+      }
+      .exp .er span:nth-child(3) {
+        text-align: right;
+      }
+      .exp .ef {
+        margin-top: 14px;
+        font-size: 12.5px;
+        color: #94a3b8;
+        display: flex;
+        justify-content: space-between;
+      }
+      @media (max-width: 700px) {
+        .wrap {
+          padding: 0 12px 60px;
+        }
+        .top h1 {
+          font-size: 24px;
+        }
+        figure.f,
+        figure.f.w430 {
+          width: 100%;
+          overflow-x: auto;
+        }
+        table.t {
+          display: block;
+          overflow-x: auto;
+        }
+        .grid2 {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .code {
+          word-break: break-all;
+        }
+        .scheme .note {
+          max-width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <h1>Đề xuất: Thuê xe và Xếp bảng trên điện thoại</h1>
+        <div class="meta">
+          Nhóm 07 · Bước 1, chỉ đề xuất (chưa sửa code) · 05/11/2026 · Sổ cầu
+          lông
+        </div>
+        <nav class="nav" aria-label="Mục lục">
+          <a href="#tom-tat">Tóm tắt</a><a href="#vuong">Vướng hiện nay</a
+          ><a href="#a-xe">A · Thuê xe</a><a href="#a-bang">A · Xếp bảng</a>
+          <a href="#vai-tro">Theo vai trò</a><a href="#be-ngang">360 / 430</a
+          ><a href="#b">Phương án B</a><a href="#cham">Số lần chạm</a>
+          <a href="#thay-doi">Thay đổi</a><a href="#mau-chung">Mẫu chung</a
+          ><a href="#chu-moi">Chữ mới</a><a href="#backend">Backend</a>
+          <a href="#cong">Công &amp; file</a><a href="#tham-khao">Tham khảo</a
+          ><a href="#quyet">Cần quyết</a>
+        </nav>
+      </header>
+
+      <!-- ============ TÓM TẮT ============ -->
+      <section class="doc" id="tom-tat">
+        <h2>Tóm tắt phương án A (khuyên dùng)</h2>
+        <p class="lead">
+          Hai màn ít dùng nhưng dài nhất app trên điện thoại. Thuê xe: người
+          dùng nhập ở đầu trang mà kết quả nằm cách 1.871 px. Xếp bảng: mỗi VĐV
+          chiếm 165 px chỉ vì nút Xóa, và nhập 16 VĐV phải mở lại hộp thoại 16
+          lần. Đợt này giữ nguyên màu, chữ và cách tính — chỉ đổi bố cục, luồng
+          chạm và phản hồi.
+        </p>
+        <div class="grid2">
+          <div class="box">
+            <b>Thuê xe</b>
+            <ul class="tight">
+              <li>
+                <b>Thanh kết quả dính đáy</b> (<span class="m">M2</span>): luôn
+                thấy "Rẻ nhất: … · số tiền" khi đang gõ, chạm vào thì cuộn tới
+                Kết quả; nút chính "Lưu lại".
+              </li>
+              <li>
+                Kết quả gộp một thẻ cho mỗi phương án: tổng xe, bóc tách, chi
+                phí chung, tổng chuyến, /người — bỏ khối lặp tên lần hai.
+              </li>
+              <li>
+                Ô chuyến đi gọn: số ngày có nút −/+, nhãn dài tách thành nhãn +
+                gợi ý, "Ghi chú, gắn bill tiệc" gập lại.
+              </li>
+              <li>
+                Lịch sử thành hàng <span class="m">M3</span>, chạm hàng mở sheet
+                chi tiết <span class="m">M5</span> có "Nạp vào máy tính" và
+                "Xóa" (<span class="code">ConfirmDialog</span>).
+              </li>
+              <li>
+                Thông báo "Đã copy" / lỗi lưu hiện ngay trên thanh đáy (<span
+                  class="m"
+                  >M8</span
+                >) — hôm nay nó hiện ở đỉnh trang, ngoài tầm mắt.
+              </li>
+            </ul>
+          </div>
+          <div class="box">
+            <b>Xếp bảng</b>
+            <ul class="tight">
+              <li>
+                VĐV thành hàng 60 px <span class="m">M3</span>, badge ghi luôn
+                "Bảng 2"; Xóa chuyển vào sheet VĐV.
+              </li>
+              <li>
+                Nút tròn "+" <span class="m">M9</span> mở sheet
+                <b>Thêm VĐV nhập liên tục</b>: Enter là thêm, giữ giới tính +
+                level của người trước, Nam/Nữ là 2 nút.
+              </li>
+              <li>
+                Import nằm chung sheet (tab "Từ file"), báo luôn các dòng bị bỏ
+                qua (hôm nay chỉ ghi vào console).
+              </li>
+              <li>
+                Bảng thi đấu xem <b>lưới 2 cột</b>: 4 bảng × 4 VĐV vừa một màn
+                390 px; vạch màu nam/nữ, cột Level.
+              </li>
+              <li>
+                Ảnh "Xuất bảng" dựng khung riêng 720 px, 2 cột, có tên danh sách
+                và ngày — không còn ảnh một cột dài theo màn điện thoại.
+              </li>
+              <li>
+                16 <span class="code">alert()</span>, 2
+                <span class="code">confirm()</span>, 1
+                <span class="code">prompt()</span> → toast
+                <span class="m">M8</span>,
+                <span class="code">ConfirmDialog</span>, sheet "Tạo danh sách
+                VĐV".
+              </li>
+            </ul>
+          </div>
+        </div>
+        <p class="note" style="margin-top: 12px">
+          Chỉ frontend, không đổi API / route / quyền. Desktop giữ nguyên (mọi
+          thay đổi bố cục nằm dưới <span class="code">sm:</span> /
+          <span class="code">md:</span>), trừ ảnh xuất bảng thi đấu — ảnh này
+          đổi cho cả desktop (xem T8).
+        </p>
+      </section>
+
+      <!-- ============ VƯỚNG ============ -->
+      <section class="doc" id="vuong">
+        <h2>Vướng trên điện thoại hiện nay</h2>
+        <p class="lead">
+          Ảnh chụp máy chủ demo ở 390 px, dữ liệu khó chặn ngay trong trình
+          duyệt chụp (không ghi vào demo). Đo bằng
+          <span class="code">getBoundingClientRect</span>.
+        </p>
+        <div class="shots">
+          <figure>
+            <img
+              src="anh/cu-xe-390-man-dau.png"
+              width="200"
+              alt="Thuê xe hiện tại, màn đầu"
+            />
+            <figcaption>
+              Thuê xe, màn đầu: chưa thấy phương án nào, thanh đáy chỉ có 2 nút.
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="anh/cu-xe-390-da-nhap.png"
+              width="120"
+              alt="Thuê xe hiện tại, cả trang"
+            />
+            <figcaption>
+              Cả trang 2.768 px; Kết quả bắt đầu ở 1.871 px.
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="anh/cu-xe-390-lich-su-mo.png"
+              width="200"
+              alt="Lịch sử hiện tại"
+            />
+            <figcaption>
+              Lịch sử: dòng tóm tắt 3 dòng chữ liền, mở rộng ngay tại chỗ.
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="anh/cu-bang-390-vdv.png"
+              width="110"
+              alt="Danh sách VĐV hiện tại"
+            />
+            <figcaption>
+              16 VĐV = 3.067 px; mỗi thẻ 165 px vì nút Xóa rộng.
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="anh/cu-bang-390-bang.png"
+              width="150"
+              alt="Bảng thi đấu hiện tại"
+            />
+            <figcaption>
+              4 bảng xếp chồng 1.793 px; nút "Xóa tất cả" đỏ đặc ngay dưới "Xếp
+              bảng".
+            </figcaption>
+          </figure>
+          <figure>
+            <img
+              src="anh/cu-bang-390-import.png"
+              width="170"
+              alt="Hộp import hiện tại"
+            />
+            <figcaption>
+              Import: nút chọn file chữ tiếng Anh, chọn xong là gửi ngay.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 class="sub">
+          Sơ đồ bố cục cũ (tỉ lệ thật, khung đỏ = phần nhìn thấy khi mở trang)
+        </h3>
+        <div class="scheme" id="scheme"></div>
+
+        <h3 class="sub">Bảng vướng</h3>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Chỗ vướng</th>
+              <th>Ảnh / đo đạc</th>
+              <th>Mức</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                Thuê xe: kết quả (phương án nào rẻ) nằm cuối trang; người dùng
+                bấm "Lưu lại" ở thanh đáy mà chưa thấy kết quả.
+              </td>
+              <td>
+                Kết quả ở y = 1.871 / 2.768 px; vùng nhìn còn ~670 px → phải
+                cuộn ~2,2 màn. <span class="code">cu-xe-390-da-nhap.png</span>
+              </td>
+              <td><span class="lvl cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>
+                Thuê xe: "Đã copy kết quả." và lỗi lưu (vd bill tiệc đã khóa)
+                hiện ở <b>đỉnh</b> trang, trong khi nút bấm nằm ở đáy.
+              </td>
+              <td>
+                <span class="code">CarRentalCalculator.jsx:512–523</span>; người
+                dùng đang ở cuối trang không thấy gì.
+              </td>
+              <td><span class="lvl cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>
+                Thuê xe: lưu xong nhảy sang tab Lịch sử, không có câu xác nhận.
+              </td>
+              <td><span class="code">CarRentalComparison.jsx:21–25</span></td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>Thuê xe: "Nhập lại" xóa trắng form không hỏi lại.</td>
+              <td>
+                <span class="code">resetForm</span> gọi thẳng, dòng 1106–1114
+              </td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Thuê xe: kết quả lặp tên phương án hai lần (khối Kết quả + khối
+                Tổng chi phí chuyến đi).
+              </td>
+              <td>729 px cho 2 phương án</td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Thuê xe: nhãn dài xuống 2 dòng làm lệch ô cạnh nhau ("Số người
+                đi (0 = không chia)", ở 360 px cả "Tổng km (cả đi lẫn về)").
+              </td>
+              <td><span class="code">cu-xe-360-da-nhap.png</span></td>
+              <td><span class="lvl thap">thấp</span></td>
+            </tr>
+            <tr>
+              <td>
+                Thuê xe: hai thanh dính đáy chồng nhau (hành động 60 px + tab 64
+                px) + đầu trang 48 px.
+              </td>
+              <td>Còn 672 / 844 px để đọc</td>
+              <td><span class="lvl thap">thấp</span></td>
+            </tr>
+            <tr>
+              <td>
+                Lịch sử: tóm tắt là một câu dài 3 dòng; Xóa dùng
+                <span class="code">window.confirm</span>.
+              </td>
+              <td>
+                <span class="code">CarRentalHistory.jsx:41, 107–121</span>
+              </td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: mỗi VĐV là thẻ 165 px vì có nút Xóa rộng cả hàng (nút
+                xám mờ, không lý do, khi VĐV đã xếp bảng).
+              </td>
+              <td>
+                16 VĐV = 3.067 px. <span class="code">cu-bang-390-vdv.png</span>
+              </td>
+              <td><span class="lvl cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: nhập từng VĐV phải mở lại hộp thoại; giới tính là ô
+                chọn (2 lần chạm cho "Nữ").
+              </td>
+              <td>16 VĐV = 64 lần chạm (bảng Số lần chạm)</td>
+              <td><span class="lvl cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: đầu trang chiếm 60% màn đầu (ô chọn danh sách, nút tạo
+                danh sách rộng, 2 nút, 3 thẻ số).
+              </td>
+              <td>Danh sách VĐV bắt đầu ở y = 503 px</td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: 4 bảng xếp chồng một cột, không nhìn được cả giải cùng
+                lúc; tiêu đề cột "Level" chữ 12 px màu slate-400 (tương phản
+                2,6:1).
+              </td>
+              <td>1.793 px. <span class="code">cu-bang-390-bang.png</span></td>
+              <td><span class="lvl cao">cao</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: "Xóa tất cả" là nút đỏ đặc rộng cả hàng, đặt giữa "Xếp
+                bảng" và "Xuất bảng".
+              </td>
+              <td>dòng 501–509</td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: ảnh xuất chụp đúng lưới trên màn → trên điện thoại ra
+                ảnh một cột rộng 390 px, dài.
+              </td>
+              <td>
+                <span class="code">html2canvas(bracketsContainerRef)</span>,
+                dòng 244–261
+              </td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: 16 <span class="code">alert()</span>, 2
+                <span class="code">confirm()</span>, 1
+                <span class="code">prompt()</span>; import lỗi dòng nào chỉ ghi
+                console.
+              </td>
+              <td>đếm bằng grep; dòng 185–188</td>
+              <td><span class="lvl vua">vừa</span></td>
+            </tr>
+            <tr>
+              <td>
+                Xếp bảng: ô chọn file hiện "Choose file / No file chosen" (chữ
+                của trình duyệt); chọn xong là gửi ngay.
+              </td>
+              <td><span class="code">cu-bang-390-import.png</span></td>
+              <td><span class="lvl thap">thấp</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ============ A · THUÊ XE ============ -->
+      <section class="doc" id="a-xe">
+        <h2>Phương án A · Thuê xe</h2>
+        <p class="lead">
+          Dữ liệu mẫu tính bằng chính
+          <span class="code">utils/carRentalCost.js</span>: chuyến 3 ngày, 1.240
+          km, 7 người, Innova xăng 1.100.000 ₫/ngày (9 L, 22.660 ₫/lít) và
+          VinFast VF8 điện 1.350.000 ₫/ngày (18 kWh, 3.858 ₫/kWh), chi phí chung
+          770.000 ₫. Số /người để nguyên như hôm nay (không làm tròn) — xem mục
+          Cần quyết.
+        </p>
+        <div class="frames">
+          <figure class="f">
+            <div class="phone" id="x1" data-carrole="save"></div>
+            <figcaption>
+              <b>X1 · Tính toán, màn đầu</b>Thanh <span class="m">M2</span> trên
+              thanh tab: trái là kết quả sống (chạm → cuộn tới Kết quả), phải là
+              "Lưu lại". Số ngày −/+, nhãn dài tách thành gợi ý, "Ghi chú, gắn
+              bill tiệc" gập.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="x2"></div>
+            <figcaption>
+              <b>X2 · Phương án thuê xe (đã cuộn)</b>Tên phương án là ô nhập
+              thật có nhãn "Phương án 1". Đơn vị (đ, L/100km, đ/lít) chuyển thành chữ mờ trong ô nên nhãn không bị cắt; gợi ý
+              giá thị trường xuống dưới, chữ 13 px. Thanh đáy đổi số ngay khi
+              gõ.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="x2b"></div>
+            <figcaption><b>X2b · Bật "Nâng cao", 3 phương án</b>Ba ô nâng cao: nhãn ngắn + đơn vị mờ trong ô, "trống = không giới hạn" thành gợi ý. Đủ 3 phương án thì mỗi phương án có nút X (giữ <span class="code">aria-label</span> "Xóa {tên}").</figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="x3"></div>
+            <figcaption>
+              <b>X3 · Kết quả (đã cuộn) + "Đã copy"</b>Câu tiết kiệm / hòa vốn
+              lên đầu; mỗi phương án một thẻ gộp cả tổng chuyến và /người. Toast
+              <span class="m">M8</span> nằm ngay trên thanh đáy.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="x4"></div>
+            <figcaption>
+              <b>X4 · Đang sửa bản ghi + gắn bill tiệc + lỗi lưu</b>Mục gập tự
+              mở khi bản ghi có gắn bill. Lỗi khóa bill (chữ của backend) hiện ở
+              toast đỏ, không tự tắt, có nút đóng.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="x5"></div>
+            <figcaption>
+              <b>X5 · Lịch sử sau khi lưu</b>Hàng <span class="m">M3</span>: tên
+              (tối đa 2 dòng), ngày <span class="m">M6</span> · ngày thuê · km,
+              "Rẻ nhất: …"; phải là tổng xe rẻ nhất + badge "Bill tiệc". Hàng
+              vừa lưu tô nhạt; toast "Đã lưu vào Lịch sử".
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="x6"></div>
+            <figcaption>
+              <b>X6 · Sheet chi tiết lần so sánh</b><span class="m">M5</span>:
+              thay phần mở rộng tại chỗ. Chân sheet: "Xóa" (viền đỏ) + "Nạp vào
+              máy tính". Bản 30 người, tiền hàng chục triệu.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="x7"></div>
+            <figcaption><b>X7 · Hỏi trước khi "Nhập lại"</b><span class="code">ConfirmDialog</span> có sẵn, nút đỏ vì xóa số đã nhập (chữ mới).</figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="x7b"></div>
+            <figcaption><b>X7b · Xóa lần so sánh</b>Thay <span class="code">window.confirm</span>; câu hỏi giữ chữ cũ "Xóa {tên}?", tiêu đề mới "Xóa lần so sánh".</figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="x8"></div>
+            <figcaption>
+              <b>X8 · Lịch sử: rỗng · đang tải · lỗi</b>Rỗng có nút đưa về tab
+              Tính toán; đang tải dùng khung xám
+              <span class="code">.skeleton</span> có sẵn thay chữ "Đang tải...";
+              lỗi giữ chữ cũ.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============ A · XẾP BẢNG ============ -->
+      <section class="doc" id="a-bang">
+        <h2>Phương án A · Xếp bảng</h2>
+        <p class="lead">
+          16 VĐV, 8 nam 8 nữ, level 1–3, có tên 30 ký tự "Nguyễn Hoàng Bảo Ngọc
+          Trâm Anh". "Bảng thi đấu" trong app là <b>chia nhóm</b> (mỗi bảng một
+          danh sách VĐV), API không có trận / tỉ số — nên đề xuất xem dạng lưới
+          nhóm, không vẽ cây đấu.
+        </p>
+        <div class="frames">
+          <figure class="f">
+            <div class="phone" id="t1"></div>
+            <figcaption>
+              <b>T1 · Danh sách VĐV (16, chưa xếp)</b>Ô chọn danh sách + nút "+"
+              cùng một hàng. 3 số gọn một thẻ, kèm "Xếp bảng". Hàng 60 px
+              <span class="m">M3</span> giữ nền xanh / hồng nam nữ như cũ. Nút
+              "+" <span class="m">M9</span>.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="t2"></div>
+            <figcaption>
+              <b>T2 · Thêm VĐV, nhập liên tục</b>Sheet không đóng sau mỗi người.
+              Phím "Tiếp" trên bàn phím = Thêm, con trỏ quay về Họ Tên; giới
+              tính + level giữ như người trước. "Vừa thêm" cho biết đã vào danh
+              sách.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="t3"></div>
+            <figcaption>
+              <b>T3 · Thêm VĐV, tab Từ file</b>Giữ đủ hướng dẫn cũ nhưng thu gọn
+              ví dụ. Nút chọn file chữ Việt. Kết quả import ở ngay sheet, liệt
+              kê dòng bị bỏ qua (chữ backend trả về).
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t2b"></div>
+            <figcaption>
+              <b>T2b · Lỗi trùng tên</b>Lỗi 422 của backend hiện dưới ô Họ Tên
+              thay vì <span class="code">alert()</span>; tên đang gõ giữ nguyên
+              để sửa.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t4"></div>
+            <figcaption>
+              <b>T4 · Sheet VĐV (chạm vào hàng)</b>Xóa chuyển vào đây. VĐV đã
+              xếp bảng: nút mờ kèm lý do (đúng câu backend). Chưa xếp: Xóa →
+              <span class="code">ConfirmDialog</span>.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t5"></div>
+            <figcaption>
+              <b>T5 · Sheet Xếp bảng</b>Số bảng có −/+; phân bổ giới tính thành
+              3 lựa chọn chạm một lần, kèm số VĐV sẽ được xếp ở mỗi lựa chọn.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="t6" data-role="admin"></div>
+            <figcaption>
+              <b>T6 · Bảng thi đấu, lưới 2 cột</b>Cả 4 bảng trong một màn. Vạch
+              trái xanh = nam, hồng = nữ (có chữ ẩn cho trình đọc màn hình);
+              dòng phụ "2 nam · 2 nữ" kiêm tiêu đề cột "Level". Thanh đáy: "Xuất bảng".
+              <span class="code">⋯</span> chứa Xếp bảng / Xóa tất cả.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="t6b"></div>
+            <figcaption>
+              <b>T6b · Dữ liệu khó: bảng lệch, bảng rỗng</b>Đúng kết quả thuật
+              toán hiện tại khi mỗi nhóm level &lt; 4 người (mục Backend): 6 / 6
+              / 4 / 0. Thẻ "Bảng 4" nói rõ chưa có VĐV; 4 VĐV mới thêm chưa xếp
+              có thanh nhắc.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t7"></div>
+            <figcaption>
+              <b>T7 · Sheet ⋯ và xác nhận xóa tất cả</b>"Xóa tất cả" rời khỏi
+              trang chính vào sheet <span class="m">M5</span>, chữ đỏ, có
+              <span class="code">ConfirmDialog</span> dùng câu cũ.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t7b"></div>
+            <figcaption><b>T7b · Xác nhận xóa tất cả bảng / xóa VĐV</b>Câu cũ của <span class="code">confirm()</span> thành nội dung <span class="code">ConfirmDialog</span>; tiêu đề mới. Xóa VĐV dùng cùng mẫu: tiêu đề "Xóa VĐV", câu cũ "Bạn có chắc muốn xóa VĐV này?".</figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t9a"></div>
+            <figcaption>
+              <b>T9a · Danh sách VĐV rỗng</b
+              ><span class="code">EmptyState</span> cũ + nút "Thêm VĐV".
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t9b"></div>
+            <figcaption>
+              <b>T9b · Chưa có bảng</b>Câu cũ 'Hãy bấm "Xếp bảng"…' giờ khớp với
+              nút "Xếp bảng" ở thanh đáy.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="t10"></div>
+            <figcaption>
+              <b>T10 · Tạo danh sách VĐV</b>Sheet thay
+              <span class="code">prompt()</span>.
+            </figcaption>
+          </figure>
+        </div>
+
+        <h3 class="sub" id="t8">T8 · Ảnh "Xuất bảng" (đổi cho cả desktop)</h3>
+        <p class="note">
+          Hôm nay: chụp đúng lưới đang hiện → điện thoại ra ảnh 1 cột 390 px (≈
+          780 × 2.490 px ở scale 2), desktop ra 4 cột. Đề xuất: một khung ẩn
+          rộng cố định 720 px, 2 cột, có tên danh sách và ngày, tên VĐV không
+          cắt — ảnh giống nhau dù bấm từ máy nào. Vẫn dùng
+          <span class="code">html2canvas</span> đang có. Trên điện thoại có Web
+          Share thì mở bảng chia sẻ (gửi thẳng Zalo / Telegram), không thì tải
+          về như cũ.
+        </p>
+        <div style="overflow-x: auto; padding: 6px 0">
+          <div class="exp" id="exp"></div>
+        </div>
+      </section>
+
+      <!-- ============ VAI TRÒ ============ -->
+      <section class="doc" id="vai-tro">
+        <h2>Theo vai trò</h2>
+        <p class="lead">
+          Không đổi quyền nào; chỉ chỗ đặt nút đổi. Bấm nút để xem khung thay
+          đổi.
+        </p>
+        <div class="grid2">
+          <div>
+            <b>Xếp bảng</b>
+            <span class="note"
+              >(<span class="code">tournament_brackets.*</span>)</span
+            >
+            <div class="roles" data-target="t6r" data-attr="role">
+              <button aria-pressed="true" data-v="admin">
+                Quản trị · Xếp bảng thi đấu
+              </button>
+              <button aria-pressed="false" data-v="sched">
+                Sắp lịch thi đấu (không có .delete)
+              </button>
+              <button aria-pressed="false" data-v="viewer">
+                Xem bảng thi đấu (chỉ .view)
+              </button>
+            </div>
+            <ul class="tight note">
+              <li>
+                Không có <span class="code">create_list</span>: ẩn nút "+" cạnh
+                ô danh sách (như hôm nay).
+              </li>
+              <li>
+                Không có <span class="code">organize</span>: ẩn "Xếp bảng" ở thẻ
+                số, thanh đáy và sheet ⋯ (hôm nay là nút mờ).
+              </li>
+              <li>
+                Không có <span class="code">delete</span>: sheet ⋯ không có "Xóa
+                tất cả" (hôm nay là nút đỏ mờ).
+              </li>
+              <li>
+                "Thêm VĐV" và "Xuất bảng" giữ như hôm nay: ai xem được trang đều
+                thấy.
+              </li>
+            </ul>
+            <div class="frames">
+              <figure class="f">
+                <div class="phone" id="t6r" data-role="admin"></div>
+                <figcaption><b>T6 theo vai trò</b></figcaption>
+              </figure>
+            </div>
+          </div>
+          <div>
+            <b>Thuê xe</b>
+            <span class="note">(<span class="code">car_rentals.*</span>)</span>
+            <div class="roles" data-target="x1r" data-attr="carrole">
+              <button aria-pressed="true" data-v="save">
+                Có .create (hoặc .update khi đang sửa)
+              </button>
+              <button aria-pressed="false" data-v="view">Chỉ .view</button>
+            </div>
+            <ul class="tight note">
+              <li>
+                Không có quyền lưu: phải thanh đáy là "Copy kết quả" thay "Lưu
+                lại" (hôm nay vẫn hiện 1 nút Copy rộng).
+              </li>
+              <li>
+                Sheet chi tiết lịch sử: "Nạp vào máy tính" cần
+                <span class="code">.update</span>, "Xóa" cần
+                <span class="code">.delete</span> — như hôm nay.
+              </li>
+            </ul>
+            <div class="frames">
+              <figure class="f">
+                <div class="phone" id="x1r" data-carrole="save"></div>
+                <figcaption><b>X1 theo vai trò</b></figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 360 / 430 ============ -->
+      <section class="doc" id="be-ngang">
+        <h2>Kiểm bề ngang 360 và 430</h2>
+        <p class="lead">
+          Cùng bố cục, không cột cố định nào ngoài nút 44 px. Tên dài xuống dòng
+          (tối đa 2 dòng ở hàng danh sách), số tiền không xuống dòng.
+        </p>
+        <div class="frames">
+          <figure class="f w360">
+            <div class="phone w360" id="x1s"></div>
+            <figcaption>
+              <b>X1 ở 360</b>Thanh đáy: tên phương án cắt "…", số tiền giữ
+              nguyên.
+            </figcaption>
+          </figure>
+          <figure class="f w360">
+            <div class="phone w360" id="t6s"></div>
+            <figcaption>
+              <b>T6 ở 360</b>Thẻ bảng còn 158 px; tên 30 ký tự xuống 2 dòng.
+            </figcaption>
+          </figure>
+          <figure class="f w360">
+            <div class="phone w360" id="t1s"></div>
+            <figcaption>
+              <b>T1 ở 360, sau khi xếp bảng</b>Badge "Bảng 1…4" thay "Đã xếp
+              bảng".
+            </figcaption>
+          </figure>
+          <figure class="f w430">
+            <div class="phone w430" id="x3l"></div>
+            <figcaption><b>X3 ở 430</b></figcaption>
+          </figure>
+          <figure class="f w430">
+            <div class="phone w430" id="t6l"></div>
+            <figcaption><b>T6 ở 430</b></figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============ PHƯƠNG ÁN B ============ -->
+      <section class="doc" id="b">
+        <h2>Phương án B · nhẹ hơn</h2>
+        <p class="lead">
+          Giữ gần như nguyên form và hộp thoại, chỉ sửa 4 chỗ đau nhất. Chữ mới
+          chỉ là các dòng đánh dấu (B) trong bảng Chữ mới (khoảng 1/3 của A), công khoảng một nửa A.
+        </p>
+        <ul class="tight">
+          <li>
+            <b>Thuê xe:</b> thêm kết quả vào thanh đáy (như X1) + toast
+            <span class="m">M8</span> + hỏi trước khi "Nhập lại" + Lịch sử thành
+            hàng <span class="m">M3</span> mở sheet. Không đổi form, không gộp
+            khối kết quả.
+          </li>
+          <li>
+            <b>Xếp bảng:</b> hàng VĐV gọn <span class="m">M3</span> + Xóa vào
+            sheet; hộp "Thêm VĐV" giữ ô chọn giới tính và ô level nhưng không
+            đóng sau khi thêm ("Hủy" → "Xong"); bảng thi đấu vẫn 1 cột nhưng
+            hàng gọn; "Xóa tất cả" vào sheet ⋯. Ảnh xuất giữ nguyên.
+          </li>
+        </ul>
+        <div class="frames">
+          <figure class="f">
+            <div class="phone" id="b1"></div>
+            <figcaption>
+              <b>B1 · Thuê xe B</b>Form cũ, chỉ thanh đáy mới.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone" id="b2"></div>
+            <figcaption>
+              <b>B2 · Bảng thi đấu B (1 cột, hàng gọn)</b>4 bảng ≈ 1.100 px thay
+              1.793 px.
+            </figcaption>
+          </figure>
+          <figure class="f">
+            <div class="phone half" id="b3"></div>
+            <figcaption>
+              <b>B3 · Hộp Thêm VĐV B</b>Ô cũ; thêm "Vừa thêm" và "Xong".
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- ============ SỐ LẦN CHẠM ============ -->
+      <section class="doc" id="cham">
+        <h2>Việc chính: số lần chạm</h2>
+        <p class="lead">
+          Đếm từ lúc trang đã mở. Gõ phím chữ / số không tính là chạm; phím
+          Enter / "Tiếp" trên bàn phím tính 1 chạm.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Việc</th>
+              <th>Hiện nay</th>
+              <th>A</th>
+              <th>B</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <b>1. So sánh 2 phương án cho một chuyến rồi lưu</b><br /><span
+                  class="note"
+                  >Tên chuyến, ngày đi, 3 ngày, 1.240 km, 7 người, sửa giá thuê
+                  2 xe, trạm thu phí, lưu.</span
+                >
+              </td>
+              <td>
+                11 chạm · 8 ô<br /><span class="note"
+                  >tên 1, ngày 3 (mở lịch, chọn, xong), số ngày 1, km 1, số
+                  người 1, giá ×2, phí 1, Lưu 1. <b>Cuộn ~2,2 màn</b> mới thấy
+                  xe nào rẻ; lưu xong không có câu xác nhận.</span
+                >
+              </td>
+              <td>
+                <b>11 chạm · 7 ô gõ</b><br /><span class="note"
+                  >Số chạm không giảm: số ngày bằng nút + thay cho gõ (không bật bàn phím số).
+                  Cái lợi là <b>0 cuộn</b> để biết xe nào rẻ (thanh đáy luôn hiện) và có toast "Đã
+                  lưu vào Lịch sử".</span
+                >
+              </td>
+              <td>
+                11 chạm · 8 ô<br /><span class="note"
+                  >0 cuộn để biết xe rẻ; có toast.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b
+                  >2. Nhập 16 VĐV (8 nam, 8 nữ, level lẫn lộn) rồi chia 4
+                  bảng</b
+                >
+              </td>
+              <td>
+                <b>68 chạm</b> · 40 lần điền / chọn<br /><span class="note"
+                  >Mỗi nam: mở hộp 1 + ô level 1 + Thêm 1 = 3; mỗi nữ thêm 2
+                  chạm cho ô chọn = 5 → 64 (không phụ thuộc thứ tự nhập vì hộp xóa trắng sau mỗi người). Chia bảng: tab 1, Xếp bảng 1, Xếp
+                  bảng 1, OK của alert 1 = 4.</span
+                >
+              </td>
+              <td>
+                <b>29–51 chạm</b> · 16 ô gõ<br /><span class="note"
+                  >Mở sheet 1 + "Tiếp" ×16 + Xong 1 = 18, cộng 1 chạm mỗi lần đổi Nam/Nữ và 1 chạm mỗi bậc level (giữ giá trị người trước).
+                  Nhập theo nhóm (nam trước, nữ sau): +1 giới tính, ~+8 level → 27. Nhập đúng thứ tự danh sách mẫu (nam nữ xen kẽ): +15, +16 → 49.
+                  Chia bảng: "Xếp bảng" ở thẻ số 1 + "Xếp bảng" trong sheet 1 = 2; tự sang tab Bảng.</span
+                >
+              </td>
+              <td>
+                31–63 chạm<br /><span class="note"
+                  >Không phải mở lại hộp (18 chạm nền như A); đổi giới tính vẫn 2 chạm (ô chọn), đổi level 1 chạm + gõ; chia bảng 3 chạm như cũ trừ OK của alert.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td><span class="note">Phụ: xem cả 4 bảng</span></td>
+              <td>cuộn 1.793 px</td>
+              <td>vừa 1 màn (lưới 2 cột)</td>
+              <td>cuộn ~1.100 px</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ============ THAY ĐỔI ============ -->
+      <section class="doc" id="thay-doi">
+        <h2>Thay đổi so với hiện tại</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Màn / khối</th>
+              <th>Hiện tại</th>
+              <th>A</th>
+              <th>Mẫu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Thuê xe · đầu trang</td>
+              <td>Tiêu đề + mô tả 2 dòng + tab</td>
+              <td>Ẩn mô tả dưới <span class="code">sm</span> (desktop giữ)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · thanh đáy</td>
+              <td>"Copy kết quả" + "Lưu lại" ngang nhau</td>
+              <td>
+                Trái: "Rẻ nhất: tên" + tổng xe, chạm để cuộn tới Kết quả; phải:
+                "Lưu lại" / "Cập nhật" (không quyền lưu: "Copy kết quả")
+              </td>
+              <td><span class="m">M2</span></td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Chuyến đi</td>
+              <td>7 ô, nhãn dài 2 dòng</td>
+              <td>
+                Số ngày −/+; "Tổng km" + gợi ý "cả đi lẫn về"; "Số người đi" +
+                gợi ý "0 = không chia"; Ghi chú + Gắn bill tiệc + Xe thực tế
+                thuê vào mục gập (tự mở khi có giá trị)
+              </td>
+              <td>Đề xuất mẫu chung (−/+)</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Phương án</td>
+              <td>Tên là ô gạch đứt, nút "Xóa" chữ</td>
+              <td>
+                Ô tên có nhãn "Phương án n"; nút X 44 px có
+                <span class="code">aria-label</span> cũ; tiêu hao + đơn giá cùng
+                hàng; gợi ý giá 13 px
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Kết quả</td>
+              <td>Thẻ phương án + khối "Tổng chi phí chuyến đi" lặp tên</td>
+              <td>
+                Câu tiết kiệm / hòa vốn lên đầu; mỗi phương án một thẻ gồm chi
+                phí chung, tổng chuyến, /người. "Copy kết quả" + "Nhập lại" ở
+                cuối khối
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · thông báo</td>
+              <td>Khung xanh / đỏ ở đỉnh trang</td>
+              <td>Toast; lỗi không tự tắt</td>
+              <td><span class="m">M8</span></td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Nhập lại</td>
+              <td>Xóa ngay</td>
+              <td>Hỏi trước</td>
+              <td><span class="code">ConfirmDialog</span></td>
+            </tr>
+            <tr>
+              <td>Lịch sử</td>
+              <td>
+                Thẻ mở rộng tại chỗ, câu tóm tắt 3 dòng,
+                <span class="code">window.confirm</span>
+              </td>
+              <td>
+                Hàng 72 px; chạm → sheet chi tiết có Nạp / Xóa; ngày "T7,
+                21/11"; rỗng có nút; đang tải = khung xám
+              </td>
+              <td>
+                <span class="m">M3</span> <span class="m">M5</span>
+                <span class="m">M6</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · đầu trang</td>
+              <td>
+                Ô danh sách + nút "Tạo danh sách VĐV" rộng; tạo bằng
+                <span class="code">prompt()</span>
+              </td>
+              <td>
+                Ô danh sách + nút "+" 44 px cùng hàng; sheet tạo danh sách
+              </td>
+              <td><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · VĐV</td>
+              <td>2 nút rộng + 3 thẻ số + thẻ 165 px có Xóa</td>
+              <td>
+                1 thẻ số gọn (kèm Xếp bảng) + hàng 60 px, badge "Bảng n"; chạm
+                hàng → sheet VĐV có Xóa; FAB "+"
+              </td>
+              <td>
+                <span class="m">M3</span> <span class="m">M9</span>
+                <span class="m">M5</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Thêm VĐV</td>
+              <td>
+                Hộp đóng sau mỗi người; giới tính ô chọn; import là hộp riêng
+              </td>
+              <td>
+                Một sheet 2 tab "Nhập tay / Từ file"; nhập liên tục; Nam/Nữ 2
+                nút; level −/+; lỗi dưới ô
+              </td>
+              <td><span class="m">M5</span>, đề xuất mẫu chung (chọn nhanh)</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Xếp bảng</td>
+              <td>Ô số + ô chọn phân bổ</td>
+              <td>−/+ và 3 lựa chọn kèm số VĐV</td>
+              <td><span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Bảng thi đấu</td>
+              <td>1 cột; Xếp bảng / Xóa tất cả / Xuất bảng ở đầu</td>
+              <td>
+                Lưới 2 cột dưới <span class="code">md</span>; thanh đáy "Xuất
+                bảng" (hoặc "Xếp bảng" khi còn VĐV chưa xếp); ⋯ chứa Xếp bảng /
+                Xóa tất cả
+              </td>
+              <td><span class="m">M2</span> <span class="m">M5</span></td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · ảnh xuất</td>
+              <td>Chụp lưới trên màn</td>
+              <td>Khung ẩn 720 px 2 cột; Web Share nếu có</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · thông báo</td>
+              <td>16 alert, 2 confirm, 1 prompt</td>
+              <td>
+                Toast / lỗi dưới ô / <span class="code">ConfirmDialog</span> /
+                sheet
+              </td>
+              <td><span class="m">M8</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ============ MẪU CHUNG ============ -->
+      <section class="doc" id="mau-chung">
+        <h2>Đề xuất mẫu chung</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Đề xuất</th>
+              <th>Lý do</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <b><span class="m">M2</span> nằm trên thanh tab</b> — biến thể
+                cho màn tab chính (không phải màn "đẩy vào"): thanh M2 đặt ở
+                <span class="code">bottom: 64px + safe-area</span>, thanh tab
+                vẫn hiện.
+              </td>
+              <td>
+                /car-rental và /tournament-brackets là màn cấp 1, không ẩn tab
+                được (mất đường đi). Thuê xe hôm nay đã làm vậy; nhóm 01 nên
+                chốt chiều cao + bóng để toast <span class="m">M8</span> biết
+                đứng ở đâu.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>Chọn nhanh 2–3 lựa chọn</b> (segmented) dùng lại
+                <span class="code">.tab-list / .tab</span> nhưng trong form: Nam
+                / Nữ, Nhập tay / Từ file.
+              </td>
+              <td>
+                Ô chọn mở bảng chọn hệ thống = 2 chạm, che màn. Theo Primer: tối
+                đa 5 lựa chọn, chữ ngắn, không xuống dòng — "Chia đều giới tính"
+                quá dài nên T5 dùng danh sách chọn một thay vì segmented.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>Ô số có nút −/+</b> (stepper) cho số nguyên nhỏ: số ngày
+                thuê, số bảng, level.
+              </td>
+              <td>
+                Một chạm, không bật bàn phím. Nên là một tùy chọn của
+                <span class="code">NumberInput</span> (nhóm 01 sở hữu) thay vì
+                mỗi màn tự vẽ.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <b>Lưới thẻ 2 cột trên điện thoại</b> cho danh sách nhóm ngắn
+                (bảng thi đấu).
+              </td>
+              <td>
+                Chỉ dùng ở đây; ghi lại để nhóm khác không vô tình áp cho danh
+                sách dài.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <h3 class="sub">Phụ thuộc nhóm khác</h3>
+        <ul class="tight">
+          <li>
+            <b>01-khung-app:</b> toast <span class="m">M8</span> (component + vị
+            trí khi có <span class="m">M2</span> trên tab),
+            <span class="m">M5</span> sheet có chân dính (<span class="code"
+              >Modal</span
+            >
+            đã có <span class="code">footer</span>), stepper trong
+            <span class="code">NumberInput</span>, kiểu segmented. Cần xong
+            trước khi làm A; B chỉ cần toast.
+          </li>
+          <li>
+            <b>Sheet + bàn phím iOS:</b> <span class="code">Modal</span> dính
+            đáy bằng <span class="code">fixed</span>, bàn phím iOS sẽ che chân
+            sheet. T2 dựa vào phím "Tiếp" nên vẫn dùng được, nhưng nhờ nhóm 01
+            xem <span class="code">visualViewport</span> cho mọi sheet có ô
+            nhập. Số chạm ở T2 giả định nút Nam/Nữ và −/+ <b>không lấy focus</b> khỏi ô Họ Tên (chặn mặc định ở <span class="code">pointerdown</span>) để bàn phím không sập; nếu không, mỗi lần đổi phải chạm lại ô tên (+1).
+          </li>
+          <li>
+            Không phụ thuộc nhóm 02–06. Màn bill tiệc chỉ được liên kết tới
+            (link trong sheet chi tiết).
+          </li>
+        </ul>
+      </section>
+
+      <!-- ============ CHỮ MỚI ============ -->
+      <section class="doc" id="chu-moi">
+        <h2>Chữ mới chờ chủ dự án gật</h2>
+        <p class="lead">
+          Chữ cũ giữ nguyên. Dưới đây là mọi nhãn / nút / câu mới hoặc bị tách.
+          (B) = cũng có trong phương án B.
+        </p>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Chỗ</th>
+              <th>Chữ mới</th>
+              <th>Thay cho</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Thuê xe · thanh đáy</td>
+              <td>"Rẻ nhất: {tên}" (dùng lại chữ của Lịch sử) (B)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Chuyến đi</td>
+              <td>
+                Nhãn "Tổng km" + gợi ý "cả đi lẫn về"; nhãn "Số người đi" + gợi
+                ý "0 = không chia"
+              </td>
+              <td>"Tổng km (cả đi lẫn về)", "Số người đi (0 = không chia)"</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Chuyến đi</td>
+              <td>
+                Mục gập "Ghi chú, gắn bill tiệc"; giá trị bên phải "Không gắn"
+                hoặc tên bill
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Phương án</td>
+              <td>Nhãn "Giá thuê / ngày", "Tiêu hao", "Đơn giá" + đơn vị mờ trong ô ("đ", "L/100km", "kWh/100km", "đ/lít", "đ/kWh" — chữ cũ) + gợi ý "0 là miễn phí"</td>
+              <td>"Giá thuê / ngày (đ)", "Tiêu hao (L/100km)", "Đơn giá (đ/lít) — 0 là miễn phí"</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Phương án</td>
+              <td>
+                Nút −/+: <span class="code">aria-label</span> "Bớt 1 ngày" /
+                "Thêm 1 ngày". Nâng cao: nhãn "Chi phí cố định khác", "Giới hạn km/ngày" + gợi ý "trống = không giới hạn", "Phí vượt" + đơn vị "đ/km" (chữ cũ, chỉ tách ra)
+              </td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · toast</td>
+              <td>"Đã lưu vào Lịch sử" (B)</td>
+              <td>(không có)</td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Nhập lại</td>
+              <td>
+                Tiêu đề "Nhập lại từ đầu?", câu "Mọi số đã nhập ở tab Tính toán
+                sẽ bị xóa." (B)
+              </td>
+              <td>(không hỏi)</td>
+            </tr>
+            <tr>
+              <td>Lịch sử · rỗng</td>
+              <td>Nút "Tính chuyến mới" (B)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · đầu trang</td>
+              <td>
+                Nút "+" chỉ biểu tượng,
+                <span class="code">aria-label</span> "Tạo danh sách VĐV" (chữ
+                cũ)
+              </td>
+              <td>nút chữ</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Tạo danh sách</td>
+              <td>Nhãn "Tên danh sách"</td>
+              <td>
+                <span class="code">prompt("Nhập tên danh sách mới:")</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · VĐV</td>
+              <td>Badge "Bảng {n}" (tên bảng lấy từ API) (B)</td>
+              <td>"Đã xếp bảng"</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Thêm VĐV</td>
+              <td>
+                Tab "Nhập tay" / "Từ file"; khối "Vừa thêm"; nút "Xong" (B: "Vừa
+                thêm", "Xong")
+              </td>
+              <td>"Hủy"</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Thêm VĐV</td>
+              <td>
+                Nút −/+: <span class="code">aria-label</span> "Bớt 1 level" /
+                "Thêm 1 level"; ở sheet Xếp bảng "Bớt 1 bảng" / "Thêm 1 bảng"
+              </td>
+              <td>ô số</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Từ file</td>
+              <td>Nút "Chọn file Excel/CSV"; "Bỏ qua {n} dòng:"</td>
+              <td>"Choose file / No file chosen"; console</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · VĐV sheet</td>
+              <td>Nút "Xóa VĐV"; nhãn "Giới tính", "Level", "Bảng"</td>
+              <td>"Xóa" trên thẻ</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Bảng thi đấu</td>
+              <td>
+                Dòng phụ "{x} nam · {y} nữ"; thẻ rỗng "Chưa có
+                VĐV"; nhắc "{n} VĐV chưa xếp bảng"; chú giải "Nam" / "Nữ"
+              </td>
+              <td>tiêu đề nhóm "Nam (3)" / "Nữ (1)"</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · ⋯</td>
+              <td><span class="code">aria-label</span> và tiêu đề sheet "Thao tác khác" (B)</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Bảng thi đấu</td>
+              <td>Dòng tóm tắt "{m} bảng · {n} VĐV"</td>
+              <td>—</td>
+            </tr>
+            <tr>
+              <td>Lịch sử · xóa</td>
+              <td>Tiêu đề hộp "Xóa lần so sánh" (câu hỏi giữ "Xóa {tên}?") (B); bên Xếp bảng: tiêu đề "Xóa tất cả bảng thi đấu", "Xóa VĐV" (câu hỏi giữ chữ cũ) (B)</td>
+              <td><span class="code">window.confirm</span></td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · toast</td>
+              <td>
+                Dùng lại chữ cũ của alert ("Đã import … VĐV thành công", câu "Đã
+                xếp … VĐV vào … bảng" của backend); mới: "Đã tải ảnh bảng thi
+                đấu"
+              </td>
+              <td>alert</td>
+            </tr>
+            <tr>
+              <td>Ảnh xuất bảng</td>
+              <td>Dòng "Bảng thi đấu · {ngày xuất}"; góc phải "{n} VĐV · {m} bảng" + kiểu phân bổ (chữ cũ "Chia đều giới tính"…); chân ảnh "Sổ cầu lông"</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ============ BACKEND ============ -->
+      <section class="doc" id="backend">
+        <h2>Backend</h2>
+        <p>
+          <b>Chỉ frontend.</b> Mọi số trên màn đã có trong API:
+          <span class="code">GET /car-rentals</span> (options, shared_costs,
+          party_bill, creator), <span class="code">GET /fuel-prices</span>,
+          <span class="code">GET /tournament-players</span> (kèm
+          <span class="code">brackets[].name</span> → badge "Bảng n"),
+          <span class="code">GET /player-lists/{id}/brackets</span> (players:
+          gender, level → đếm nam/nữ). Lỗi trùng tên lấy từ 422 của
+          <span class="code">StorePlayerRequest</span>; dòng import bị bỏ qua
+          lấy từ <span class="code">errors[]</span> đã trả về.
+        </p>
+        <h3 class="sub">Phát hiện ngoài phạm vi (báo lại, không vẽ sửa)</h3>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Chỗ</th>
+              <th>Điều thấy</th>
+              <th>Bằng chứng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <span class="code">BracketController.php:106–122</span> (và
+                131–142)
+              </td>
+              <td>
+                <b>Chia bảng lệch, có thể ra bảng rỗng.</b> Mỗi nhóm (giới tính,
+                level) chia phần dư luôn từ Bảng 1. Nhóm nào &lt; số bảng thì
+                chỉ rơi vào các bảng đầu. 16 VĐV (nam 3/3/2, nữ 3/3/2 theo
+                level) chia 4 bảng → 6 / 6 / 4 / 0.
+              </td>
+              <td>
+                Đã chạy bản chép nguyên vòng lặp (<span class="code"
+                  >_work/sim.php</span
+                >): "Bảng 1: 6, Bảng 2: 6, Bảng 3: 4, Bảng 4: 0". Chưa chạy trên
+                controller thật (không chạy artisan ở bước 1).
+              </td>
+            </tr>
+            <tr>
+              <td><span class="code">BracketController::organize</span></td>
+              <td>
+                Xếp tiếp khi đã có bảng sẽ tạo thêm một bộ "Bảng 1…N" trùng tên
+                với bộ cũ.
+              </td>
+              <td>
+                Tên luôn là "Bảng {$bracketNumber}" bắt đầu từ 1 (dòng 147–156).
+                Giả thuyết về hậu quả trên màn — chưa thử.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <span class="code">PlayerListController</span>,
+                <span class="code">PlayerController</span>
+              </td>
+              <td>
+                Danh sách VĐV lọc theo <span class="code">user_id</span> người
+                tạo: vai trò "Xem bảng thi đấu" chỉ thấy danh sách của chính
+                mình (thường rỗng), không thấy giải do người khác xếp.
+              </td>
+              <td>
+                <span class="code"
+                  >PlayerList::where('user_id', $user-&gt;id)</span
+                >
+                ở mọi hàm. Cần chủ dự án xác nhận có cố ý không.
+              </td>
+            </tr>
+            <tr>
+              <td><span class="code">TournamentBrackets.jsx:349–362</span></td>
+              <td>
+                "Thêm VĐV" và "Import" không kiểm quyền nào (khác "Tạo danh
+                sách" / "Xếp bảng").
+              </td>
+              <td>Đọc code. Đề xuất giữ nguyên (không đổi quyền đợt này).</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ============ CÔNG & FILE ============ -->
+      <section class="doc" id="cong">
+        <h2>Ước lượng công và file sẽ sửa</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Màn</th>
+              <th>A</th>
+              <th>B</th>
+              <th>File</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Thuê xe · Tính toán</td>
+              <td>L</td>
+              <td>M</td>
+              <td>
+                <span class="code"
+                  >screens/car-rental/CarRentalCalculator.jsx</span
+                >
+                (1.143 dòng — tách <span class="code">TripFields.jsx</span>,
+                <span class="code">OptionFields.jsx</span>,
+                <span class="code">ResultBar.jsx</span> cùng thư mục
+                <span class="code">components/car-rental/</span>),
+                <span class="code"
+                  >components/car-rental/OptionBreakdown.jsx</span
+                >
+                (phần dưới <span class="code">sm</span>: thêm dòng chi phí chung
+                / tổng chuyến / người)
+              </td>
+            </tr>
+            <tr>
+              <td>Thuê xe · khung tab</td>
+              <td>S</td>
+              <td>S</td>
+              <td>
+                <span class="code"
+                  >screens/car-rental/CarRentalComparison.jsx</span
+                >
+                (toast sau lưu, ẩn mô tả dưới sm)
+              </td>
+            </tr>
+            <tr>
+              <td>Thuê xe · Lịch sử</td>
+              <td>M</td>
+              <td>M</td>
+              <td>
+                <span class="code"
+                  >screens/car-rental/CarRentalHistory.jsx</span
+                >
+                + sheet chi tiết mới
+                <span class="code"
+                  >components/car-rental/ComparisonDetailSheet.jsx</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · VĐV + Thêm VĐV + Import</td>
+              <td>L</td>
+              <td>M</td>
+              <td>
+                <span class="code"
+                  >screens/tournament/TournamentBrackets.jsx</span
+                >
+                (795 dòng — tách
+                <span class="code"
+                  >components/tournament/AddPlayersSheet.jsx</span
+                >, <span class="code">PlayerSheet.jsx</span>,
+                <span class="code">PlayerRow.jsx</span>)
+              </td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · Bảng thi đấu + ⋯ + xếp bảng</td>
+              <td>M</td>
+              <td>S</td>
+              <td>
+                <span class="code">components/tournament/BracketCard.jsx</span>,
+                <span class="code">OrganizeSheet.jsx</span>; hàm thuần đếm
+                nam/nữ (và level TB nếu chọn) →
+                <span class="code">utils/bracketSummary.js</span> +
+                <span class="code">.test.js</span>
+              </td>
+            </tr>
+            <tr>
+              <td>Xếp bảng · ảnh xuất</td>
+              <td>M</td>
+              <td>—</td>
+              <td>
+                <span class="code"
+                  >components/tournament/BracketsExport.jsx</span
+                >
+                (khung ẩn 720 px)
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          A ≈ 5–6 ngày công (sau khi nhóm 01 có toast / stepper / segmented); B
+          ≈ 2,5–3 ngày. Không thêm thư viện; Web Share là API của trình duyệt.
+        </p>
+      </section>
+
+      <!-- ============ THAM KHẢO ============ -->
+      <section class="doc" id="tham-khao">
+        <h2>Tham khảo</h2>
+        <table class="t">
+          <thead>
+            <tr>
+              <th>Nguồn</th>
+              <th>Lấy</th>
+              <th>Không lấy</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                GitHub Primer · SegmentedControl guidelines<br /><a
+                  href="https://primer.style/product/components/segmented-control/guidelines/"
+                  >primer.style/…/segmented-control/guidelines</a
+                >
+              </td>
+              <td>
+                2–5 lựa chọn, chữ ngắn, không xuống dòng, áp ngay không cần nút
+                lưu; màn hẹp thì đổi sang dạng khác → Nam/Nữ và Nhập tay/Từ file
+                dùng segmented, "Chia đều giới tính" dùng danh sách chọn một.
+              </td>
+              <td>
+                Biểu tượng, tooltip (không có hover trên điện thoại), màu
+                Primer.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Ministry of Justice Design System · Add to a list<br /><a
+                  href="https://design-patterns.service.justice.gov.uk/patterns/add-to-a-list"
+                  >design-patterns.service.justice.gov.uk/patterns/add-to-a-list</a
+                >
+              </td>
+              <td>
+                Thêm nhiều mục: luôn cho thấy danh sách đã thêm, xóa có bước xác
+                nhận, có lối "xong" rõ → khối "Vừa thêm" + nút "Xong" ở T2.
+              </td>
+              <td>
+                Câu hỏi Có/Không sau mỗi mục (thêm 1 chạm mỗi người — ngược mục
+                tiêu), mỗi bước một trang.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                Shopify Polaris · IndexTable (README @shopify/polaris 7.4.1)<br /><a
+                  href="https://app.unpkg.com/@shopify/polaris@7.4.1/files/build/docs/components/IndexTable/README.md"
+                  >unpkg.com/@shopify/polaris@7.4.1/…/IndexTable/README.md</a
+                >
+              </td>
+              <td>
+                "Have items that perform an action when clicked… navigate to the
+                resource's details page or otherwise provide more detail"; ví dụ
+                màn nhỏ xếp tên đậm + vài dòng phụ trong một hàng → hàng Lịch sử
+                / VĐV cả hàng là vùng bấm, mở sheet chi tiết.
+              </td>
+              <td>Chọn nhiều hàng + thao tác hàng loạt, sắp xếp cột.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          Material 3 (bottom sheet, segmented) cũng được tra nhưng trang
+          m3.material.io không đọc được bằng công cụ (chỉ trả tiêu đề) nên không
+          trích. Splitwise / Tricount không áp: màn thuê xe so sánh chi phí,
+          không chia nợ.
+        </p>
+      </section>
+
+      <!-- ============ CẦN QUYẾT ============ -->
+      <section class="doc" id="quyet">
+        <h2>Điều cần chủ dự án quyết</h2>
+        <ol>
+          <li>
+            Chọn A hay B (hoặc A cho Xếp bảng, B cho Thuê xe — hai màn độc lập).
+          </li>
+          <li>
+            Thuê xe: số "/người" có hiện làm tròn nghìn (811.587 ₫ → 812.000 ₫)
+            như bill cầu không? Hiện in nguyên số. Chỉ đổi cách in, không đổi số
+            lưu.
+          </li>
+          <li>
+            Bảng thi đấu: chỉ "2 nam · 2 nữ" như mockup, hay thêm "level TB 2" để soát bảng có đều trình không? (API có đủ dữ liệu, chỉ thêm chữ.)
+          </li>
+          <li>Ảnh xuất bảng đổi khung 720 px cho cả desktop — đồng ý không?</li>
+          <li>
+            Thuật toán chia bảng lệch / bảng rỗng (mục Backend): có mở việc
+            riêng để sửa backend không? Không sửa thì T6b là cảnh báo duy nhất.
+          </li>
+          <li>
+            Ý tưởng chưa vẽ: thêm tab "Dán chữ" (mỗi dòng "Tên, nam, 2", gửi qua
+            đúng API import có sẵn) — 16 VĐV còn ~6 chạm nếu có sẵn danh sách
+            trong Zalo. Có muốn không?
+          </li>
+        </ol>
+      </section>
+    </div>
+
+    <script>
+      /* ======= Biểu tượng (đường vẽ chép từ components/ui/icons.jsx — Lucide) ======= */
+      const P = {
+        receipt:
+          '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17.5v-11"/>',
+        utensils:
+          '<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"/><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"/><path d="m2.1 21.8 6.4-6.3"/><path d="m19 5-7 7"/>',
+        users:
+          '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+        trophy:
+          '<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>',
+        car: '<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
+        plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+        minus: '<path d="M5 12h14"/>',
+        x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        ell: '<circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/>',
+        down: '<path d="m6 9 6 6 6-6"/>',
+        up: '<path d="m18 15-6-6-6 6"/>',
+        right: '<path d="m9 18 6-6-6-6"/>',
+        download:
+          '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+        upload:
+          '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/>',
+        check: '<path d="M20 6 9 17l-5-5"/>',
+        alert:
+          '<circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/>',
+        target:
+          '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+        cal: '<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+        file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/>',
+      };
+      const ic = (n, s = 20, st = "") =>
+        `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;${st}">${P[n]}</svg>`;
+      const logo = `<svg width="28" height="28" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#047857"/><path d="M25 42 L14 12 L50 12 L39 42 Z" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M32 12 L32 42 M23 12 L28.5 42 M41 12 L35.5 42 M17.3 21 L46.7 21" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><path d="M24 41 L40 41 L40 46 A8 8 0 0 1 24 46 Z" fill="#fff"/></svg>`;
+
+      /* ======= Khung chung ======= */
+      const HD = `<div class="p-hd">${logo}<span class="brand">Sổ cầu lông</span><span class="av">D</span></div>`;
+      const TABS = (on) =>
+        `<nav class="p-tabs">${[
+          ["receipt", "Bill cầu"],
+          ["utensils", "Bill tiệc"],
+          ["users", "Người chơi"],
+          ["trophy", "Xếp bảng"],
+          ["ell", "Thêm"],
+        ]
+          .map(
+            ([i, l]) =>
+              `<a class="${l === on ? "on" : ""}"><span class="pill">${ic(i, 22)}</span>${l}</a>`,
+          )
+          .join("")}</nav>`;
+      const BD = (html, pad = 0) =>
+        `<div class="p-bd" style="padding-bottom:${pad}px">${html}</div>`;
+      const fmt = (n) => n.toLocaleString("vi-VN") + " ₫";
+      const fmtN = (n) => n.toLocaleString("vi-VN");
+
+      /* ======= Dữ liệu (đúng số carRentalCost.js) ======= */
+      const TRIP = "Giao lưu CLB Phan Thiết – Mũi Né cuối tháng 11";
+      const OPT = [
+        {
+          name: "Innova xăng 7 chỗ",
+          rent: 1100000,
+          fuel: "Xăng",
+          unit: "L/100km",
+          pu: "đ/lít",
+          cons: "9",
+          price: 22660,
+          rc: 3300000,
+          fc: 2528856,
+          tot: 5828856,
+          km: 4701,
+          trip: 6598856,
+          pp: 942694,
+          win: false,
+        },
+        {
+          name: "VinFast VF8 điện",
+          rent: 1350000,
+          fuel: "Điện",
+          unit: "kWh/100km",
+          pu: "đ/kWh",
+          cons: "18",
+          price: 3858,
+          rc: 4050000,
+          fc: 861106,
+          tot: 4911106,
+          km: 3961,
+          trip: 5681106,
+          pp: 811587,
+          win: true,
+        },
+      ];
+
+      const stepper = (v, a, b) =>
+        `<div class="step"><i aria-label="${a}">${ic("minus", 18)}</i><b>${v}</b><i aria-label="${b}">${ic("plus", 18)}</i></div>`;
+      const sel = (v) =>
+        `<div class="inp sel"><span>${v}</span>${ic("down", 18, "color:#64748b")}</div>`;
+      const fld = (label, inner, hint = "") =>
+        `<div class="fld"><span class="lbl">${label}</span>${inner}${hint ? `<div class="hint">${hint}</div>` : ""}</div>`;
+
+      const resultBar = (
+        role = "save",
+        primary = "Lưu lại",
+        name = "VinFast VF8 điện",
+        amt = 4911106,
+      ) => `
+  <div class="m2"><div class="sum"><div style="min-width:0"><div class="t1">Rẻ nhất: ${name}</div><div class="t2">${fmt(amt)}</div></div>${ic("up", 18, "color:#64748b;margin-left:2px")}</div>
+  <span class="btn p need-save" style="min-width:108px">${primary}</span><span class="btn s only-view">Copy kết quả</span></div>`;
+
+      const tripCard = (opts = {}) => `
+  <div class="card"><h5>Chuyến đi</h5>
+    ${fld("Tên chuyến", `<div class="inp">${TRIP}</div>`)}
+    <div class="row2" style="grid-template-columns:minmax(0,1fr) 132px">${fld("Ngày đi", `<div class="inp">21/11/2026</div>`)}${fld("Số ngày thuê", stepper(3, "Bớt 1 ngày", "Thêm 1 ngày"))}</div>
+    <div class="row2">${fld("Tổng km", `<div class="inp ${opts.focusKm ? "focus" : ""}">1240${opts.focusKm ? '<span class="caret"></span>' : ""}</div>`, "cả đi lẫn về")}${fld("Số người đi", `<div class="inp">7</div>`, "0 = không chia")}</div>
+    ${
+      opts.open
+        ? `
+      <div class="disc" style="margin-bottom:10px;border-bottom:1px solid #f1f5f9"><span style="font-weight:500">Ghi chú, gắn bill tiệc</span>${ic("up", 18, "margin-left:auto;color:#64748b")}</div>
+      ${fld("Ghi chú", `<div class="inp ph">&nbsp;</div>`)}
+      ${fld("Gắn vào bill tiệc", sel("Tiệc giao lưu Phan Thiết · 21/11/2026"))}
+      ${fld("Xe thực tế thuê", sel("Phương án rẻ nhất"))}`
+        : `<div class="disc"><span style="font-weight:500">Ghi chú, gắn bill tiệc</span><span class="v">${opts.bill || "Không gắn"}</span>${ic("down", 18, "color:#64748b")}</div>`
+    }
+  </div>`;
+
+      const optCard = (o, i, many = false) => `
+  <div class="ob" style="background:#fff">
+    <div style="display:flex;align-items:flex-end;gap:8px">
+      <div class="fld" style="flex:1;margin-bottom:10px"><span class="lbl">Phương án ${i + 1}</span><div class="inp">${o.name}</div></div>
+      ${many ? `<span class="ib" aria-label="Xóa ${o.name}" style="color:#e11d48;margin-bottom:10px">${ic("x", 18)}</span>` : ""}
+    </div>
+    <div class="row2">${fld("Giá thuê / ngày", `<div class="inp">${fmtN(o.rent)}<span class="sfx">đ</span></div>`)}${fld("Nhiên liệu", sel(o.fuel))}</div>
+    <div class="row2">${fld("Tiêu hao", `<div class="inp">${o.cons}<span class="sfx">${o.unit}</span></div>`)}${fld("Đơn giá", `<div class="inp">${fmtN(o.price)}<span class="sfx">${o.pu}</span></div>`, "0 là miễn phí")}</div>
+    ${o.fuel === "Xăng" ? `<div class="hint" style="margin-top:-4px">Giá thị trường 22.660 đ/lít · giavangnay.com · 30/10/2026 · <span style="color:#047857;font-weight:500">đang dùng</span></div>` : ""}
+  </div>`;
+
+      const obCard = (o, shared = 770000, people = 7) => `
+  <div class="ob ${o.win ? "win" : ""}">
+    <div class="on"><span>${o.name}</span>${o.win ? '<span class="badge b-solid">Rẻ nhất</span>' : ""}</div>
+    <div class="big">${fmt(o.tot)}</div>
+    <dl><div><dt>Thuê</dt><dd>${fmt(o.rc)}</dd></div><div><dt>Nhiên liệu</dt><dd>${fmt(o.fc)}</dd></div><div><dt>đ/km</dt><dd>${fmt(o.km)}</dd></div></dl>
+    <div class="trip" style="font-size:14px">
+      <div><span class="muted">Chi phí chung</span><span class="num">${fmt(shared)}</span></div>
+      <div style="font-weight:600;margin-top:2px"><span>Tổng chi phí chuyến đi</span><span class="num">${fmt(o.trip)}</span></div>
+      ${people ? `<div class="muted" style="justify-content:flex-end"><span class="num">${fmt(o.pp)}/người</span></div>` : ""}
+    </div>
+  </div>`;
+
+      const pageTop = (tab = "Tính toán") =>
+        `<div class="h1">So sánh chi phí thuê xe</div><div class="tl"><span class="${tab === "Tính toán" ? "on" : ""}">Tính toán</span><span class="${tab === "Lịch sử" ? "on" : ""}">Lịch sử</span></div>`;
+
+      const B = {};
+
+      /* ---------- THUÊ XE ---------- */
+      B.x1 = () =>
+        HD +
+        BD(
+          pageTop() +
+            tripCard() +
+            `
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h5 style="margin:0">Phương án thuê xe</h5><span style="display:flex;align-items:center;gap:8px;min-height:44px;color:#475569"><span style="width:20px;height:20px;border:1.5px solid #cbd5e1;border-radius:5px;background:#fff"></span>Nâng cao</span></div>
+  ${optCard(OPT[0], 0)}</div>`,
+        ) +
+        resultBar() +
+        TABS("Thêm");
+
+      B.x2 = () =>
+        HD +
+        BD(`<div class="card" style="margin-top:-2px">${optCard(OPT[0], 0).replace('class="ob" style="background:#fff"', 'class="ob" style="background:#fff;margin-top:-170px"')}${optCard(OPT[1], 1)}
+  <span class="btn s dash full">${ic("plus", 16)}Thêm phương án</span></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline"><h5 style="margin:0 0 4px">Chi phí chung cả chuyến</h5><span class="muted num" style="font-size:14px">Tổng 770.000 ₫</span></div>
+  <div class="muted" style="font-size:14px;margin-bottom:10px">Các khoản áp như nhau cho mọi phương án, không ảnh hưởng việc so sánh xe.</div>
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 128px 44px;gap:8px"><div class="inp">Gửi xe</div><div class="inp">150.000</div><span class="ib" style="color:#e11d48">${ic("x", 18)}</span></div></div>`) +
+        resultBar() +
+        TABS("Thêm");
+
+      B.x2b = () =>
+        HD +
+        BD(`<div class="card" style="margin-top:-6px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h5 style="margin:0">Phương án thuê xe</h5><span style="display:flex;align-items:center;gap:8px;min-height:44px;color:#475569"><span style="width:20px;height:20px;border-radius:5px;background:#047857;color:#fff;display:flex;align-items:center;justify-content:center">${ic("check", 14)}</span>Nâng cao</span></div>
+  <div class="ob" style="background:#fff">
+    <div style="display:flex;align-items:flex-end;gap:8px"><div class="fld" style="flex:1;margin-bottom:10px"><span class="lbl">Phương án 1</span><div class="inp">Innova xăng 7 chỗ</div></div><span class="ib" aria-label="Xóa Innova xăng 7 chỗ" style="color:#e11d48;margin-bottom:10px">${ic("x", 18)}</span></div>
+    <div class="row2">${fld("Giá thuê / ngày", '<div class="inp">1.100.000<span class="sfx">đ</span></div>')}${fld("Nhiên liệu", sel("Xăng"))}</div>
+    <div class="row2">${fld("Tiêu hao", '<div class="inp">9<span class="sfx">L/100km</span></div>')}${fld("Đơn giá", '<div class="inp">22.660<span class="sfx">đ/lít</span></div>', "0 là miễn phí")}</div>
+    <div style="border-top:1px dashed #e2e8f0;padding-top:10px">
+      ${fld("Chi phí cố định khác", '<div class="inp">300.000<span class="sfx">đ</span></div>')}
+      <div class="row2">${fld("Giới hạn km/ngày", '<div class="inp">300</div>', "trống = không giới hạn")}${fld("Phí vượt", '<div class="inp">3.000<span class="sfx">đ/km</span></div>')}</div>
+    </div></div>
+  <div class="ob" style="background:#fff"><div style="display:flex;align-items:flex-end;gap:8px"><div class="fld" style="flex:1;margin-bottom:10px"><span class="lbl">Phương án 2</span><div class="inp">Xe 7 chỗ kèm tài xế</div></div><span class="ib" style="color:#e11d48;margin-bottom:10px">${ic("x", 18)}</span></div>
+    <div class="row2">${fld("Giá thuê / ngày", '<div class="inp">1.900.000<span class="sfx">đ</span></div>')}${fld("Nhiên liệu", sel("Không tốn nhiên liệu"))}</div></div></div>`) +
+        resultBar() +
+        TABS("Thêm");
+
+      B.x3 = () =>
+        HD +
+        BD(`
+  <div class="card" style="margin-top:-60px">
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 128px 44px;gap:8px;margin-bottom:8px"><div class="inp">Gửi xe</div><div class="inp">150.000</div><span class="ib" aria-label="Xóa khoản chi Gửi xe" style="color:#e11d48">${ic("x", 18)}</span></div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) 128px 44px;gap:8px;margin-bottom:10px"><div class="inp">Trạm thu phí</div><div class="inp">620.000</div><span class="ib" style="color:#e11d48">${ic("x", 18)}</span></div>
+    <span class="btn s dash">${ic("plus", 16)}Thêm khoản chi</span>
+  </div>
+  <div class="card"><h5>Kết quả</h5>
+    <div style="margin-bottom:10px"><div style="color:#047857;font-weight:600">Tiết kiệm 917.750 ₫ (−15.7%)</div><div style="color:#334155">Đi trên 558 km thì VinFast VF8 điện rẻ hơn.</div></div>
+    ${obCard(OPT[0])}${obCard(OPT[1])}
+    <div style="display:flex;gap:8px;margin-top:4px"><span class="btn s" style="flex:1">Copy kết quả</span><span class="btn g">Nhập lại</span></div>
+  </div>`) +
+        `<div class="toast" style="bottom:140px">${ic("check", 18)}<span>Đã copy kết quả.</span></div>` +
+        resultBar() +
+        TABS("Thêm");
+
+      B.x4 = () =>
+        HD +
+        BD(
+          pageTop() +
+            `<div class="banner am"><span style="flex:1">Đang sửa bản ghi đã lưu trước đó.</span><span style="font-weight:500;text-decoration:underline;min-height:44px;display:flex;align-items:center">Hủy sửa</span></div>` +
+            tripCard({ open: true }),
+        ) +
+        `<div class="toast err" style="bottom:140px">${ic("alert", 18, "margin-top:1px")}<span>Bill tiệc «Tiệc giao lưu Phan Thiết» đã thanh toán hết nên không sửa được. Hãy bỏ đánh dấu thanh toán của ít nhất một người trước khi gắn hoặc gỡ chuyến xe.</span><span class="x" aria-label="Đóng">${ic("x", 18)}</span></div>` +
+        resultBar("save", "Cập nhật") +
+        TABS("Thêm");
+
+      const HIST = [
+        {
+          t: TRIP,
+          s: "T7, 21/11 · 3 ngày · 1.240 km",
+          w: "VinFast VF8 điện",
+          a: 4911106,
+          bill: true,
+        },
+        {
+          t: "Xe 16 chỗ đi giải Đà Lạt",
+          s: "T7, 03/10 · 5 ngày · 2.400 km",
+          w: "Ford Transit 16 chỗ (x2)",
+          a: 38608640,
+        },
+        {
+          t: "Bản ghi #1",
+          s: "Không ghi ngày · 2 ngày · 800 km",
+          w: "Xe điện",
+          a: 1380000,
+        },
+      ];
+      const histRow = (h, cls = "") =>
+        `<div class="lr ${cls}" style="min-height:72px"><div class="mn"><div class="tt">${h.t}</div><div class="st">${h.s}</div><div class="st" style="color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rẻ nhất: ${h.w}</div></div><div class="rt"><div class="amt">${fmt(h.a)}</div>${h.bill ? '<span class="badge b-sky" style="margin-top:4px">Bill tiệc</span>' : ""}</div></div>`;
+      const histList = (hl = true) =>
+        `<div class="list">${HIST.map((h, i) => histRow(h, i === 0 && hl ? "new" : "")).join("")}</div>`;
+
+      B.x5 = () =>
+        HD +
+        BD(pageTop("Lịch sử") + histList()) +
+        `<div class="toast" style="bottom:76px">${ic("check", 18)}<span>Đã lưu vào Lịch sử</span></div>` +
+        TABS("Thêm");
+
+      B.x6 = () =>
+        HD +
+        BD(pageTop("Lịch sử") + histList(false)) +
+        TABS("Thêm") +
+        `<div class="scrim"></div>
+  <div class="sheet" style="height:90%"><div class="sh-h"><h4>Xe 16 chỗ đi giải Đà Lạt</h4><span class="ib" aria-label="Đóng">${ic("x", 20)}</span></div>
+  <div class="sh-b">
+    <div class="muted" style="font-size:13px;margin-bottom:10px">T7, 03/10 · 5 ngày · 2.400 km · Chia 30 người · Hai xe 16 chỗ, có tài xế</div>
+    <div class="ob win"><div class="on"><span>Ford Transit 16 chỗ (x2)</span><span class="badge b-solid">Rẻ nhất</span></div><div class="big">38.608.640 ₫</div>
+      <dl><div><dt>Thuê</dt><dd>26.000.000 ₫</dd></div><div><dt>Nhiên liệu</dt><dd>12.608.640 ₫</dd></div><div><dt>đ/km</dt><dd>16.087 ₫</dd></div></dl>
+      <div class="trip"><div><span class="muted">Chi phí chung</span><span class="num">2.440.000 ₫</span></div><div style="font-weight:600"><span>Tổng chi phí chuyến đi</span><span class="num">41.048.640 ₫</span></div><div class="muted" style="justify-content:flex-end">1.368.288 ₫/người</div></div></div>
+    <div class="ob"><div class="on"><span>Thuê xe giường nằm</span></div><div class="big">39.000.000 ₫</div>
+      <dl><div><dt>Thuê</dt><dd>39.000.000 ₫</dd></div><div><dt>Nhiên liệu</dt><dd>0 ₫</dd></div><div><dt>đ/km</dt><dd>16.250 ₫</dd></div></dl>
+      <div class="trip"><div><span class="muted">Chi phí chung</span><span class="num">2.440.000 ₫</span></div><div style="font-weight:600"><span>Tổng chi phí chuyến đi</span><span class="num">41.440.000 ₫</span></div><div class="muted" style="justify-content:flex-end">1.381.333 ₫/người</div></div></div>
+    <div class="ob"><div class="on"><span>Hyundai Solati 16 chỗ (x2)</span></div><div class="big">40.007.200 ₫</div>
+      <dl><div><dt>Thuê</dt><dd>29.500.000 ₫</dd></div><div><dt>Nhiên liệu</dt><dd>10.507.200 ₫</dd></div><div><dt>đ/km</dt><dd>16.670 ₫</dd></div></dl></div>
+  </div>
+  <div class="sh-f"><span class="btn ds" style="flex:0 0 auto">Xóa</span><span class="btn p">Nạp vào máy tính</span></div></div>`;
+
+      const confirmSheet = (title, msg, ok, danger = true) =>
+        `<div class="scrim"></div><div class="sheet"><div class="sh-h"><h4>${title}</h4><span class="ib">${ic("x", 20)}</span></div><div class="sh-b"><p style="margin:0;color:#475569;font-size:14px">${msg}</p></div><div class="sh-f"><span class="btn s">Hủy</span><span class="btn ${danger ? "d" : "p"}">${ok}</span></div></div>`;
+      B.x7b = () =>
+        HD +
+        BD(pageTop("Lịch sử") + histList(false)) +
+        TABS("Thêm") +
+        confirmSheet("Xóa lần so sánh", "Xóa Xe 16 chỗ đi giải Đà Lạt?", "Xóa");
+      B.x7 = () =>
+        HD +
+        BD(pageTop() + tripCard()) +
+        TABS("Thêm") +
+        confirmSheet(
+          "Nhập lại từ đầu?",
+          "Mọi số đã nhập ở tab Tính toán sẽ bị xóa.",
+          "Nhập lại",
+        );
+
+      B.x8 = () =>
+        HD +
+        BD(
+          pageTop("Lịch sử") +
+            `
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:22px 16px;text-align:center;margin-bottom:12px">
+    <div style="width:48px;height:48px;border-radius:50%;background:#f1f5f9;color:#64748b;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">${ic("car", 24)}</div>
+    <div style="font-weight:600;font-size:16px">Chưa có lần so sánh nào được lưu.</div>
+    <span class="btn p" style="margin-top:14px">Tính chuyến mới</span></div>
+  <div class="list">${[1, 2].map(() => `<div class="lr" style="min-height:72px"><div class="mn"><div class="sk" style="height:14px;width:70%"></div><div class="sk" style="height:12px;width:45%;margin-top:8px"></div></div><div class="sk" style="width:80px;height:16px"></div></div>`).join("")}</div>
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:14px;text-align:center"><div style="color:#e11d48;font-size:14px;margin-bottom:8px">Không tải được lịch sử. Thử lại giúp mình.</div><span class="btn p">Thử lại</span></div>`,
+        );
+
+      /* ---------- XẾP BẢNG ---------- */
+      const PL = [
+        ["Nguyễn Hoàng Bảo Ngọc Trâm Anh", "f", 2, 1],
+        ["Trần Minh Khôi", "m", 3, 2],
+        ["Lê Thu Hà", "f", 1, 1],
+        ["Phạm Quốc Bảo", "m", 2, 1],
+        ["Võ Trường", "m", 3, 1],
+        ["Đặng Mỹ Linh", "f", 2, 2],
+        ["Bùi Đức Anh", "m", 2, 2],
+        ["Hồ Ngọc Diệp", "f", 2, 3],
+        ["Ngô Thanh Tùng", "m", 3, 4],
+        ["Huỳnh Gia Hân", "f", 1, 3],
+        ["Phan Văn Lộc", "m", 2, 3],
+        ["Trương Hải Yến", "f", 2, 4],
+        ["Đỗ Minh Quân", "m", 3, 3],
+        ["Lý Kim Ngân", "f", 1, 4],
+        ["Mai Xuân Phúc", "m", 2, 4],
+        ["Cao Thị Thanh Tâm", "f", 1, 2],
+      ];
+      const G = { m: "Nam", f: "Nữ" };
+      const plRow = (p, i, assigned) =>
+        `<div class="lr g-${p[1]}"><span class="stt">${i + 1}</span><div class="mn"><div class="tt">${p[0]}</div><div class="st">${G[p[1]]} · Level <span class="num">${p[2]}</span></div></div><div class="rt">${assigned ? `<span class="badge b-em">Bảng ${p[3]}</span>` : '<span class="badge b-am">Chưa xếp</span>'}</div></div>`;
+      const tourTop = (
+        tab,
+      ) => `<div class="h1">Quản lý &amp; Xếp bảng thi đấu</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px"><div style="flex:1;min-width:0">${sel("Giải nội bộ tháng 11 (Mặc định)")}</div><span class="ib bd need-create" aria-label="Tạo danh sách VĐV">${ic("plus", 20)}</span></div>
+  <div class="tl"><span class="${tab === 0 ? "on" : ""}">Danh sách VĐV (16)</span><span class="${tab === 1 ? "on" : ""}">Bảng thi đấu (4)</span></div>`;
+      const stats = (
+        un,
+        as,
+      ) => `<div class="card" style="display:flex;align-items:flex-start;gap:6px;padding:10px 12px">
+  <div style="flex:1"><div class="num" style="font-size:18px;font-weight:700">16</div><div class="muted" style="font-size:13px">Tổng VĐV</div></div>
+  <div style="flex:1"><div class="num" style="font-size:18px;font-weight:700;color:#d97706">${un}</div><div class="muted" style="font-size:13px">Chưa xếp bảng</div></div>
+  <div style="flex:1"><div class="num" style="font-size:18px;font-weight:700;color:#047857">${as}</div><div class="muted" style="font-size:13px">Đã xếp bảng</div></div>
+  ${un ? `<span class="btn p sm need-organize" style="align-self:center">${ic("target", 16)}Xếp bảng</span>` : ""}</div>`;
+      const FAB = `<span class="fab" aria-label="Thêm VĐV">${ic("plus", 26)}</span>`;
+
+      B.t1 = (assigned = false) =>
+        HD +
+        BD(
+          tourTop(0) +
+            stats(assigned ? 0 : 16, assigned ? 16 : 0) +
+            `<div class="list">${PL.map((p, i) => plRow(p, i, assigned)).join("")}</div>`,
+        ) +
+        FAB +
+        TABS("Xếp bảng");
+      B.t1s = () => B.t1(true);
+
+      const kbd = () => {
+        const r = (keys) =>
+          `<div class="kr">${keys
+            .split("")
+            .map((k) => `<span class="k">${k}</span>`)
+            .join("")}</div>`;
+        return `<div class="kbd">${r("qwertyuiop")}${r("asdfghjkl")}<div class="kr"><span class="k g">⇧</span>${"zxcvbnm"
+          .split("")
+          .map((k) => `<span class="k">${k}</span>`)
+          .join(
+            "",
+          )}<span class="k g">⌫</span></div><div class="kr"><span class="k g">123</span><span class="k g">🌐</span><span class="k w">dấu cách</span><span class="k go">Tiếp</span></div></div>`;
+      };
+      const addSheet = (
+        o = {},
+      ) => `<div class="scrim"></div><div class="sheet" style="bottom:${o.kb ? 262 : 0}px;border-radius:16px 16px 0 0"><div class="sh-h"><h4>Thêm VĐV</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b">
+    <div class="seg" style="margin-bottom:12px"><span class="on">Nhập tay</span><span>Từ file</span></div>
+    <div class="fld"><span class="lbl">Họ Tên *</span><div class="inp ${o.err ? "bad" : "focus"}">${o.name}<span class="caret"></span></div>${o.err ? '<div class="err-t">Họ tên VĐV đã tồn tại trong danh sách này.</div>' : ""}</div>
+    <div class="row2" style="grid-template-columns:1fr 1fr">${fld("Giới tính *", `<div class="seg"><span class="${o.g === "m" ? "on" : ""}">Nam</span><span class="${o.g === "f" ? "on" : ""}">Nữ</span></div>`)}${fld("Level *", stepper(o.lv, "Bớt 1 level", "Thêm 1 level"))}</div>
+    ${o.recent ? `<div style="background:#f8fafc;border-radius:12px;padding:8px 10px;font-size:13px"><div style="font-weight:600;color:#334155;margin-bottom:2px">Vừa thêm</div>${o.recent.map((t) => `<div style="display:flex;gap:6px;align-items:center;color:#475569">${ic("check", 14, "color:#047857")}${t}</div>`).join("")}</div>` : ""}
+  </div>
+  ${o.kb ? "" : '<div class="sh-f"><span class="btn s">Xong</span><span class="btn p">Thêm</span></div>'}
+  </div>${o.kb ? kbd() : ""}`;
+
+      B.t2 = () =>
+        HD +
+        BD(
+          tourTop(0) +
+            stats(9, 0) +
+            `<div class="list">${PL.slice(0, 9)
+              .map((p, i) => plRow(p, i, false))
+              .join("")}</div>`,
+        ) +
+        FAB +
+        TABS("Xếp bảng") +
+        addSheet({
+          kb: true,
+          name: "Huỳnh Gia Hân",
+          g: "f",
+          lv: 1,
+          recent: [
+            "9 · Ngô Thanh Tùng · Nam · Level 3",
+            "8 · Hồ Ngọc Diệp · Nữ · Level 2",
+          ],
+        });
+      B.t2b = () =>
+        HD +
+        BD(tourTop(0)) +
+        addSheet({
+          name: "Võ Trường",
+          g: "m",
+          lv: 3,
+          err: true,
+          recent: ["10 · Huỳnh Gia Hân · Nữ · Level 1"],
+        });
+
+      B.t3 = () =>
+        HD +
+        BD(tourTop(0) + stats(14, 0)) +
+        TABS("Xếp bảng") +
+        `<div class="scrim"></div><div class="sheet" style="max-height:92%"><div class="sh-h"><h4>Thêm VĐV</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b" style="font-size:14px;color:#475569">
+    <div class="seg" style="margin-bottom:12px"><span>Nhập tay</span><span class="on">Từ file</span></div>
+    <div style="font-weight:600;color:#1e293b;margin-bottom:4px">Định dạng file hỗ trợ: Excel (.xlsx, .xls) hoặc CSV</div>
+    <div style="background:#f1f5f9;border-radius:12px;padding:10px 12px;font-size:13px;color:#334155;line-height:1.5">
+      <div>Cột 1: Họ Tên (bắt buộc)</div><div>Cột 2: Giới tính (bắt buộc)</div><div>Cột 3: Level (bắt buộc, chỉ nhập số 1,2,3,...)</div>
+      <div style="margin-top:6px;display:flex;justify-content:space-between;color:#047857;font-weight:500;min-height:32px;align-items:center">Ví dụ: ${ic("down", 16)}</div>
+      <div style="color:#075985">Lưu ý về Giới tính: Chấp nhận: "male" hoặc "nam" (Nam), "female" hoặc "nữ" (Nữ)</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:12px 0"><span class="btn s">${ic("upload", 16)}Chọn file Excel/CSV</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px">${ic("file", 14, "vertical-align:-2px")} dang-ky-giai-thang-11.xlsx</span></div>
+    <div style="border:1px solid #a7f3d0;background:#ecfdf5;border-radius:12px;padding:10px 12px;color:#065f46;font-size:14px">
+      <div style="font-weight:600;display:flex;gap:6px;align-items:center">${ic("check", 16)}Đã import 14 VĐV thành công</div></div>
+    <div style="border:1px solid #fde68a;background:#fffbeb;border-radius:12px;padding:10px 12px;color:#92400e;font-size:13px;margin-top:8px">
+      <div style="font-weight:600;margin-bottom:2px">Bỏ qua 2 dòng:</div>
+      <div>Dòng 5 bỏ qua vì trùng tên trong danh sách: Võ Trường</div>
+      <div>Dòng 9 dữ liệu không hợp lệ (Tên/Giới tính/Level): Lý Kim Ngân, nu, 3</div></div>
+  </div><div class="sh-f"><span class="btn s">Đóng</span></div></div>`;
+
+      B.t4 = () =>
+        HD +
+        BD(tourTop(0)) +
+        `<div class="scrim"></div><div class="sheet"><div class="sh-h"><h4>Nguyễn Hoàng Bảo Ngọc Trâm Anh</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b"><dl style="margin:0;font-size:15px">
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9"><dt class="muted">Giới tính</dt><dd style="margin:0">Nữ</dd></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9"><dt class="muted">Level</dt><dd style="margin:0" class="num">2</dd></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0"><dt class="muted">Bảng</dt><dd style="margin:0"><span class="badge b-em">Bảng 1</span></dd></div></dl>
+    <div class="hint" style="margin-top:10px">Không thể xóa VĐV vì đã được xếp vào bảng thi đấu</div></div>
+  <div class="sh-f"><span class="btn ds off">Xóa VĐV</span></div></div>`;
+
+      B.t5 = () =>
+        HD +
+        BD(tourTop(0)) +
+        `<div class="scrim"></div><div class="sheet"><div class="sh-h"><h4>Xếp bảng thi đấu</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b">
+    ${fld("Số bảng *", stepper(4, "Bớt 1 bảng", "Thêm 1 bảng"))}
+    <span class="lbl">Phân bổ giới tính *</span>
+    <div class="radio on"><span class="dot"></span>Chia đều giới tính<span class="c">16 VĐV</span></div>
+    <div class="radio"><span class="dot"></span>Chỉ nam<span class="c">8 VĐV</span></div>
+    <div class="radio"><span class="dot"></span>Chỉ nữ<span class="c">8 VĐV</span></div>
+    <div style="border:1px solid #fde68a;background:#fffbeb;border-radius:12px;padding:10px 12px;color:#92400e;font-size:13px;margin-top:4px">Lưu ý: Chỉ các VĐV chưa được xếp bảng mới được xếp vào bảng mới. Hiện có 16 VĐV chưa xếp bảng.</div>
+  </div><div class="sh-f"><span class="btn s">Hủy</span><span class="btn p">Xếp bảng</span></div></div>`;
+
+      const BK = [1, 2, 3, 4].map((n) =>
+        PL.filter((p) => p[3] === n).sort((a, b) =>
+          a[1] === b[1] ? 0 : a[1] === "m" ? -1 : 1,
+        ),
+      );
+      const bkCard = (n, ps) => {
+        const nm = ps.filter((p) => p[1] === "m").length,
+          nf = ps.length - nm;
+        const avg = ps.length
+          ? ps.reduce((s, p) => s + p[2], 0) / ps.length
+          : 0;
+        const avgT = ps.length
+          ? avg.toLocaleString("vi-VN", { maximumFractionDigits: 1 })
+          : "";
+        return `<div class="bk"><div class="bh"><b>Bảng ${n}</b><span class="badge b-sky">${ps.length} VĐV</span></div>
+    ${
+      ps.length
+        ? `<div class="bs"><span>${nm} nam · ${nf} nữ</span><span style="color:#475569">Level</span></div>
+    ${ps.map((p) => `<div class="pr g-${p[1]}"><span>${p[0]}<span class="sr">, ${G[p[1]]}</span></span><span class="lv">${p[2]}</span></div>`).join("")}`
+        : '<div class="empty">Chưa có VĐV</div>'
+    }</div>`;
+      };
+      const bkTools = (
+        txt = "4 bảng · 16 VĐV",
+      ) => `<div style="display:flex;align-items:center;gap:12px;margin:-4px 0 4px"><span class="muted" style="font-size:13px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${txt}</span><span class="legend"><span><i style="background:#38bdf8"></i>Nam</span><span><i style="background:#fb7185"></i>Nữ</span></span><span class="ib need-organize" aria-label="Thao tác khác">${ic("ell", 20)}</span></div>`;
+      const exportBar = (label = "Xuất bảng", icon = "download") =>
+        `<div class="m2"><span class="btn p" style="flex:1">${ic(icon, 18)}${label}</span></div>`;
+
+      B.t6 = () =>
+        HD +
+        BD(
+          tourTop(1) +
+            bkTools() +
+            `<div class="bk-grid">${BK.map((ps, i) => bkCard(i + 1, ps)).join("")}</div>`,
+        ) +
+        exportBar() +
+        TABS("Xếp bảng");
+      B.t6r = B.t6;
+      B.t6s = B.t6;
+      B.t6l = B.t6;
+
+      const UNEVEN = (() => {
+        // đúng kết quả mô phỏng: nam L3(3) L2(3) L1(2), nữ L2(3) L1(3) L3(2) → 6/6/4/0
+        const m3 = ["Trần Minh Khôi", "Võ Trường", "Đỗ Minh Quân"],
+          m2 = ["Phạm Quốc Bảo", "Ngô Thanh Tùng", "Mai Xuân Phúc"],
+          m1 = ["Bùi Đức Anh", "Phan Văn Lộc"];
+        const f2 = [
+            "Nguyễn Hoàng Bảo Ngọc Trâm Anh",
+            "Đặng Mỹ Linh",
+            "Trương Hải Yến",
+          ],
+          f1 = ["Lê Thu Hà", "Huỳnh Gia Hân", "Cao Thị Thanh Tâm"],
+          f3 = ["Hồ Ngọc Diệp", "Lý Kim Ngân"];
+        const b = [[], [], [], []];
+        [
+          [m3, "m", 3],
+          [m2, "m", 2],
+          [m1, "m", 1],
+          [f2, "f", 2],
+          [f1, "f", 1],
+          [f3, "f", 3],
+        ].forEach(([arr, g, l]) =>
+          arr.forEach((nm, i) => b[i].push([nm, g, l])),
+        );
+        return b;
+      })();
+      B.t6b = () =>
+        HD +
+        BD(
+          tourTop(1) +
+            `<div class="banner am" style="padding:6px 6px 6px 12px"><span style="flex:1">4 VĐV chưa xếp bảng</span><span class="btn s sm need-organize">Xếp bảng</span></div>` +
+            bkTools("4 bảng · 16 VĐV") +
+            `<div class="bk-grid">${UNEVEN.map((ps, i) => bkCard(i + 1, ps)).join("")}</div>`,
+        ) +
+        exportBar() +
+        TABS("Xếp bảng");
+
+      B.t7 = () =>
+        HD +
+        BD(
+          tourTop(1) +
+            bkTools() +
+            `<div class="bk-grid">${BK.map((ps, i) => bkCard(i + 1, ps)).join("")}</div>`,
+        ) +
+        `<div class="scrim"></div><div class="sheet"><div class="sh-h"><h4>Thao tác khác</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b" style="padding-bottom:6px">
+    <div style="display:flex;align-items:center;gap:12px;min-height:52px;color:#94a3b8">${ic("target", 20)}<div><div style="font-weight:500">Xếp bảng</div><div style="font-size:13px">Không có VĐV nào chưa được xếp bảng</div></div></div>
+    <div style="display:flex;align-items:center;gap:12px;min-height:52px;color:#e11d48;border-top:1px solid #f1f5f9">${ic("x", 20)}<span style="font-weight:500">Xóa tất cả</span></div>
+  </div><div style="height:20px"></div></div>`;
+
+      B.t7b = () =>
+        HD +
+        BD(tourTop(1)) +
+        TABS("Xếp bảng") +
+        confirmSheet("Xóa tất cả bảng thi đấu", "Bạn có chắc muốn xóa tất cả các bảng? Điều này sẽ không xóa VĐV.", "Xóa tất cả");
+      B.t9a = () =>
+        HD +
+        BD(
+          tourTop(0).replace("(16)", "(0)").replace("(4)", "(0)") +
+            `
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:26px 16px;text-align:center">
+    <div style="width:48px;height:48px;border-radius:50%;background:#f1f5f9;color:#64748b;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">${ic("users", 24)}</div>
+    <div style="font-weight:600;font-size:16px">Chưa có VĐV nào</div><div class="muted" style="margin-top:2px">Hãy thêm VĐV để bắt đầu.</div>
+    <span class="btn p" style="margin-top:14px">${ic("plus", 16)}Thêm VĐV</span></div>`,
+        ) +
+        FAB.replace("bottom:80px", "") +
+        TABS("Xếp bảng");
+      B.t9b = () =>
+        HD +
+        BD(
+          tourTop(1).replace("(4)", "(0)") +
+            `
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:26px 16px;text-align:center">
+    <div style="width:48px;height:48px;border-radius:50%;background:#f1f5f9;color:#64748b;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">${ic("trophy", 24)}</div>
+    <div style="font-weight:600;font-size:16px">Chưa có bảng nào</div><div class="muted" style="margin-top:2px">Hãy bấm "Xếp bảng" để tạo bảng thi đấu.</div></div>`,
+        ) +
+        exportBar("Xếp bảng", "target") +
+        TABS("Xếp bảng");
+      B.t10 = () =>
+        HD +
+        BD(tourTop(0)) +
+        `<div class="scrim"></div><div class="sheet"><div class="sh-h"><h4>Tạo danh sách VĐV</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b">${fld("Tên danh sách", '<div class="inp focus">Giải giao lưu Phan Thiết 2026<span class="caret"></span></div>')}</div>
+  <div class="sh-f"><span class="btn s">Hủy</span><span class="btn p">Tạo danh sách VĐV</span></div></div>`;
+
+      /* ---------- B ---------- */
+      B.b1 = () =>
+        HD +
+        BD(
+          `<div class="h1">So sánh chi phí thuê xe</div><div class="muted" style="font-size:12px;margin:-8px 0 12px">Nhập chuyến đi và các phương án thuê để xem phương án nào rẻ hơn.</div>` +
+            pageTop().replace(
+              '<div class="h1">So sánh chi phí thuê xe</div>',
+              "",
+            ) +
+            `
+  <div class="card"><h5>Chuyến đi</h5>${fld("Tên chuyến", `<div class="inp">${TRIP}</div>`)}
+  <div class="row2">${fld("Ngày đi", '<div class="inp">21/11/2026</div>')}${fld("Số ngày thuê", '<div class="inp">3</div>')}</div>
+  <div class="row2" style="align-items:end"><div class="fld"><span class="lbl" style="white-space:normal">Tổng km (cả đi lẫn về)</span><div class="inp">1240</div></div><div class="fld"><span class="lbl" style="white-space:normal">Số người đi (0 = không chia)</span><div class="inp">7</div></div></div>
+  ${fld("Ghi chú", '<div class="inp ph">&nbsp;</div>')}${fld("Gắn vào bill tiệc", sel("— Không gắn —"))}</div>`,
+        ) +
+        resultBar() +
+        TABS("Thêm");
+
+      B.b2 = () =>
+        HD +
+        BD(
+          tourTop(1) +
+            `<div style="display:flex;justify-content:flex-end;margin:-4px 0 6px"><span class="ib" aria-label="Thao tác khác">${ic("ell", 20)}</span></div>` +
+            BK.slice(0, 3)
+              .map(
+                (
+                  ps,
+                  i,
+                ) => `<div class="card" style="padding:10px 12px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><b style="font-size:16px">Bảng ${i + 1}</b><span class="badge b-sky">${ps.length} VĐV</span></div>
+  ${ps.map((p) => `<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid #f1f5f9;font-size:14px"><span>${p[0]}</span><span class="muted" style="white-space:nowrap">${G[p[1]]} · Level ${p[2]}</span></div>`).join("")}</div>`,
+              )
+              .join(""),
+        ) +
+        exportBar() +
+        TABS("Xếp bảng");
+
+      B.b3 = () =>
+        HD +
+        BD(tourTop(0)) +
+        `<div class="scrim"></div><div class="sheet"><div class="sh-h"><h4>Thêm VĐV</h4><span class="ib">${ic("x", 20)}</span></div>
+  <div class="sh-b">${fld("Họ Tên *", '<div class="inp focus">Huỳnh Gia Hân<span class="caret"></span></div>')}${fld("Giới tính *", sel("Nữ"))}${fld("Level *", '<div class="inp">1</div>')}
+  <div style="font-size:13px;color:#475569;display:flex;gap:6px;align-items:center">${ic("check", 14, "color:#047857")}Vừa thêm: Ngô Thanh Tùng</div></div>
+  <div class="sh-f"><span class="btn s">Xong</span><span class="btn p">Thêm</span></div></div>`;
+
+      /* ---------- Dựng ---------- */
+      const alias = { x1r: "x1", x1s: "x1", x3l: "x3" };
+      document.querySelectorAll(".phone[id]").forEach((el) => {
+        const key = B[el.id] ? el.id : alias[el.id];
+        if (B[key]) el.innerHTML = B[key]();
+      });
+
+      /* ảnh xuất 720 px */
+      document.getElementById("exp").innerHTML =
+        `<div class="eh">${logo.replace(/28/g, "36")}<div><h6>Giải nội bộ tháng 11</h6><div style="color:#475569;font-size:14px">Bảng thi đấu · 05/11/2026</div></div><div class="d">16 VĐV · 4 bảng<br>Chia đều giới tính</div></div>
+  <div class="eg">${BK.map((ps, i) => `<div class="ec"><div class="t">Bảng ${i + 1}<small>${ps.length} VĐV</small></div>${ps.map((p) => `<div class="er"><span>${p[0]}</span><span>${G[p[1]]}</span><span>Level ${p[2]}</span></div>`).join("")}</div>`).join("")}</div>
+  <div class="ef"><span>Sổ cầu lông</span><span></span></div>`;
+
+      /* nút xem theo vai trò */
+      document.querySelectorAll(".roles").forEach((g) =>
+        g.addEventListener("click", (e) => {
+          const b = e.target.closest("button");
+          if (!b) return;
+          g.querySelectorAll("button").forEach((x) =>
+            x.setAttribute("aria-pressed", x === b ? "true" : "false"),
+          );
+          document.getElementById(g.dataset.target).dataset[g.dataset.attr] =
+            b.dataset.v;
+        }),
+      );
+
+      /* sơ đồ bố cục cũ (đo từ màn demo 390 px) */
+      const S = 0.13;
+      const scheme = [
+        {
+          t: "Thuê xe · Tính toán (2.768 px)",
+          h: 2768,
+          b: [
+            [0, 187, "Đầu trang + tab", "#f1f5f9"],
+            [207, 480, "Chuyến đi", "#e0f2fe"],
+            [707, 866, "Phương án (2)", "#e0f2fe"],
+            [1593, 258, "Chi phí chung", "#e0f2fe"],
+            [1871, 729, "Kết quả", "#d1fae5"],
+          ],
+        },
+        {
+          t: "Xếp bảng · VĐV (3.067 px)",
+          h: 3067,
+          b: [
+            [0, 235, "Tiêu đề, ô danh sách, nút tạo, tab", "#f1f5f9"],
+            [240, 255, "2 nút rộng + 3 thẻ số", "#fef3c7"],
+            [503, 2520, "16 thẻ × 165 px (có nút Xóa)", "#ffe4e6"],
+          ],
+        },
+        {
+          t: "Xếp bảng · Bảng (1.793 px)",
+          h: 1793,
+          b: [
+            [0, 255, "Tiêu đề, ô danh sách, tab", "#f1f5f9"],
+            [260, 180, "Xếp bảng, Xóa tất cả (đỏ), Xuất", "#ffe4e6"],
+            [445, 314, "Bảng 1", "#e0f2fe"],
+            [775, 294, "Bảng 2", "#e0f2fe"],
+            [1085, 294, "Bảng 3", "#e0f2fe"],
+            [1395, 294, "Bảng 4", "#e0f2fe"],
+          ],
+        },
+      ];
+      document.getElementById("scheme").innerHTML =
+        scheme
+          .map(
+            (c) =>
+              `<div class="col"><h4>${c.t}</h4><div class="bar" style="height:${c.h * S}px">${c.b.map(([y, h, l, bg]) => `<div class="blk" style="top:${y * S}px;height:${h * S - 2}px;background:${bg}">${l}</div>`).join("")}<div class="vp" style="top:0;height:${(844 - 48 - 64) * S}px"><span>màn đầu</span></div></div></div>`,
+          )
+          .join("") +
+        `<div class="note" style="max-width:300px">Thuê xe: khối Kết quả bắt đầu ở 1.871 px, cách màn đầu (732 px nhìn được, trừ thanh đáy còn ~670 px) khoảng 2,2 lần cao màn. Xếp bảng: phần đầu trang và nút chiếm 503 px trước VĐV đầu tiên.</div>`;
+    </script>
+  </body>
+</html>
