@@ -5,6 +5,16 @@
 :root {
   --color-surface: #f8fafc;
   --color-ink: #0f172a;
+  /* Khung điện thoại (docs/superpowers/specs/2026-11-05-giao-dien-mobile-design.md, mục 3):
+     mọi vị trí dính đáy / đỉnh (FAB, ActionBar, thông báo, đầu nhóm) tính theo ba biến này. */
+  --app-bar-h: 56px;
+  --tab-bar-h: 56px;
+  --action-bar-h: 68px;
+}
+
+/* Ô tích / ô chọn một màu nhấn của app (không specificity để class accent-* vẫn đè được) */
+:where(input[type="checkbox"], input[type="radio"]) {
+  accent-color: #047857;
 }
 
 body {
@@ -107,7 +117,7 @@ body {
   }
 
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-3 shadow-card sm:rounded-2xl sm:p-6;
+    @apply rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-6;
   }
 
   .badge {
@@ -127,6 +137,323 @@ body {
   }
   .badge-slate {
     @apply bg-slate-100 text-slate-700;
+  }
+
+  /* ===== Khung điện thoại và bộ mẫu M1–M17 (spec giao-dien-mobile mục 3; cách dùng:
+     2026-11-05-giao-dien-mobile/01-khung-app-trien-khai.md). Chỉ đổi giao diện dưới sm
+     trừ khi ghi khác. ===== */
+
+  /* M1 · Thanh trên điện thoại (một thanh 56 px; desktop giữ header h-16) */
+  .app-bar {
+    @apply sticky top-0 z-30 flex items-center gap-0.5 border-b border-slate-200 bg-white/95 pl-4 pr-1.5 backdrop-blur sm:hidden;
+    height: calc(var(--app-bar-h) + env(safe-area-inset-top));
+    padding-top: env(safe-area-inset-top);
+  }
+  .app-bar-pushed {
+    @apply pl-1;
+  }
+  .app-bar-title {
+    @apply min-w-0 flex-1 truncate text-xl font-semibold tracking-tight text-slate-900;
+  }
+  .app-bar-pushed .app-bar-title {
+    @apply pl-0.5 text-lg;
+  }
+  .app-bar-btn {
+    @apply flex h-11 w-11 flex-none items-center justify-center rounded-xl text-slate-600 active:bg-slate-100;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+
+  /* Thanh tab dưới đáy: 56 px gồm viền trên, + vùng an toàn */
+  .tab-bar {
+    @apply fixed inset-x-0 bottom-0 z-30 flex border-t border-slate-200 bg-white/95 backdrop-blur sm:hidden;
+    height: calc(var(--tab-bar-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab-bar-item {
+    @apply flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-slate-500;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40;
+  }
+  .tab-bar-item[data-active="true"] {
+    @apply text-emerald-700;
+  }
+  .tab-bar-pill {
+    @apply flex h-7 w-14 items-center justify-center rounded-full;
+  }
+  .tab-bar-item[data-active="true"] .tab-bar-pill {
+    @apply bg-emerald-50;
+  }
+  .tab-bar-label {
+    @apply max-w-full truncate px-0.5 text-xs font-medium leading-4;
+  }
+
+  /* M2 · Thanh hành động dính đáy (component ui/ActionBar.jsx) */
+  .action-bar {
+    @apply fixed inset-x-0 bottom-0 z-30 flex items-center gap-2 border-t border-slate-200 bg-white px-4 pt-3 sm:hidden;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+  /* Màn gốc còn tab (Thuê xe): đứng ngay trên tab, vùng an toàn đã nằm dưới tab */
+  .action-bar-over-tab {
+    bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom));
+    padding-bottom: 0.75rem;
+  }
+  .action-bar-sum {
+    @apply -my-1 mr-1 flex min-w-0 flex-none flex-col items-start rounded-lg py-1 text-left;
+  }
+  button.action-bar-sum {
+    @apply -ml-1.5 min-h-11 px-1.5 active:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  .action-bar-sum-label {
+    @apply text-xs font-medium leading-4 text-slate-500;
+  }
+  .action-bar-sum-value {
+    @apply flex items-center gap-1 whitespace-nowrap text-lg font-bold leading-6 text-slate-900;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* M3 · Hàng danh sách: cả hàng là một Link / button, không nút Xóa trên hàng */
+  .list-card {
+    @apply overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card;
+  }
+  .list-card > * + * {
+    @apply border-t border-slate-100;
+  }
+  .list-row {
+    @apply relative flex min-h-16 w-full items-center gap-3 py-3 pl-4 pr-2.5 text-left;
+  }
+  :is(a, button).list-row,
+  .list-row-main {
+    @apply active:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40;
+  }
+  .list-row-text {
+    @apply min-w-0 flex-1;
+  }
+  .list-row-title {
+    @apply truncate text-[15px] font-semibold leading-5 text-slate-900;
+  }
+  .list-row-sub {
+    @apply mt-0.5 truncate text-[13px] leading-[18px] text-slate-500;
+  }
+  .list-row-end {
+    @apply flex flex-none flex-col items-end gap-1;
+  }
+  .list-row-chevron {
+    @apply h-4 w-4 flex-none text-slate-300 transition-transform;
+  }
+  /* Bill con ngay dưới bill chính: thụt vào, vạch trái sky */
+  .list-row-child {
+    @apply bg-sky-50/60 pl-8;
+  }
+  .list-row-child::before {
+    @apply absolute inset-y-0 left-4 w-0.5 bg-sky-300;
+    content: "";
+  }
+  /* Quá hạn / cần chú ý */
+  .list-row-warn {
+    @apply bg-rose-50/60;
+  }
+  /* M3b · Hàng có nút đuôi: <div class="list-row list-row-split"> chứa vùng bấm chính
+     (.list-row-main, Link / button) + một nút anh em (.list-row-action, có chữ, không bao giờ là Xóa) */
+  .list-row-split {
+    @apply gap-2 py-0 pl-0;
+  }
+  .list-row-main {
+    @apply flex min-h-16 min-w-0 flex-1 items-center gap-3 self-stretch py-3 pl-4 text-left;
+  }
+  .list-row-action {
+    @apply h-11 min-w-[5.25rem] flex-none px-3 sm:h-11;
+  }
+  /* M3c · Hàng mở tại chỗ: button.list-row[aria-expanded] + .list-row-panel (mỗi lúc một hàng mở) */
+  .list-row[aria-expanded="true"] {
+    @apply bg-slate-50;
+  }
+  .list-row[aria-expanded="true"] .list-row-chevron {
+    @apply rotate-180;
+  }
+  .list-row-panel {
+    @apply border-t border-slate-100 bg-slate-50 px-4 py-3;
+  }
+
+  /* M7 · Số tiền (in qua formatters.js) */
+  .amount {
+    @apply whitespace-nowrap text-[17px] font-bold leading-[22px] tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+  .amount-lg {
+    @apply whitespace-nowrap text-xl font-bold tracking-tight;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* M4 · Chip lọc: .chip-bar = nút "Lọc" ghim trái (.chip-filter) + .chip-row cuộn ngang */
+  .chip-bar {
+    @apply flex items-center gap-2;
+  }
+  .chip-row {
+    @apply -my-1 flex min-w-0 flex-1 gap-2 overflow-x-auto py-1;
+    scrollbar-width: none;
+  }
+  .chip-row::-webkit-scrollbar {
+    display: none;
+  }
+  .chip-bar > .chip-row {
+    @apply -mr-4 pr-4;
+  }
+  .chip {
+    @apply relative inline-flex h-9 flex-none items-center gap-1.5 whitespace-nowrap rounded-full border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 active:bg-slate-100;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:opacity-50;
+  }
+  /* Vùng chạm 44 px cho chip cao 36 */
+  .chip::after {
+    @apply absolute inset-x-0 -inset-y-1;
+    content: "";
+  }
+  /* Chip đang bật: viền + nền emerald và dấu ✓ (không chỉ dựa vào màu) */
+  .chip[aria-pressed="true"] {
+    @apply border-emerald-600 bg-emerald-50 text-emerald-800;
+  }
+  .chip[aria-pressed="true"]::before {
+    @apply -ml-0.5 h-4 w-4 flex-none bg-current;
+    content: "";
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .chip-count {
+    @apply inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-700 px-1.5 text-xs font-semibold text-white;
+  }
+  /* Điều kiện đang áp (vd khoảng ngày) + nút ✕ bên trong */
+  .chip-applied {
+    @apply border-sky-200 bg-sky-50 pr-0 text-sky-800;
+  }
+  .chip-remove {
+    @apply relative -my-px flex h-9 w-9 items-center justify-center rounded-full text-sky-700 active:bg-sky-100;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  .chip-remove::after {
+    @apply absolute inset-x-0 -inset-y-1;
+    content: "";
+  }
+
+  /* M9 · Nút tạo mới nổi (FAB), luôn cách tab 16 px */
+  .fab {
+    @apply fixed right-4 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-700 text-white shadow-fab transition-colors hover:bg-emerald-800 active:bg-emerald-900 md:hidden;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/50 focus-visible:ring-offset-2;
+    bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom) + 1rem);
+  }
+  .fab svg {
+    @apply h-6 w-6;
+  }
+
+  /* M10 · Đầu nhóm dính (h2), ngay dưới thanh trên */
+  .group-head {
+    @apply sticky z-10 -mx-4 flex h-9 items-center justify-between gap-3 bg-slate-50/95 px-4 backdrop-blur sm:mx-0 sm:px-1;
+    top: calc(var(--app-bar-h) + env(safe-area-inset-top));
+  }
+  .group-head-title {
+    @apply flex-none text-sm font-semibold text-slate-700;
+  }
+  .group-head-meta {
+    @apply min-w-0 truncate text-[13px] text-slate-500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* M11 · Ô tóm tắt: <button> cả ô (mở sheet, có ›) hoặc <div> chỉ xem */
+  .stat-tile {
+    @apply relative flex min-h-16 min-w-0 flex-col items-start rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-card;
+  }
+  button.stat-tile {
+    @apply pr-8 active:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  button.stat-tile:not([aria-pressed])::after {
+    @apply absolute right-2.5 top-3.5 h-4 w-4 bg-slate-300;
+    content: "";
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+  .stat-tile[aria-pressed="true"] {
+    @apply border-emerald-600 bg-emerald-50;
+  }
+  .stat-tile-label {
+    @apply text-[13px] leading-[18px] text-slate-500;
+  }
+  .stat-tile-value {
+    @apply mt-0.5 whitespace-nowrap text-xl font-bold tracking-tight text-slate-900;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-tile-sub {
+    @apply mt-0.5 max-w-full truncate text-[13px] leading-[18px] text-slate-500;
+  }
+
+  /* M13 · trạng thái trong trang: xem ui/EmptyState.jsx (tone="error", compact) */
+
+  /* M14 · Lỗi ngay tại ô: ô có aria-invalid="true" + aria-describedby trỏ vào .field-error */
+  .field-error {
+    @apply mt-1.5 flex items-start gap-1.5 text-[13px] leading-[18px] text-rose-700;
+  }
+  .field-error > svg {
+    @apply mt-px h-4 w-4 flex-none;
+  }
+  .field-input[aria-invalid="true"] {
+    @apply border-rose-500 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/20;
+  }
+
+  /* M15 · Hàng menu trong sheet ("Thêm", ⋯) */
+  .menu-row {
+    @apply flex min-h-[52px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[15px] font-medium text-slate-800 hover:bg-slate-50 active:bg-slate-100;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:opacity-50;
+  }
+  .menu-row-icon {
+    @apply flex h-9 w-9 flex-none items-center justify-center rounded-[10px] bg-slate-100 text-slate-600;
+  }
+  .menu-row-icon > svg {
+    @apply h-5 w-5;
+  }
+  .menu-row[aria-current="page"] {
+    @apply bg-slate-100;
+  }
+  .menu-row[aria-current="page"] .menu-row-icon {
+    @apply bg-white text-emerald-700;
+  }
+  .menu-row-chevron {
+    @apply ml-auto h-[18px] w-[18px] flex-none text-slate-400;
+  }
+  .menu-row-danger {
+    @apply text-rose-600;
+  }
+  .menu-row-danger .menu-row-icon {
+    @apply bg-rose-50 text-rose-600;
+  }
+
+  /* M16 · Chọn nhanh 2–3 lựa chọn trong form: role="radiogroup" + button role="radio" aria-checked */
+  .choice-list {
+    @apply flex gap-1 rounded-xl bg-slate-100 p-1;
+  }
+  .choice {
+    @apply h-10 min-w-0 flex-1 truncate whitespace-nowrap rounded-lg px-3 text-sm font-medium text-slate-600 transition hover:text-slate-900 sm:h-9;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:opacity-50;
+  }
+  .choice[aria-checked="true"] {
+    @apply bg-white text-slate-900 shadow-sm;
+  }
+
+  /* M8 · Thông báo ngắn (ui/ToastProvider.jsx) */
+  .toast-region {
+    @apply pointer-events-none fixed inset-x-4 z-40 flex justify-center;
+    bottom: calc(env(safe-area-inset-bottom) + 1rem);
+  }
+  .toast {
+    @apply pointer-events-auto flex min-h-[52px] w-full max-w-[420px] items-center gap-2.5 rounded-xl bg-slate-900 py-1 pl-3.5 pr-1 text-sm font-medium leading-5 text-white;
+    box-shadow: 0 10px 24px -6px rgba(15, 23, 42, 0.4);
+    animation: toast-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .toast-text {
+    @apply my-2 line-clamp-3 min-w-0 flex-1;
+  }
+  .toast-action {
+    @apply flex h-11 flex-none items-center rounded-lg px-3 font-semibold text-emerald-300 hover:bg-white/10 active:bg-white/10;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60;
+  }
+  .toast-close {
+    @apply flex h-11 w-11 flex-none items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/60;
   }
 }
 
@@ -193,6 +520,20 @@ body {
   animation: sheet-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Điện thoại: cao theo khung nhìn thấy thật (dvh, có dự phòng vh); khi bàn phím bật,
+   Modal đặt --kb-inset / --vv-h để sheet đứng ngay trên bàn phím. */
+@media (max-width: 639px) {
+  .modal-panel {
+    max-height: 90vh;
+    max-height: min(90dvh, calc(var(--vv-h, 100dvh) - 12px));
+    margin-bottom: var(--kb-inset, 0px);
+  }
+  .modal-panel-tall {
+    height: 85vh;
+    height: min(85dvh, calc(var(--vv-h, 100dvh) - 12px));
+  }
+}
+
 @media (min-width: 640px) {
   .modal-panel {
     animation: modal-fade 0.15s ease-out both;
@@ -203,5 +544,77 @@ body {
   .modal-backdrop,
   .modal-panel {
     animation: none;
+  }
+}
+
+@keyframes toast-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: modal-fade 0.15s ease-out both;
+  }
+}
+
+/* Vị trí dính đáy theo vật đang có trên màn (chỉ điện thoại) */
+@media (max-width: 639px) {
+  /* Thông báo nằm ngay trên vật dính đáy cao nhất; quy tắc sau thắng quy tắc trước */
+  body:has(.tab-bar) .toast-region {
+    bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom) + 0.5rem);
+  }
+  body:has(.fab) .toast-region {
+    bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom) + 1rem + 3.5rem + 0.5rem);
+  }
+  body:has(.action-bar) .toast-region {
+    bottom: calc(var(--action-bar-h) + env(safe-area-inset-bottom) + 0.5rem);
+  }
+  body:has(.action-bar-over-tab) .toast-region {
+    bottom: calc(var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) + 0.5rem);
+  }
+
+  /* Nội dung tự chừa đáy để hàng cuối kéo lên khỏi FAB / ActionBar */
+  .app-main:has(.fab) {
+    padding-bottom: calc(var(--tab-bar-h) + env(safe-area-inset-bottom) + 5.5rem);
+  }
+  .app-main:has(.action-bar) {
+    padding-bottom: calc(var(--action-bar-h) + env(safe-area-inset-bottom) + 1rem);
+  }
+  .app-main:has(.action-bar-over-tab) {
+    padding-bottom: calc(var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) + 1rem);
+  }
+
+  /* Ô được cuộn tới (lỗi tại ô, focus) không nằm sau thanh trên / ActionBar */
+  :is(input, select, textarea, .field-error) {
+    scroll-margin-top: calc(var(--app-bar-h) + env(safe-area-inset-top) + 0.75rem);
+  }
+  body:has(.action-bar) :is(input, select, textarea) {
+    scroll-margin-bottom: calc(var(--action-bar-h) + env(safe-area-inset-bottom) + 1rem);
+  }
+
+  /* Bàn phím đang mở (Layout đặt data-keyboard): tab và FAB không nhảy lên đè nội dung */
+  html[data-keyboard="open"] .tab-bar,
+  html[data-keyboard="open"] .fab {
+    display: none;
+  }
+}
+
+@media (min-width: 640px) {
+  .fab {
+    bottom: 1.5rem;
+  }
+  .toast-region {
+    bottom: 1.5rem;
+  }
+  /* Desktop: thanh trên h-16 */
+  .group-head {
+    top: 4rem;
   }
 }
