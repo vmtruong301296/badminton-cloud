@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import Modal from '../ui/Modal';
-import { CircleAlert, Download, Loader, RotateCcw, Search, Send, X } from '../ui/icons';
+import BillImageZoom from '../bill/BillImageZoom';
+import { CircleAlert, Download, Loader, RotateCcw, Search, Send } from '../ui/icons';
 import {
   activePaymentAccounts,
   apiErrorDetail,
@@ -9,8 +9,6 @@ import {
   pickImageSaveMethod,
 } from '../../utils/billImageShare';
 
-// Ảnh bill dựng ở pixelRatio 2 (BillDetail / PartyBillDetail) → cỡ thật trên màn = ảnh / 2.
-const EXPORT_PIXEL_RATIO = 2;
 // Giữ URL của file tải về một lúc để trình duyệt kịp đọc rồi mới thu hồi.
 const DOWNLOAD_URL_TTL_MS = 60000;
 
@@ -137,66 +135,6 @@ async function saveImageFile(blob, fileName) {
   }
   downloadBlob(blob, fileName);
   return 'downloaded';
-}
-
-/** Xem ảnh đúng cỡ thật, kéo ngang / dọc; ✕ hoặc Esc quay lại hộp. */
-function ImageZoom({ url, alt, onClose }) {
-  const closeRef = useRef(null);
-  const scrollerRef = useRef(null);
-  const [width, setWidth] = useState(null);
-
-  useEffect(() => {
-    closeRef.current?.focus();
-  }, []);
-
-  // Dừng phím ở đây để Modal bên dưới (nghe ở document) không đóng hộp / kéo focus về.
-  const handleKeyDown = (event) => {
-    if (event.key === 'Escape') {
-      event.stopPropagation();
-      onClose();
-    } else if (event.key === 'Tab') {
-      event.preventDefault();
-      event.stopPropagation();
-      const next = document.activeElement === closeRef.current ? scrollerRef.current : closeRef.current;
-      next?.focus();
-    }
-  };
-
-  return createPortal(
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={alt}
-      onKeyDown={handleKeyDown}
-      className="fixed inset-0 z-[60] flex flex-col bg-slate-900"
-    >
-      <div className="flex flex-none items-center justify-end px-1.5 pt-[env(safe-area-inset-top)]">
-        <button
-          ref={closeRef}
-          type="button"
-          onClick={onClose}
-          aria-label="Đóng"
-          className="flex h-14 w-14 items-center justify-center rounded-xl text-white active:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-        >
-          <X className="h-6 w-6" />
-        </button>
-      </div>
-      <div
-        ref={scrollerRef}
-        tabIndex={0}
-        className="min-h-0 flex-1 overflow-auto overscroll-contain bg-white focus-visible:outline-none"
-      >
-        <img
-          src={url}
-          alt={alt}
-          onLoad={(e) => setWidth(e.currentTarget.naturalWidth / EXPORT_PIXEL_RATIO)}
-          style={width ? { width } : undefined}
-          className="block max-w-none"
-        />
-      </div>
-    </div>,
-    document.body,
-  );
 }
 
 function PreviewBox({ status, url, alt, onRetry, onZoom, zoomButtonRef }) {
@@ -392,7 +330,7 @@ function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSend
           <span className="min-w-0 break-words">{actionError}</span>
         </p>
       )}
-      {zoomOpen && ready && <ImageZoom url={current.url} alt={previewAlt} onClose={closeZoom} />}
+      {zoomOpen && ready && <BillImageZoom url={current.url} alt={previewAlt} onClose={closeZoom} />}
     </Modal>
   );
 }
