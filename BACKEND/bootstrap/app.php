@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\RequirePermission;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // Enable session for API routes (needed for session-based authentication)
         $middleware->api(prepend: [
             \Illuminate\Session\Middleware\StartSession::class,
+        ]);
+
+        // Kiểm quyền theo route: ->middleware('permission:bills.view|bills.create')
+        $middleware->alias([
+            RequirePermission::ALIAS => RequirePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
