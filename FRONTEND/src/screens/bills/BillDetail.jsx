@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { billsApi, paymentAccountsApi } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import {
   formatCurrency,
   formatCurrencyRounded,
@@ -10,63 +11,73 @@ import {
 } from "../../utils/formatters";
 import {
   billCollectedTotal,
+  billCollection,
   billPlayingTotal,
   billProfit,
   formatProfit,
   hasExtraCosts,
+  playerCurrentOnlyAmount,
+  playerTotalWithSubBills,
 } from "../../utils/billTotals";
+import { oldBillIdsOf } from "../../utils/billPlayers";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
 import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
-import {
-  waitForImagesReady,
-  nodeToPng,
-  nodeToBlob,
-} from "../../utils/exportImage";
+import BillDetailSummary from "../../components/bill/BillDetailSummary";
+import BillPlayerList from "../../components/bill/BillPlayerList";
+import { waitForImagesReady, nodeToBlob } from "../../utils/exportImage";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
+import ActionBar from "../../components/ui/ActionBar";
+import useToast from "../../components/ui/useToast";
 import {
   CalendarDays,
-  Check,
   ChevronLeft,
-  Circle,
   CircleAlert,
-  Clock,
   Download,
-  Loader,
   Pencil,
   Plus,
   Send,
   Trash2,
 } from "../../components/ui/icons";
 
+const CLOSED_PAY_OLD_BILLS = {
+  isOpen: false,
+  playerId: null,
+  playerName: "",
+  debtAmount: 0,
+  oldBillIds: [],
+  debtDetails: [],
+  currentAmount: 0,
+  allAmount: 0,
+};
+const CLOSED_UNCHECK = { isOpen: false, playerId: null, playerName: "" };
+
 export default function BillDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const toast = useToast();
   const [bill, setBill] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
-  const [uncheckPaymentConfirm, setUncheckPaymentConfirm] = useState({
-    isOpen: false,
-    playerId: null,
-    playerName: "",
-  });
-  const [payOldBillsConfirm, setPayOldBillsConfirm] = useState({
-    isOpen: false,
-    playerId: null,
-    playerName: "",
-    debtAmount: 0,
-    oldBillIds: [],
-  });
+  const [deleting, setDeleting] = useState(false);
+  const [uncheckPaymentConfirm, setUncheckPaymentConfirm] =
+    useState(CLOSED_UNCHECK);
+  const [uncheckBusy, setUncheckBusy] = useState(false);
+  const [payOldBillsConfirm, setPayOldBillsConfirm] =
+    useState(CLOSED_PAY_OLD_BILLS);
+  const [payOldBillsBusy, setPayOldBillsBusy] = useState(null); // null | "current" | "all"
+  // user_id đang lưu "Đã TT" → nút có vòng quay, không bấm lại được.
+  const [savingIds, setSavingIds] = useState(() => new Set());
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [paymentAccountImages, setPaymentAccountImages] = useState({}); // Store base64 images: { accountId: base64 }
-  const [exporting, setExporting] = useState(false);
-  const [sendingTelegram, setSendingTelegram] = useState(false);
-  const [pendingExportAction, setPendingExportAction] = useState("download"); // "download" | "telegram"
-  const [selectAccountDialog, setSelectAccountDialog] = useState({
+  // Hộp "Gửi ảnh bill"; primaryAction = nút vừa bấm (desktop) — điện thoại mở bằng "Gửi ảnh".
+  const [imageDialog, setImageDialog] = useState({
     isOpen: false,
+    primaryAction: "telegram",
   });
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const exportRef = useRef(null);
@@ -75,6 +86,7 @@ export default function BillDetail() {
     loadBill();
     loadPaymentAccounts();
   }, [id]);
+
 
   /**
    * Load bill data.
@@ -90,64 +102,49 @@ export default function BillDetail() {
       setBill(response.data);
     } catch (error) {
       console.error("Error loading bill:", error);
-      if (!silent) {
-        alert("Không tìm thấy bill");
-        navigate("/");
-      }
+      // Lần tải đầu lỗi: hiện khối "Không tìm thấy bill" (có Thử lại), không tự quay về.
+      if (!silent) setBill(null);
     } finally {
       if (!silent) setLoading(false);
     }
   };
 
   const handleMarkPayment = async (playerId, isPaid) => {
+    const player = bill.bill_players?.find((p) => p.user_id === playerId);
+
     // Nếu đang uncheck (từ checked -> unchecked), hiển thị confirm dialog
-    if (!isPaid) {
-      const player = bill.bill_players?.find((p) => p.user_id === playerId);
-      if (player) {
-        setUncheckPaymentConfirm({
-          isOpen: true,
-          playerId,
-          playerName: player.user?.name || "",
-        });
-        return;
-      }
+    if (!isPaid && player) {
+      setUncheckPaymentConfirm({
+        isOpen: true,
+        playerId,
+        playerName: player.user?.name || "",
+      });
+      return;
     }
 
-    // Nếu đang check (từ unchecked -> checked)
-    const player = bill.bill_players?.find((p) => p.user_id === playerId);
+    // Có tiền nợ: hỏi có thanh toán bill cũ không (ghi sẵn số thu của từng lựa chọn)
     if (player && player.debt_amount > 0 && isPaid) {
-      // Nếu có tiền nợ, hiển thị confirm dialog hỏi có thanh toán bill cũ không
-      const oldBillIdsSet = new Set();
-      if (player.debt_details && player.debt_details.length > 0) {
-        player.debt_details.forEach((debt) => {
-          if (debt.parent_bill_id) {
-            oldBillIdsSet.add(debt.parent_bill_id);
-          }
-          if (debt.sub_bills && debt.sub_bills.length > 0) {
-            debt.sub_bills.forEach((subBill) => {
-              if (subBill.bill_id) {
-                oldBillIdsSet.add(subBill.bill_id);
-              }
-            });
-          }
-        });
-      }
-
+      const subBills = bill.parent_bill_id ? [] : bill.sub_bills || [];
       setPayOldBillsConfirm({
         isOpen: true,
         playerId,
         playerName: player.user?.name || "",
         debtAmount: player.debt_amount,
-        oldBillIds: Array.from(oldBillIdsSet),
+        oldBillIds: oldBillIdsOf(player),
+        debtDetails: player.debt_details || [],
+        currentAmount: playerCurrentOnlyAmount(player, subBills),
+        allAmount: playerTotalWithSubBills(player, subBills),
       });
       return;
     }
 
-    // Nếu không có tiền nợ hoặc đang uncheck, gọi API trực tiếp
+    // Nếu không có tiền nợ, gọi API trực tiếp
     await executeMarkPayment(playerId, isPaid);
   };
 
+
   const executeMarkPayment = async (playerId, isPaid, oldBillIds = []) => {
+    setSavingIds((prev) => new Set(prev).add(playerId));
     try {
       // Mark payment cho bill hiện tại
       await billsApi.markPayment(id, playerId, {
@@ -220,46 +217,39 @@ export default function BillDetail() {
       await loadBill({ silent: true });
     } catch (error) {
       console.error("Error marking payment:", error);
-      alert("Có lỗi xảy ra");
+      toast.error("Có lỗi xảy ra", {
+        onRetry: () => executeMarkPayment(playerId, isPaid, oldBillIds),
+      });
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(playerId);
+        return next;
+      });
     }
   };
 
   const handleUncheckPaymentConfirm = async () => {
+    setUncheckBusy(true);
     await executeMarkPayment(uncheckPaymentConfirm.playerId, false);
-    setUncheckPaymentConfirm({ isOpen: false, playerId: null, playerName: "" });
+    setUncheckBusy(false);
+    setUncheckPaymentConfirm(CLOSED_UNCHECK);
   };
 
   const handleUncheckPaymentCancel = () => {
-    setUncheckPaymentConfirm({ isOpen: false, playerId: null, playerName: "" });
+    setUncheckPaymentConfirm(CLOSED_UNCHECK);
     // Dialog was cancelled — no server state changed, no reload needed.
-    // The toggle pill reads from `bill.bill_players[...].is_paid` which is unchanged.
   };
 
-  const handlePayOldBillsConfirm = async () => {
+  const payFromOldBillsDialog = async (choice) => {
+    setPayOldBillsBusy(choice);
     await executeMarkPayment(
       payOldBillsConfirm.playerId,
       true,
-      payOldBillsConfirm.oldBillIds,
+      choice === "all" ? payOldBillsConfirm.oldBillIds : [],
     );
-    setPayOldBillsConfirm({
-      isOpen: false,
-      playerId: null,
-      playerName: "",
-      debtAmount: 0,
-      oldBillIds: [],
-    });
-  };
-
-  const handlePayOldBillsCancel = async () => {
-    // Chỉ thanh toán bill hiện tại, không thanh toán bill cũ
-    await executeMarkPayment(payOldBillsConfirm.playerId, true, []);
-    setPayOldBillsConfirm({
-      isOpen: false,
-      playerId: null,
-      playerName: "",
-      debtAmount: 0,
-      oldBillIds: [],
-    });
+    setPayOldBillsBusy(null);
+    setPayOldBillsConfirm(CLOSED_PAY_OLD_BILLS);
   };
 
   const handleDeleteClick = () => {
@@ -267,19 +257,23 @@ export default function BillDetail() {
   };
 
   const handleDeleteConfirm = async () => {
+    setDeleting(true);
     try {
       await billsApi.delete(id);
       navigate("/");
     } catch (error) {
       console.error("Error deleting bill:", error);
-      alert("Có lỗi xảy ra khi xóa bill");
+      toast.error("Có lỗi xảy ra khi xóa bill");
       setDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
   const handleDeleteCancel = () => {
     setDeleteConfirm(false);
   };
+
 
   // Helper to convert image URL to base64 using fetch API (bypasses CORS)
   const loadImageAsBase64 = async (url) => {
@@ -403,230 +397,98 @@ export default function BillDetail() {
     }
   };
 
-  const handleExportBill = () => {
+  const openImageDialog = (primaryAction) => {
     if (!bill) return;
-    setPendingExportAction("download");
-    setSelectAccountDialog({ isOpen: true });
+    setImageDialog({ isOpen: true, primaryAction });
   };
 
-  const handleSendTelegramClick = () => {
-    if (!bill) return;
-    setPendingExportAction("telegram");
-    setSelectAccountDialog({ isOpen: true });
+  const closeImageDialog = () => {
+    setImageDialog((prev) => ({ ...prev, isOpen: false }));
   };
 
-  const handleSelectAccountConfirm = async (accountId) => {
-    setSelectAccountDialog({ isOpen: false });
-    if (pendingExportAction === "telegram") {
-      await executeSendTelegram(accountId);
-    } else {
-      await executeExportBill(accountId);
-    }
-  };
+  // Ảnh QR của tài khoản chưa tải xong lúc mở trang thì tải nốt trước khi dựng ảnh.
+  const ensureAccountImages = async () => {
+    const accountsNeedingPreload = paymentAccounts.filter(
+      (acc) =>
+        acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
+    );
+    if (accountsNeedingPreload.length === 0) return;
 
-  const handleSelectAccountCancel = () => {
-    setSelectAccountDialog({ isOpen: false });
-  };
-
-  const executeExportBill = async (accountId) => {
-    if (!bill) return;
-
-    // Đảm bảo selectedAccountId đã được set và component đã render
-    setSelectedAccountId(accountId);
-    // Đợi component re-render với tài khoản mới
+    const imageMap = { ...paymentAccountImages };
+    await Promise.all(
+      accountsNeedingPreload.map(async (acc) => {
+        try {
+          if (acc.qr_code_image.startsWith("data:image/")) {
+            imageMap[acc.id] = acc.qr_code_image;
+            return;
+          }
+          const imageUrl =
+            acc.qr_code_image_url ||
+            (acc.qr_code_image
+              ? `${window.location.origin}/storage/${acc.qr_code_image}`
+              : null);
+          if (imageUrl) {
+            imageMap[acc.id] = await loadImageAsBase64(imageUrl);
+          }
+        } catch (error) {
+          console.error(
+            `Failed to preload image for account ${acc.id} before export:`,
+            error,
+          );
+        }
+      }),
+    );
+    setPaymentAccountImages(imageMap);
+    // Wait a bit for state to update and component to re-render
     await new Promise((resolve) => setTimeout(resolve, 300));
-
-    if (!exportRef.current) {
-      console.error("Export ref not available");
-      setExporting(false);
-      return;
-    }
-
-    try {
-      setExporting(true);
-
-      // Ensure all payment account images are preloaded before export
-      // If qr_code_image is already base64, use it directly
-      const accountsNeedingPreload = paymentAccounts.filter(
-        (acc) =>
-          acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
-      );
-
-      if (accountsNeedingPreload.length > 0) {
-        console.log(
-          "Preloading missing images before export:",
-          accountsNeedingPreload.length,
-        );
-        const imageMap = { ...paymentAccountImages };
-
-        await Promise.all(
-          accountsNeedingPreload.map(async (acc) => {
-            try {
-              // Check if qr_code_image is already a base64 string
-              if (acc.qr_code_image.startsWith("data:image/")) {
-                // Already base64, use directly
-                imageMap[acc.id] = acc.qr_code_image;
-                console.log(
-                  `Account ${acc.id}: Using direct base64 image for export`,
-                );
-                return;
-              }
-
-              // Otherwise, it's a file path, need to load and convert
-              const imageUrl =
-                acc.qr_code_image_url ||
-                (acc.qr_code_image
-                  ? `${window.location.origin}/storage/${acc.qr_code_image}`
-                  : null);
-
-              if (imageUrl) {
-                console.log(
-                  `Preloading image for account ${acc.id} before export:`,
-                  imageUrl,
-                );
-                const base64 = await loadImageAsBase64(imageUrl);
-                imageMap[acc.id] = base64;
-                console.log(`Account ${acc.id}: Image preloaded before export`);
-              }
-            } catch (error) {
-              console.error(
-                `Failed to preload image for account ${acc.id} before export:`,
-                error,
-              );
-            }
-          }),
-        );
-
-        setPaymentAccountImages(imageMap);
-        // Wait a bit for state to update and component to re-render
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      const images = exportRef.current.querySelectorAll(
-        "img.bill-export-image",
-      );
-      await waitForImagesReady(images);
-
-      // Wait for fonts + paint before capture. html-to-image uses SVG
-      // foreignObject so styles/fonts are serialized into the snapshot
-      // atomically — no iframe-clone race condition like html2canvas.
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      );
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      const dataUrl = await nodeToPng(exportRef.current, {
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-        cacheBust: true,
-      });
-
-      const link = document.createElement("a");
-      link.download = `Bill_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
-      link.href = dataUrl;
-      link.click();
-
-      setExporting(false);
-    } catch (error) {
-      console.error("Error exporting bill:", error);
-      alert("Có lỗi xảy ra khi xuất bill");
-      setExporting(false);
-    }
   };
 
   /**
-   * Render the bill the same way as export, but upload the PNG to backend
-   * which forwards it to the Telegram chat configured in BACKEND/.env.
-   * Reuses the same image-preload + html2canvas pipeline as executeExportBill.
+   * Dựng ảnh bill (PNG) với tài khoản đã chọn — cùng cách dựng với "Xuất Bill" cũ; hộp
+   * "Gửi ảnh bill" gọi khi mở / đổi tài khoản, rồi dùng đúng file này để xem trước, lưu
+   * và gửi Telegram.
    */
-  const executeSendTelegram = async (accountId) => {
-    if (!bill) return;
+  const buildBillImage = async (accountId) => {
+    // Đảm bảo selectedAccountId đã được set và component đã render
     setSelectedAccountId(accountId);
     await new Promise((resolve) => setTimeout(resolve, 300));
+    if (!exportRef.current) throw new Error("Export ref not available");
 
-    if (!exportRef.current) {
-      console.error("Export ref not available");
-      setSendingTelegram(false);
-      return;
+    await ensureAccountImages();
+
+    const images = exportRef.current.querySelectorAll("img.bill-export-image");
+    await waitForImagesReady(images);
+
+    // Wait for fonts + paint before capture. html-to-image uses SVG
+    // foreignObject so styles/fonts are serialized into the snapshot
+    // atomically — no iframe-clone race condition like html2canvas.
+    if (document.fonts && document.fonts.ready) {
+      await document.fonts.ready;
     }
+    await new Promise((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve)),
+    );
+    await new Promise((resolve) => setTimeout(resolve, 200));
 
-    try {
-      setSendingTelegram(true);
-
-      const accountsNeedingPreload = paymentAccounts.filter(
-        (acc) =>
-          acc.is_active && acc.qr_code_image && !paymentAccountImages[acc.id],
-      );
-      if (accountsNeedingPreload.length > 0) {
-        const imageMap = { ...paymentAccountImages };
-        await Promise.all(
-          accountsNeedingPreload.map(async (acc) => {
-            try {
-              if (acc.qr_code_image.startsWith("data:image/")) {
-                imageMap[acc.id] = acc.qr_code_image;
-                return;
-              }
-              const imageUrl =
-                acc.qr_code_image_url ||
-                (acc.qr_code_image
-                  ? `${window.location.origin}/storage/${acc.qr_code_image}`
-                  : null);
-              if (imageUrl) {
-                const base64 = await loadImageAsBase64(imageUrl);
-                imageMap[acc.id] = base64;
-              }
-            } catch (error) {
-              console.error("Preload image error", error);
-            }
-          }),
-        );
-        setPaymentAccountImages(imageMap);
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      const images = exportRef.current.querySelectorAll(
-        "img.bill-export-image",
-      );
-      await waitForImagesReady(images);
-
-      if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-      }
-      await new Promise((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(resolve)),
-      );
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      const blob = await nodeToBlob(exportRef.current, {
-        backgroundColor: "#ffffff",
-        pixelRatio: 2,
-        cacheBust: true,
-      });
-      if (!blob) throw new Error("Không tạo được file PNG");
-
-      await billsApi.sendTelegram(bill.id, blob);
-      alert("Đã gửi bill qua Telegram thành công!");
-    } catch (error) {
-      console.error("Error sending bill to Telegram:", error);
-      const detail =
-        error?.response?.data?.error ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Lỗi không xác định";
-      alert("Gửi Telegram thất bại: " + detail);
-    } finally {
-      setSendingTelegram(false);
-    }
+    return nodeToBlob(exportRef.current, {
+      backgroundColor: "#ffffff",
+      pixelRatio: 2,
+      cacheBust: true,
+    });
   };
+
+  // Backend chuyển ảnh tới nhóm Telegram cấu hình trong BACKEND/.env. Lỗi để hộp hiện tại chỗ.
+  const sendBillToTelegram = async (blob) => {
+    await billsApi.sendTelegram(bill.id, blob);
+    toast.success("Đã gửi bill qua Telegram thành công!");
+  };
+
 
   if (loading) {
     return (
       <div className="px-4 sm:px-0">
-        {/* Header skeleton */}
-        <div className="mb-6 flex items-center justify-between gap-3">
+        {/* Header skeleton (điện thoại: tiêu đề nằm trên thanh trên) */}
+        <div className="mb-6 hidden items-center justify-between gap-3 sm:flex">
           <div className="flex-1">
             <div className="skeleton h-3 w-24 mb-2" />
             <div className="skeleton h-8 w-56 mb-2" />
@@ -669,6 +531,7 @@ export default function BillDetail() {
           icon={CircleAlert}
           title="Không tìm thấy bill"
           description="Bill này có thể đã bị xóa hoặc không tồn tại."
+          onRetry={() => loadBill()}
           action={
             <button
               type="button"
@@ -687,10 +550,53 @@ export default function BillDetail() {
   const hasPaidPlayers = bill.bill_players?.some((p) => p.is_paid) || false;
   const allPaid =
     bill.bill_players?.length > 0 && bill.bill_players?.every((p) => p.is_paid);
+  const subBills = bill.parent_bill_id ? [] : bill.sub_bills || [];
+  const collection = billCollection(bill.bill_players, subBills);
+  // Ẩn nút theo quyền (quyết định 10): thiếu quyền thì không hiện / chỉ hiện trạng thái.
+  const canMark = hasPermission("bills.mark_payment");
+  const canUpdate = hasPermission("bills.update");
+  const canCreate = hasPermission("bills.create");
+  const canDelete = hasPermission("bills.delete");
+  const markPayment = canMark ? handleMarkPayment : undefined;
+  const billImageFileName = `Bill_${bill.id}_${formatDate(bill.date).replace(/\//g, "-")}.png`;
+
+  // Sheet ⋯ của thanh trên (điện thoại); desktop dùng các nút ở đầu màn.
+  const menu = [
+    canUpdate &&
+      (hasPaidPlayers
+        ? {
+            key: "edit",
+            label: (
+              <span>
+                Sửa bill
+                <span className="block text-[13px] font-normal text-slate-500">
+                  Có người đã TT nên không sửa được
+                </span>
+              </span>
+            ),
+            icon: Pencil,
+            disabled: true,
+          }
+        : { label: "Sửa bill", icon: Pencil, to: `/bills/${id}/edit` }),
+    canCreate &&
+      !bill.parent_bill_id && {
+        label: "Tạo bill con",
+        icon: Plus,
+        to: `/bills/create?parent_id=${id}`,
+      },
+    canDelete && {
+      label: "Xóa bill",
+      icon: Trash2,
+      danger: true,
+      onClick: handleDeleteClick,
+    },
+  ];
 
   return (
     <div className="px-4 sm:px-0 pb-6 md:pb-0">
-      {/* Back link — bill con quay về bill chính của nó */}
+      {/* Điện thoại: PageHeader chỉ đưa ‹ + tiêu đề + ⋯ lên thanh trên; khối đầu màn chỉ hiện từ sm.
+          Back link — bill con quay về bill chính của nó */}
+      <div className="hidden sm:block">
       <PageHeader
         back={{
           to: bill.parent_bill_id ? `/bills/${bill.parent_bill_id}` : "/",
@@ -698,7 +604,14 @@ export default function BillDetail() {
             ? `Bill chính #${bill.parent_bill_id}`
             : "Danh sách bills",
         }}
-        title={`Chi tiết Bill #${bill.id}`}
+        title={
+          <>
+            <span className="sm:hidden">Bill #{bill.id}</span>
+            <span className="hidden sm:inline">Chi tiết Bill #{bill.id}</span>
+          </>
+        }
+        menuTitle={`Bill #${bill.id}`}
+        menu={menu}
         description={
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <span
@@ -741,41 +654,21 @@ export default function BillDetail() {
           <>
             <button
               type="button"
-              onClick={handleExportBill}
-              disabled={exporting}
+              onClick={() => openImageDialog("download")}
               className="btn btn-primary flex-1 sm:flex-none"
             >
-              {exporting ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  Đang xuất…
-                </>
-              ) : (
-                <>
-                  <Download className="h-4 w-4" />
-                  Xuất Bill
-                </>
-              )}
+              <Download className="h-4 w-4" />
+              Xuất Bill
             </button>
             <button
               type="button"
-              onClick={handleSendTelegramClick}
-              disabled={sendingTelegram || exporting}
+              onClick={() => openImageDialog("telegram")}
               className="btn btn-secondary flex-1 sm:flex-none"
             >
-              {sendingTelegram ? (
-                <>
-                  <Loader className="h-4 w-4 animate-spin" />
-                  Đang gửi…
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Gửi Telegram
-                </>
-              )}
+              <Send className="h-4 w-4" />
+              Gửi Telegram
             </button>
-            {!hasPaidPlayers && (
+            {!hasPaidPlayers && canUpdate && (
               <button
                 type="button"
                 onClick={() => navigate(`/bills/${id}/edit`)}
@@ -785,7 +678,7 @@ export default function BillDetail() {
                 Sửa bill
               </button>
             )}
-            {!bill.parent_bill_id && (
+            {!bill.parent_bill_id && canCreate && (
               <button
                 type="button"
                 onClick={() => navigate(`/bills/create?parent_id=${id}`)}
@@ -795,18 +688,35 @@ export default function BillDetail() {
                 Bill con
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleDeleteClick}
-              aria-label="Xóa bill"
-              className="btn btn-danger-soft btn-icon shrink-0"
-            >
-              <Trash2 className="h-[18px] w-[18px]" />
-            </button>
+            {canDelete && (
+              <button
+                type="button"
+                onClick={handleDeleteClick}
+                aria-label="Xóa bill"
+                className="btn btn-danger-soft btn-icon shrink-0"
+              >
+                <Trash2 className="h-[18px] w-[18px]" />
+              </button>
+            )}
           </>
         }
       />
+      </div>
 
+      {/* Điện thoại / máy nhỏ: thẻ tóm tắt + chip lọc + hàng có nút Đã TT; từ md giữ bố cục cũ */}
+      <div className="space-y-3 md:hidden">
+        <BillDetailSummary key={`s-${bill.id}`} bill={bill} collection={collection} />
+        <BillPlayerList
+          key={`p-${bill.id}`}
+          bill={bill}
+          subBills={subBills}
+          canMark={canMark}
+          savingIds={savingIds}
+          onMarkPayment={handleMarkPayment}
+        />
+      </div>
+
+      <div className="hidden md:block">
       {/* Layout 2 cột nếu có sub-bills, 1 cột nếu không */}
       {!bill.parent_bill_id && bill.sub_bills && bill.sub_bills.length > 0 ? (
         <div className="grid grid-cols-1 items-start gap-4 sm:gap-6 lg:grid-cols-2">
@@ -822,7 +732,7 @@ export default function BillDetail() {
               <BillContent
                 bill={bill}
                 showHeader={false}
-                onMarkPayment={handleMarkPayment}
+                onMarkPayment={markPayment}
                 isMainBill={true}
                 subBills={bill.sub_bills}
               />
@@ -1147,7 +1057,8 @@ export default function BillDetail() {
                                 );
                               }
                             }}
-                            className="h-5 w-5 cursor-pointer accent-emerald-700"
+                            disabled={!canMark || savingIds.has(player.user_id)}
+                            className="h-5 w-5 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed"
                           />
                           {player.paid_at && (
                             <div className="font-tabular mt-1 text-xs text-slate-500">
@@ -1207,243 +1118,6 @@ export default function BillDetail() {
               </table>
             </div>
 
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-2.5 p-3">
-              {(() => {
-                const sortedPlayers = [...(bill.bill_players || [])].sort(
-                  (a, b) => {
-                    const aIsPaid = a.is_paid || false;
-                    const bIsPaid = b.is_paid || false;
-                    const aGender = a.user?.gender || "";
-                    const bGender = b.user?.gender || "";
-                    if (aIsPaid !== bIsPaid) return aIsPaid ? 1 : -1;
-                    if (aGender !== bGender) {
-                      if (aGender === "male") return -1;
-                      if (bGender === "male") return 1;
-                    }
-                    return 0;
-                  },
-                );
-
-                return sortedPlayers.map((player, index) => {
-                  const total =
-                    (player.total_amount || 0) + (player.debt_amount || 0);
-                  return (
-                    <article
-                      key={player.id}
-                      className={`overflow-hidden rounded-xl border transition ${
-                        player.is_paid
-                          ? "border-emerald-200 bg-emerald-50/40"
-                          : "border-slate-200 bg-white"
-                      }`}
-                    >
-                      <div className="p-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-start gap-2">
-                              <span className="font-tabular mt-0.5 inline-flex h-5 min-w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 px-1.5 text-xs font-medium text-slate-600">
-                                {index + 1}
-                              </span>
-                              <h4 className="break-words font-semibold text-slate-900">
-                                {player.user?.name}
-                              </h4>
-                            </div>
-                            <div className="mt-1 flex items-center gap-2 text-xs text-slate-500">
-                              <span>Mức tính</span>
-                              <span className="font-tabular font-medium text-slate-700">
-                                {formatRatio(player.ratio_value)}
-                              </span>
-                              {player.user?.gender === "female" && (
-                                <span className="rounded-full bg-pink-100 px-1.5 py-0.5 text-xs font-medium text-pink-700">
-                                  Nữ
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-tabular text-xl font-semibold tracking-tight text-slate-900">
-                              {formatCurrencyRounded(total)}
-                            </div>
-                            <label className="mt-1.5 inline-flex h-11 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition cursor-pointer select-none active:scale-95 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-100 has-[:checked]:text-emerald-800 border-slate-200 bg-white text-slate-600">
-                              <input
-                                type="checkbox"
-                                checked={player.is_paid || false}
-                                onChange={(e) => {
-                                  if (player.is_paid && !e.target.checked) {
-                                    e.preventDefault();
-                                    handleMarkPayment(player.user_id, false);
-                                  } else {
-                                    handleMarkPayment(
-                                      player.user_id,
-                                      e.target.checked,
-                                    );
-                                  }
-                                }}
-                                className="sr-only"
-                              />
-                              {player.is_paid ? (
-                                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                              ) : (
-                                <Circle className="h-3.5 w-3.5" strokeWidth={2.5} />
-                              )}
-                              {player.is_paid ? "Đã thanh toán" : "Đánh dấu TT"}
-                            </label>
-                          </div>
-                        </div>
-
-                        {hasExtraCosts(player) && (
-                          <div className="mt-3 rounded-lg bg-slate-50 p-2.5">
-                            <div className="flex items-baseline justify-between gap-2">
-                              <span className="text-xs font-medium text-slate-500">
-                                Chi phí thêm
-                              </span>
-                              <span className="font-tabular text-sm font-semibold text-slate-900">
-                                {formatCurrencyRounded(
-                                  player.menu_extra_total || 0,
-                                )}
-                              </span>
-                            </div>
-                            <div className="mt-1 space-y-0.5 text-xs text-slate-600">
-                              {(player.bill_player_menus || []).map(
-                                (menuItem, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex justify-between"
-                                  >
-                                    <span>
-                                      {menuItem.menu?.name} ×{" "}
-                                      {menuItem.quantity}
-                                    </span>
-                                    <span className="font-tabular">
-                                      {formatCurrency(menuItem.subtotal)}
-                                    </span>
-                                  </div>
-                                ),
-                              )}
-                              {Number(player.extra_amount) ? (
-                                <div className="flex justify-between gap-2">
-                                  <span className="min-w-0 break-words">
-                                    {player.extra_note || "Cộng thêm"}
-                                  </span>
-                                  <span className="font-tabular flex-shrink-0">
-                                    {formatCurrency(player.extra_amount)}
-                                  </span>
-                                </div>
-                              ) : null}
-                            </div>
-                          </div>
-                        )}
-
-                        {player.debt_amount > 0 && (
-                          <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
-                            <div className="flex items-baseline justify-between gap-2">
-                              <span className="text-xs font-medium text-amber-800">
-                                Tiền nợ
-                              </span>
-                              <span className="font-tabular text-sm font-semibold text-amber-800">
-                                {formatCurrencyRounded(player.debt_amount)}
-                              </span>
-                            </div>
-                            {player.debt_details &&
-                              player.debt_details.length > 0 && (
-                                <div className="mt-1.5 space-y-1 text-xs text-slate-600">
-                                  {player.debt_details.map((debt, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="rounded-md border border-amber-100 bg-white/60 p-1.5"
-                                    >
-                                      {debt.parent_amount !== null && (
-                                        <div className="flex justify-between">
-                                          <span className="font-medium text-slate-700">
-                                            {formatDateDisplay(debt.date)}
-                                          </span>
-                                          <span className="font-tabular">
-                                            {formatCurrencyRounded(
-                                              debt.parent_amount,
-                                            )}
-                                          </span>
-                                        </div>
-                                      )}
-                                      {debt.sub_bills &&
-                                        debt.sub_bills.length > 0 &&
-                                        debt.sub_bills.map(
-                                          (subBill, subIdx) => (
-                                            <div
-                                              key={subIdx}
-                                              className="flex justify-between pl-2 text-[11px]"
-                                            >
-                                              <span>
-                                                {subBill.note || "Bill con"}
-                                              </span>
-                                              <span className="font-tabular">
-                                                {formatCurrencyRounded(
-                                                  subBill.amount,
-                                                )}
-                                              </span>
-                                            </div>
-                                          ),
-                                        )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                          </div>
-                        )}
-
-                        {player.paid_at && (
-                          <div className="mt-2 flex items-center gap-1 text-[11px] text-emerald-700">
-                            <Clock className="h-3 w-3" strokeWidth={2.5} />
-                            {new Date(player.paid_at).toLocaleString("vi-VN")}
-                          </div>
-                        )}
-                      </div>
-                    </article>
-                  );
-                });
-              })()}
-
-              {/* Total Summary */}
-              <div className="mt-2 rounded-xl bg-emerald-50/70 px-3 py-2.5">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-sm font-medium text-emerald-700">
-                    Tổng cộng
-                  </span>
-                  <span className="font-tabular text-xl font-semibold tracking-tight text-emerald-700">
-                    {formatCurrencyRounded(
-                      billCollectedTotal(bill.bill_players),
-                    )}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-3">
-                  <span className="text-xs font-medium text-slate-500">
-                    Tổng tiền đánh{" "}
-                    <span className="font-normal text-slate-400">
-                      (không gồm nợ cũ, menu)
-                    </span>
-                  </span>
-                  <span className="font-tabular text-sm font-semibold text-slate-700">
-                    {formatCurrencyRounded(
-                      billPlayingTotal(bill.bill_players),
-                    )}
-                  </span>
-                </div>
-                <div className="mt-1 flex items-baseline justify-between gap-3">
-                  <span className="text-xs font-medium text-slate-500">
-                    Tiền lời{" "}
-                    <span className="font-normal text-slate-400">
-                      (tiền đánh − tổng tiền bill)
-                    </span>
-                  </span>
-                  <span
-                    className={`font-tabular text-sm font-semibold ${
-                      billProfit(bill) < 0 ? "text-rose-600" : "text-emerald-700"
-                    }`}
-                  >
-                    {formatProfit(billProfit(bill))}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </>
       )}
@@ -1478,9 +1152,11 @@ export default function BillDetail() {
           </div>
         </section>
       )}
+      </div>
 
       <ConfirmDialog
         isOpen={deleteConfirm}
+        busy={deleting}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
         title="Xác nhận xóa bill"
@@ -1493,23 +1169,21 @@ export default function BillDetail() {
         onConfirm={handleUncheckPaymentConfirm}
         title="Xác nhận hủy thanh toán"
         message={`Bạn có chắc chắn muốn hủy trạng thái "Đã thanh toán" cho ${uncheckPaymentConfirm.playerName}?`}
+        confirmLabel="Bỏ đánh dấu"
+        busy={uncheckBusy}
       />
 
       <PayOldBillsDialog
         isOpen={payOldBillsConfirm.isOpen}
-        onClose={() =>
-          setPayOldBillsConfirm({
-            isOpen: false,
-            playerId: null,
-            playerName: "",
-            debtAmount: 0,
-            oldBillIds: [],
-          })
-        }
-        onPayCurrentOnly={handlePayOldBillsCancel}
-        onPayAll={handlePayOldBillsConfirm}
+        onClose={() => setPayOldBillsConfirm(CLOSED_PAY_OLD_BILLS)}
+        onPayCurrentOnly={() => payFromOldBillsDialog("current")}
+        onPayAll={() => payFromOldBillsDialog("all")}
         playerName={payOldBillsConfirm.playerName}
         debtAmount={payOldBillsConfirm.debtAmount}
+        debtDetails={payOldBillsConfirm.debtDetails}
+        currentAmount={payOldBillsConfirm.currentAmount}
+        allAmount={payOldBillsConfirm.allAmount}
+        busy={payOldBillsBusy || false}
       />
 
       {/* Hidden export component — always rendered when bill is loaded so
@@ -1543,11 +1217,55 @@ export default function BillDetail() {
       )}
 
       <SelectPaymentAccountDialog
-        isOpen={selectAccountDialog.isOpen}
-        onClose={handleSelectAccountCancel}
-        onConfirm={handleSelectAccountConfirm}
+        isOpen={imageDialog.isOpen}
+        onClose={closeImageDialog}
         paymentAccounts={paymentAccounts}
+        buildImage={buildBillImage}
+        fileName={billImageFileName}
+        onSendTelegram={sendBillToTelegram}
+        primaryAction={imageDialog.primaryAction}
       />
+
+      {/* Điện thoại: còn thiếu bao nhiêu + gửi ảnh bill, luôn trong tầm ngón cái */}
+      <ActionBar
+        summary={{
+          label:
+            collection.unpaid > 0 ? (
+              <>
+                Còn thiếu{" "}
+                <b className="font-semibold text-slate-800">
+                  {collection.unpaid} người
+                </b>
+              </>
+            ) : (
+              <span className="text-emerald-700">
+                Đã thu đủ {collection.total} người
+              </span>
+            ),
+          value: (
+            <span
+              className={
+                collection.unpaid > 0 ? "text-rose-700" : "text-emerald-700"
+              }
+            >
+              {formatCurrencyRounded(
+                collection.unpaid > 0
+                  ? collection.unpaidAmount
+                  : collection.totalAmount,
+              )}
+            </span>
+          ),
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => openImageDialog("telegram")}
+          className="btn btn-primary flex-1"
+        >
+          <Send className="h-4 w-4" />
+          Gửi ảnh
+        </button>
+      </ActionBar>
     </div>
   );
 }

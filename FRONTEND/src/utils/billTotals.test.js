@@ -3,9 +3,14 @@ import {
   billCollectedTotal,
   billPlayingTotal,
   billProfit,
+  billCollection,
+  billPerPersonAmount,
   formatProfit,
   hasExtraCosts,
+  playerCurrentOnlyAmount,
   playerDueAmount,
+  playerSubBillLines,
+  playerTotalWithSubBills,
 } from "./billTotals";
 
 const player = (total_amount, debt_amount = 0, menu_extra_total = 0) => ({
@@ -107,5 +112,123 @@ describe("hasExtraCosts", () => {
     expect(hasExtraCosts({})).toBe(false);
     expect(hasExtraCosts({ bill_player_menus: [], extra_amount: 0 })).toBe(false);
     expect(hasExtraCosts({ bill_player_menus: null, extra_amount: null })).toBe(false);
+  });
+});
+
+// Bill chính có bill con "Sau 9h": người 7 chơi cả hai bill, người 8 chỉ bill chính.
+const subBill180 = {
+  id: 180,
+  note: "Sau 9h",
+  bill_players: [
+    { user_id: 7, total_amount: 37662, debt_amount: 0 },
+    { user_id: 9, total_amount: 0, debt_amount: 0 },
+  ],
+};
+const subBillNoNote = {
+  id: 181,
+  note: null,
+  bill_players: [{ user_id: 7, total_amount: 20400, debt_amount: 0 }],
+};
+const p7 = { user_id: 7, total_amount: 75297, debt_amount: 156000 };
+const p8 = { user_id: 8, total_amount: 52237, debt_amount: 0 };
+
+describe("playerSubBillLines", () => {
+  it("tiền từng bill con đã làm tròn nghìn, nhãn là ghi chú bill con", () => {
+    expect(playerSubBillLines(p7, [subBill180])).toEqual([
+      { id: 180, label: "Sau 9h", amount: 38000 },
+    ]);
+  });
+
+  it("bill con không ghi chú thì nhãn là Bill sau", () => {
+    expect(playerSubBillLines(p7, [subBillNoNote])).toEqual([
+      { id: 181, label: "Bill sau", amount: 20000 },
+    ]);
+  });
+
+  it("bỏ bill con người đó không chơi hoặc tiền bằng 0", () => {
+    expect(playerSubBillLines(p8, [subBill180])).toEqual([]);
+    expect(playerSubBillLines({ user_id: 9 }, [subBill180])).toEqual([]);
+  });
+
+  it("không có bill con thì rỗng", () => {
+    expect(playerSubBillLines(p7, [])).toEqual([]);
+    expect(playerSubBillLines(p7, undefined)).toEqual([]);
+  });
+});
+
+describe("playerTotalWithSubBills", () => {
+  it("TT + Bill sau = bill chính (gồm nợ cũ) + từng bill con, làm tròn từng số rồi cộng", () => {
+    // round(75.297 + 156.000) = 231.000; Sau 9h 38.000
+    expect(playerTotalWithSubBills(p7, [subBill180])).toBe(269000);
+  });
+
+  it("không có tiền bill con thì bằng số phải trả của bill", () => {
+    expect(playerTotalWithSubBills(p8, [subBill180])).toBe(52000);
+    expect(playerTotalWithSubBills(p8)).toBe(52000);
+  });
+});
+
+describe("playerCurrentOnlyAmount", () => {
+  it("chỉ bill hiện tại: tiền bill (không nợ cũ) + bill con được đánh dấu kèm", () => {
+    // round(75.297) = 75.000; Sau 9h 38.000
+    expect(playerCurrentOnlyAmount(p7, [subBill180])).toBe(113000);
+  });
+
+  it("bill con (không có bill con nào bên dưới) chỉ còn tiền bill", () => {
+    expect(playerCurrentOnlyAmount({ total_amount: 30142, debt_amount: 52000 })).toBe(30000);
+  });
+});
+
+describe("billCollection", () => {
+  const players = [
+    { ...p7, is_paid: false },
+    { ...p8, is_paid: true },
+    { user_id: 10, total_amount: 30142, debt_amount: 0, is_paid: false },
+  ];
+
+  it("đếm người đã / chưa trả và số tiền còn thiếu (gồm nợ cũ và bill con)", () => {
+    expect(billCollection(players, [subBill180])).toEqual({
+      total: 3,
+      paid: 1,
+      unpaid: 2,
+      // 269.000 + 30.000
+      unpaidAmount: 299000,
+      // 269.000 + 52.000 + 30.000
+      totalAmount: 351000,
+    });
+  });
+
+  it("danh sách rỗng", () => {
+    expect(billCollection([], [])).toEqual({
+      total: 0,
+      paid: 0,
+      unpaid: 0,
+      unpaidAmount: 0,
+      totalAmount: 0,
+    });
+    expect(billCollection(undefined).total).toBe(0);
+  });
+});
+
+describe("billPerPersonAmount", () => {
+  it("Tiền/người = tổng tiền bill / tổng mức tính, làm tròn đồng", () => {
+    // 1.430.000 / (1 + 0.7 + 0.5) = 650.000
+    const players = [
+      { ratio_value: "1.000" },
+      { ratio_value: "0.700" },
+      { ratio_value: 0.5 },
+    ];
+    expect(billPerPersonAmount(players, "1430000.00")).toBe(650000);
+  });
+
+  it("thiếu mức tính thì coi là 1", () => {
+    expect(billPerPersonAmount([{}, { ratio_value: null }], 100001)).toBe(
+      50001,
+    );
+  });
+
+  it("không có người chơi thì 0", () => {
+    expect(billPerPersonAmount([], 500000)).toBe(0);
+    expect(billPerPersonAmount(undefined, 500000)).toBe(0);
   });
 });
