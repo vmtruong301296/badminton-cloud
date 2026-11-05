@@ -4,6 +4,7 @@ import {
   billPlayingTotal,
   billProfit,
   billCollection,
+  billPerPersonAmount,
   formatProfit,
   hasExtraCosts,
   playerCurrentOnlyAmount,
@@ -206,5 +207,28 @@ describe("billCollection", () => {
       totalAmount: 0,
     });
     expect(billCollection(undefined).total).toBe(0);
+  });
+});
+
+describe("billPerPersonAmount", () => {
+  it("Tiền/người = tổng tiền bill / tổng mức tính, làm tròn đồng", () => {
+    // 1.430.000 / (1 + 0.7 + 0.5) = 650.000
+    const players = [
+      { ratio_value: "1.000" },
+      { ratio_value: "0.700" },
+      { ratio_value: 0.5 },
+    ];
+    expect(billPerPersonAmount(players, "1430000.00")).toBe(650000);
+  });
+
+  it("thiếu mức tính thì coi là 1", () => {
+    expect(billPerPersonAmount([{}, { ratio_value: null }], 100001)).toBe(
+      50001,
+    );
+  });
+
+  it("không có người chơi thì 0", () => {
+    expect(billPerPersonAmount([], 500000)).toBe(0);
+    expect(billPerPersonAmount(undefined, 500000)).toBe(0);
   });
 });

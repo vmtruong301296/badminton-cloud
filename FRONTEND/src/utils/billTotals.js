@@ -48,6 +48,18 @@ export const billPlayingTotal = (players = []) =>
 export const billProfit = (bill) =>
   billPlayingTotal(bill.bill_players) - (Number(bill.total_amount) || 0);
 
+/**
+ * "Tiền/người": tổng tiền bill chia tổng mức tính (thiếu mức tính coi là 1),
+ * làm tròn đồng — cùng cách tính với thẻ Thông tin Bill và ảnh xuất.
+ */
+export const billPerPersonAmount = (players = [], totalAmount = 0) => {
+  const sumRatios = (players || []).reduce(
+    (sum, player) => sum + Number(player.ratio_value ?? 1.0),
+    0,
+  );
+  return sumRatios > 0 ? Math.round((Number(totalAmount) || 0) / sumRatios) : 0;
+};
+
 /** Tiền lời có dấu: "+7.000 ₫", "-3.000 ₫", "0 ₫". */
 export const formatProfit = (value) =>
   `${value > 0 ? "+" : ""}${formatCurrency(value)}`;
