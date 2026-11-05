@@ -32,11 +32,18 @@ function MenuItem({ item, onDone }) {
           <IconComponent />
         </span>
       )}
-      {item.label}
+      {item.description ? (
+        <span className="min-w-0">
+          <span className="block">{item.label}</span>
+          <span className="menu-row-desc">{item.description}</span>
+        </span>
+      ) : (
+        item.label
+      )}
     </>
   );
 
-  if (item.to) {
+  if (item.to && !item.disabled) {
     return (
       <Link to={item.to} onClick={onDone} className={className}>
         {content}
@@ -68,7 +75,8 @@ function MenuItem({ item, onDone }) {
  * - title: chữ / node một dòng (cắt "…").
  * - back: { to, label, onClick? } → màn đẩy vào: nút ‹ thay biểu tượng app, ẩn vòng tài khoản và
  *   tab. onClick(event) chạy trước khi chuyển trang; event.preventDefault() để ở lại.
- * - menu: [{ label, icon, onClick | to, danger, disabled }] → nút ⋯ mở sheet thao tác phụ.
+ * - menu: [{ label, icon, onClick | to, danger, disabled, description }] → nút ⋯ mở sheet thao tác
+ *   phụ. description: dòng phụ dưới nhãn, vd lý do mục bị khóa (disabled: nhãn mờ, lý do rõ).
  *   Mảng rỗng / không truyền thì không có ⋯. Thao tác xóa (danger) vẫn phải qua ConfirmDialog.
  * - menuTitle: tiêu đề sheet ⋯ (mặc định = title).
  * - action: một nút 44 px bên phải (class app-bar-btn, nhớ aria-label), cho màn gốc.

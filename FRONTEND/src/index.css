@@ -422,7 +422,20 @@ body {
   /* M15 · Hàng menu trong sheet ("Thêm", ⋯) */
   .menu-row {
     @apply flex min-h-[52px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[15px] font-medium text-slate-800 hover:bg-slate-50 active:bg-slate-100;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:opacity-50;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  /* Mục bị khóa: nhãn + biểu tượng mờ, dòng lý do (.menu-row-desc) vẫn đọc rõ */
+  .menu-row:disabled {
+    @apply cursor-not-allowed text-slate-400 hover:bg-transparent active:bg-transparent;
+  }
+  .menu-row:disabled .menu-row-icon {
+    @apply text-slate-300;
+  }
+  .menu-row-desc {
+    @apply mt-0.5 block text-[13px] font-normal leading-[18px] text-slate-500;
+  }
+  .menu-row:disabled .menu-row-desc {
+    @apply text-slate-600;
   }
   .menu-row-icon {
     @apply flex h-9 w-9 flex-none items-center justify-center rounded-[10px] bg-slate-100 text-slate-600;

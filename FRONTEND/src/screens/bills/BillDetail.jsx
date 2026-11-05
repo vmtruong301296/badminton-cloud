@@ -566,14 +566,8 @@ export default function BillDetail() {
       (hasPaidPlayers
         ? {
             key: "edit",
-            label: (
-              <span>
-                Sửa bill
-                <span className="block text-[13px] font-normal text-slate-500">
-                  Có người đã TT nên không sửa được
-                </span>
-              </span>
-            ),
+            label: "Sửa bill",
+            description: "Có người đã TT nên không sửa được",
             icon: Pencil,
             disabled: true,
           }
