@@ -436,7 +436,8 @@ body {
 
   /* M8 · Thông báo ngắn (ui/ToastProvider.jsx) */
   .toast-region {
-    @apply pointer-events-none fixed inset-x-4 z-40 flex justify-center;
+    /* Trên lớp nền của Modal (z-50) để thông báo sau thao tác trong sheet vẫn thấy được */
+    @apply pointer-events-none fixed inset-x-4 z-[60] flex justify-center;
     bottom: calc(env(safe-area-inset-bottom) + 1rem);
   }
   .toast {
@@ -578,6 +579,11 @@ body {
   }
   body:has(.action-bar-over-tab) .toast-region {
     bottom: calc(var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) + 0.5rem);
+  }
+  /* Đang mở sheet (Modal): thông báo lên đỉnh màn, không che nút ở chân sheet */
+  body:has(.modal-backdrop) .toast-region {
+    top: calc(env(safe-area-inset-top) + 0.75rem);
+    bottom: auto;
   }
 
   /* Nội dung tự chừa đáy để hàng cuối kéo lên khỏi FAB / ActionBar */
