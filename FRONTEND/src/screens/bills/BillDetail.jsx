@@ -566,14 +566,8 @@ export default function BillDetail() {
       (hasPaidPlayers
         ? {
             key: "edit",
-            label: (
-              <span>
-                Sửa bill
-                <span className="block text-[13px] font-normal text-slate-500">
-                  Có người đã TT nên không sửa được
-                </span>
-              </span>
-            ),
+            label: "Sửa bill",
+            description: "Có người đã TT nên không sửa được",
             icon: Pencil,
             disabled: true,
           }
@@ -1242,19 +1236,12 @@ export default function BillDetail() {
                 Đã thu đủ {collection.total} người
               </span>
             ),
-          value: (
-            <span
-              className={
-                collection.unpaid > 0 ? "text-rose-700" : "text-emerald-700"
-              }
-            >
-              {formatCurrencyRounded(
-                collection.unpaid > 0
-                  ? collection.unpaidAmount
-                  : collection.totalAmount,
-              )}
-            </span>
+          value: formatCurrencyRounded(
+            collection.unpaid > 0
+              ? collection.unpaidAmount
+              : collection.totalAmount,
           ),
+          tone: collection.unpaid > 0 ? "danger" : "success",
         }}
       >
         <button

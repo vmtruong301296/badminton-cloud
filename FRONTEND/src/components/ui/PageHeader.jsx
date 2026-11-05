@@ -8,7 +8,8 @@ import { ChevronLeft } from "./icons";
  * Đầu màn: tiêu đề h1, mô tả, nút hành động.
  * - description: chuỗi hoặc node (vd badge, ngày); khung bọc là div nên đặt được cả khối.
  * - actions: nằm bên phải trên desktop, xuống dưới tiêu đề trên điện thoại.
- * - back: { to, label } -> liên kết quay lại có mũi tên, đặt trên tiêu đề.
+ * - back: { to, label, onClick? } -> liên kết quay lại có mũi tên, đặt trên tiêu đề (điện thoại: nút ‹
+ *   trên thanh). onClick(event) chạy trước khi chuyển trang, event.preventDefault() để ở lại.
  *
  * Trong Layout, trên điện thoại (dưới sm) tiêu đề, nút quay lại và ⋯ lên thanh trên (M1, qua
  * AppBar); description / actions ở lại trong nội dung. Desktop giữ như cũ.
@@ -16,6 +17,8 @@ import { ChevronLeft } from "./icons";
  *   thao tác phụ; menuTitle: tiêu đề sheet (mặc định = title).
  * - barAction: một nút 44 px trên thanh của màn gốc (class app-bar-btn + aria-label).
  * - hideTabBar: ẩn tab dưới đáy (khi đường dẫn chưa nằm trong danh sách màn đẩy vào).
+ * - hideOnPhone: trên điện thoại không dựng khối trong nội dung (kể cả khoảng cách dưới) — dùng khi
+ *   description / actions chỉ hiện từ sm; tiêu đề / ‹ / ⋯ vẫn lên thanh trên.
  */
 export default function PageHeader({
   title,
@@ -27,6 +30,7 @@ export default function PageHeader({
   menuTitle,
   barAction,
   hideTabBar = false,
+  hideOnPhone = false,
 }) {
   // Có khe thanh trên (đang trong Layout): điện thoại ẩn tiêu đề / quay lại trong nội dung.
   const inBar = Boolean(useContext(AppBarContext));
@@ -46,10 +50,11 @@ export default function PageHeader({
           hideTabBar={hideTabBar}
         />
       )}
-      <div className={inBar && !description && !actions ? "hidden sm:mb-6 sm:block" : "mb-3 sm:mb-6"}>
+      <div className={inBar && (hideOnPhone || (!description && !actions)) ? "hidden sm:mb-6 sm:block" : "mb-3 sm:mb-6"}>
         {back && (
           <Link
             to={back.to}
+            onClick={back.onClick}
             className={`-ml-2 mb-2 ${phoneHidden("inline-flex")} h-11 items-center gap-1 rounded-lg px-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:h-9`}
           >
             <ChevronLeft className="h-4 w-4" />

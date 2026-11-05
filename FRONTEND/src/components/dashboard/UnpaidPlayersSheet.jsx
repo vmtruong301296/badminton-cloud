@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Modal from "../ui/Modal";
 import EmptyState from "../ui/EmptyState";
@@ -6,60 +6,16 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  CircleAlert,
-  CircleCheck,
   Inbox,
   Loader,
-  RotateCcw,
 } from "../ui/icons";
 import { formatCurrencyRounded, formatDateShort } from "../../utils/formatters";
 import { isPlayerOverdue } from "../../utils/billList";
 
-/** Kết quả "Đã trả hết" hiện ngay trong sheet (thông báo ngắn M8 nằm dưới lớp nền mờ của sheet). */
-function SheetNotice({ notice, onRetry }) {
-  const ref = useRef(null);
-
-  // Người vừa trả hết rời danh sách nên nút đang focus biến mất: đưa focus về thông báo.
-  useEffect(() => {
-    ref.current?.focus();
-  }, [notice]);
-
-  const isError = notice.type === "error";
-  return (
-    <div
-      ref={ref}
-      tabIndex={-1}
-      role={isError ? "alert" : "status"}
-      className={`mb-3 flex items-start gap-2 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none ${
-        isError ? "bg-rose-50 text-rose-700" : "bg-emerald-50 text-emerald-800"
-      }`}
-    >
-      {isError ? (
-        <CircleAlert className="mt-px h-5 w-5 flex-none" />
-      ) : (
-        <CircleCheck className="mt-px h-5 w-5 flex-none" />
-      )}
-      <span className="min-w-0 flex-1 break-words">{notice.text}</span>
-      {isError && onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="btn btn-sm -my-1.5 flex-none text-rose-700 hover:bg-rose-100"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Thử lại
-        </button>
-      )}
-    </div>
-  );
-}
-
 /**
  * Sheet "DS chưa thanh toán" (dưới lg; từ lg là thẻ ở cột phải): mỗi người một hàng mở tại chỗ
  * (M3c, mỗi lúc một hàng) → các ngày thiếu (chạm để mở bill ngày đó) + "Đã trả hết" (có hỏi lại,
- * màn cha mở ConfirmDialog qua onPayAll).
- *
- * notice: { type: "success" | "error", text, onRetry? } — kết quả lần "Đã trả hết" gần nhất.
+ * màn cha mở ConfirmDialog qua onPayAll; kết quả là thông báo ngắn của màn cha).
  */
 export default function UnpaidPlayersSheet({
   isOpen,
@@ -71,7 +27,6 @@ export default function UnpaidPlayersSheet({
   canMark,
   markingIds,
   onPayAll,
-  notice,
 }) {
   const [expandedId, setExpandedId] = useState(null);
   const today = new Date();
@@ -83,7 +38,6 @@ export default function UnpaidPlayersSheet({
       title={`DS chưa thanh toán (${players.length})`}
       initialFocus="panel"
     >
-      {notice && <SheetNotice notice={notice} onRetry={notice.onRetry} />}
       <p className="text-sm text-slate-600">
         Tổng:{" "}
         <span className="amount-lg ml-1 text-rose-700">

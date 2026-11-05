@@ -209,6 +209,12 @@ body {
     @apply flex items-center gap-1 whitespace-nowrap text-lg font-bold leading-6 text-slate-900;
     font-variant-numeric: tabular-nums;
   }
+  .action-bar-sum-danger .action-bar-sum-value {
+    @apply text-rose-700;
+  }
+  .action-bar-sum-success .action-bar-sum-value {
+    @apply text-emerald-700;
+  }
 
   /* M3 · Hàng danh sách: cả hàng là một Link / button, không nút Xóa trên hàng */
   .list-card {
@@ -247,9 +253,9 @@ body {
     @apply absolute inset-y-0 left-4 w-0.5 bg-sky-300;
     content: "";
   }
-  /* Quá hạn / cần chú ý */
+  /* Quá hạn / cần chú ý: vạch rose 4 px mép trái (không tô cả hàng) */
   .list-row-warn {
-    @apply bg-rose-50/60;
+    @apply shadow-[inset_4px_0_0_theme(colors.rose.500)];
   }
   /* M3b · Hàng có nút đuôi: <div class="list-row list-row-split"> chứa vùng bấm chính
      (.list-row-main, Link / button) + một nút anh em (.list-row-action, có chữ, không bao giờ là Xóa) */
@@ -262,11 +268,13 @@ body {
   .list-row-action {
     @apply h-11 min-w-[5.25rem] flex-none px-3 sm:h-11;
   }
-  /* M3c · Hàng mở tại chỗ: button.list-row[aria-expanded] + .list-row-panel (mỗi lúc một hàng mở) */
+  /* M3c · Hàng mở tại chỗ: button.list-row[aria-expanded] + .list-row-panel (mỗi lúc một hàng mở).
+     M3b + M3c: aria-expanded đặt trên .list-row-main, mũi tên .list-row-chevron cũng tự xoay. */
   .list-row[aria-expanded="true"] {
     @apply bg-slate-50;
   }
-  .list-row[aria-expanded="true"] .list-row-chevron {
+  .list-row[aria-expanded="true"] .list-row-chevron,
+  .list-row-main[aria-expanded="true"] .list-row-chevron {
     @apply rotate-180;
   }
   .list-row-panel {
@@ -395,10 +403,39 @@ body {
     @apply border-rose-500 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/20;
   }
 
+  /* Khối báo trong sheet / hộp thoại: lỗi khi lưu (role="alert") hoặc kết quả (role="status",
+     .sheet-alert-success). Con: biểu tượng (CircleAlert / CircleCheck) + chữ. */
+  .sheet-alert {
+    @apply flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700;
+    overflow-wrap: anywhere;
+  }
+  .sheet-alert > svg {
+    @apply mt-0.5 h-4 w-4 flex-none;
+  }
+  .sheet-alert > :not(svg) {
+    @apply min-w-0;
+  }
+  .sheet-alert-success {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-800;
+  }
+
   /* M15 · Hàng menu trong sheet ("Thêm", ⋯) */
   .menu-row {
     @apply flex min-h-[52px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[15px] font-medium text-slate-800 hover:bg-slate-50 active:bg-slate-100;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 disabled:opacity-50;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40;
+  }
+  /* Mục bị khóa: nhãn + biểu tượng mờ, dòng lý do (.menu-row-desc) vẫn đọc rõ */
+  .menu-row:disabled {
+    @apply cursor-not-allowed text-slate-400 hover:bg-transparent active:bg-transparent;
+  }
+  .menu-row:disabled .menu-row-icon {
+    @apply text-slate-300;
+  }
+  .menu-row-desc {
+    @apply mt-0.5 block text-[13px] font-normal leading-[18px] text-slate-500;
+  }
+  .menu-row:disabled .menu-row-desc {
+    @apply text-slate-600;
   }
   .menu-row-icon {
     @apply flex h-9 w-9 flex-none items-center justify-center rounded-[10px] bg-slate-100 text-slate-600;
@@ -580,11 +617,6 @@ body {
   body:has(.action-bar-over-tab) .toast-region {
     bottom: calc(var(--tab-bar-h) + var(--action-bar-h) + env(safe-area-inset-bottom) + 0.5rem);
   }
-  /* Đang mở sheet (Modal): thông báo lên đỉnh màn, không che nút ở chân sheet */
-  body:has(.modal-backdrop) .toast-region {
-    top: calc(env(safe-area-inset-top) + 0.75rem);
-    bottom: auto;
-  }
 
   /* Nội dung tự chừa đáy để hàng cuối kéo lên khỏi FAB / ActionBar */
   .app-main:has(.fab) {
@@ -623,4 +655,11 @@ body {
   .group-head {
     top: 4rem;
   }
+}
+
+/* Đang mở sheet / hộp thoại (Modal): thông báo lên đỉnh màn, không che nút ở chân sheet (điện
+   thoại) hay chân hộp cao giữa màn (desktop). Đặt sau các quy tắc theo tab / FAB / ActionBar để thắng. */
+body:has(.modal-backdrop) .toast-region {
+  top: calc(env(safe-area-inset-top) + 0.75rem);
+  bottom: auto;
 }

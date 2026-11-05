@@ -460,7 +460,7 @@ export default function EditBill() {
   return (
     <div className="px-4 sm:px-0">
       <PageHeader
-        back={{ to: backTo, label: "Về chi tiết Bill" }}
+        back={{ to: backTo, label: "Về chi tiết Bill", onClick: leave.onBackClick }}
         title={`Sửa Bill #${id}`}
       />
 

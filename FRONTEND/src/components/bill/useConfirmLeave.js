@@ -4,9 +4,8 @@ import { useNavigate } from "react-router-dom";
 /**
  * Hỏi lại trước khi rời màn tạo / sửa bill khi đã nhập (ConfirmDialog do màn dựng).
  *
- * - Chặn bấm vào link dẫn tới `backTo`: nút ‹ trên thanh trên (M1), link "‹ Danh sách" của
- *   desktop. Nút ‹ nằm trong AppBar của nhóm khung app (chưa có onClick) nên bắt ở pha capture
- *   của document, trước khi react-router xử lý.
+ * - onBackClick: truyền vào `back.onClick` của PageHeader — chặn nút ‹ trên thanh trên (M1) và
+ *   link "‹ Danh sách" của desktop rồi mở hộp hỏi.
  * - Tải lại / đóng tab: hộp hỏi của trình duyệt (beforeunload).
  * - requestLeave(to): cho nút "Hủy" của desktop.
  *
@@ -19,9 +18,23 @@ export default function useConfirmLeave({ when, backTo }) {
   useEffect(() => {
     if (!when) return undefined;
 
-    const handleClick = (event) => {
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [when]);
+
+  return {
+    isOpen: pendingTo !== null,
+    // Bấm ‹ / link quay lại: đã nhập thì ở lại và hỏi; Ctrl / Cmd + bấm (mở tab mới) để nguyên.
+    onBackClick: (event) => {
       if (
-        event.defaultPrevented ||
+        !when ||
         event.button !== 0 ||
         event.metaKey ||
         event.ctrlKey ||
@@ -29,27 +42,9 @@ export default function useConfirmLeave({ when, backTo }) {
         event.altKey
       )
         return;
-      const link = event.target.closest?.("a[href]");
-      if (!link || link.getAttribute("href") !== backTo) return;
       event.preventDefault();
-      event.stopPropagation();
       setPendingTo(backTo);
-    };
-    const handleBeforeUnload = (event) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-
-    document.addEventListener("click", handleClick, true);
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => {
-      document.removeEventListener("click", handleClick, true);
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [when, backTo]);
-
-  return {
-    isOpen: pendingTo !== null,
+    },
     requestLeave: (to = backTo) => (when ? setPendingTo(to) : navigate(to)),
     cancel: () => setPendingTo(null),
     confirm: () => {

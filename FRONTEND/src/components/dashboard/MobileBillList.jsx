@@ -17,8 +17,6 @@ const OVERDUE_BADGE = {
   dot: "bg-rose-500",
   text: "Quá hạn",
 };
-// Bill quá hạn: vạch hồng mép trái (không tô cả hàng — tháng cũ gần như hàng nào cũng quá hạn).
-const OVERDUE_BAR = "shadow-[inset_4px_0_0_theme(colors.rose.500)]";
 
 /** Một hàng bill (M3): cả hàng mở chi tiết, không nút Xóa (xóa ở màn chi tiết), không ›. */
 function BillRow({ bill, isChild, orphanOf, canView, today, entryIndex }) {
@@ -39,7 +37,8 @@ function BillRow({ bill, isChild, orphanOf, canView, today, entryIndex }) {
     .join(" · ");
 
   // Không có › như bản vẽ: cả hàng đã bấm được, ở 360 px cần chỗ cho "{a}/{b} người chưa TT".
-  const className = `list-row pr-4 ${isChild ? "list-row-child" : ""} ${overdue ? OVERDUE_BAR : ""}`;
+  // Bill quá hạn: .list-row-warn = vạch hồng mép trái (không tô cả hàng — tháng cũ gần như hàng nào cũng quá hạn).
+  const className = `list-row pr-4 ${isChild ? "list-row-child" : ""} ${overdue ? "list-row-warn" : ""}`;
   const content = (
     <>
       <div className="list-row-text">
