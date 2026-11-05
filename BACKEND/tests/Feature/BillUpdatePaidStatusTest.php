@@ -26,6 +26,9 @@ class BillUpdatePaidStatusTest extends TestCase
 
     private User $chi;
 
+    /** Người thu tiền gọi API (route bill cần quyền, xem ApiPermissionTest). */
+    private User $thuQuy;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +36,8 @@ class BillUpdatePaidStatusTest extends TestCase
         $this->an = User::create(['name' => 'An', 'email' => 'an@example.com', 'password' => 'secret123']);
         $this->binh = User::create(['name' => 'Bình', 'email' => 'binh@example.com', 'password' => 'secret123']);
         $this->chi = User::create(['name' => 'Chi', 'email' => 'chi@example.com', 'password' => 'secret123']);
+
+        $this->thuQuy = $this->adminUser();
 
         $this->travelTo(self::PAID_AT);
     }
@@ -54,7 +59,7 @@ class BillUpdatePaidStatusTest extends TestCase
 
     private function createBill(array $players, array $overrides = []): int
     {
-        return $this->actingAs($this->an)
+        return $this->actingAs($this->thuQuy)
             ->postJson('/api/bills', $this->payload($players, $overrides))
             ->assertStatus(201)
             ->json('id');
@@ -62,14 +67,14 @@ class BillUpdatePaidStatusTest extends TestCase
 
     private function markPayment(int $billId, User $user, bool $isPaid = true): void
     {
-        $this->actingAs($this->an)
+        $this->actingAs($this->thuQuy)
             ->postJson("/api/bills/{$billId}/players/{$user->id}/pay", ['is_paid' => $isPaid])
             ->assertStatus(200);
     }
 
     private function updateBill(int $billId, array $players, array $overrides = []): array
     {
-        return $this->actingAs($this->an)
+        return $this->actingAs($this->thuQuy)
             ->putJson("/api/bills/{$billId}", $this->payload($players, $overrides))
             ->assertStatus(200)
             ->json();
@@ -191,7 +196,7 @@ class BillUpdatePaidStatusTest extends TestCase
 
         $this->updateBill($oldBillId, [$this->player($this->an), $this->player($this->binh)]);
 
-        $newBill = $this->actingAs($this->an)->getJson("/api/bills/{$newBillId}")->assertStatus(200)->json();
+        $newBill = $this->actingAs($this->thuQuy)->getJson("/api/bills/{$newBillId}")->assertStatus(200)->json();
         $an = $this->jsonPlayer($newBill, $this->an);
         $this->assertSame(0, (int) $an['debt_amount'], 'Bill cũ An đã TT không được thành nợ cũ sau khi sửa');
         $this->assertSame([], $an['debt_details']);
@@ -202,7 +207,7 @@ class BillUpdatePaidStatusTest extends TestCase
     public function test_sua_bill_con_giu_da_tt_va_giu_bill_chinh(): void
     {
         $parentId = $this->createBill([$this->player($this->an), $this->player($this->binh)]);
-        $subId = $this->actingAs($this->an)
+        $subId = $this->actingAs($this->thuQuy)
             ->postJson("/api/bills/{$parentId}/sub-bills", $this->payload([$this->player($this->an)], ['court_total' => 50000]))
             ->assertStatus(201)
             ->json('id');
@@ -218,7 +223,7 @@ class BillUpdatePaidStatusTest extends TestCase
     public function test_sua_bill_chinh_giu_da_tt_cua_bill_chinh_va_khong_dong_bill_con(): void
     {
         $parentId = $this->createBill([$this->player($this->an), $this->player($this->binh)]);
-        $subId = $this->actingAs($this->an)
+        $subId = $this->actingAs($this->thuQuy)
             ->postJson("/api/bills/{$parentId}/sub-bills", $this->payload([$this->player($this->an)], ['court_total' => 50000]))
             ->assertStatus(201)
             ->json('id');
