@@ -116,10 +116,93 @@ export default function CarRentalHistory({ reloadKey, onEdit, onNew }) {
   const sheetItem = items.find((item) => item.id === sheetId) ?? null;
 
   return (
-    <>
+    <div className="space-y-3">
+      {items.map((item) => {
+        const cheapest = (item.options ?? []).find(
+          (option) => option.is_cheapest,
+        );
+        const expanded = expandedId === item.id;
+
+        return (
+          <div
+            key={item.id}
+            // sm trở lên: giữ thẻ mở rộng tại chỗ như cũ (điện thoại dùng hàng M3 bên dưới).
+            className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card sm:block"
+          >
+            <button
+              type="button"
+              onClick={() => setExpandedId(expanded ? null : item.id)}
+              aria-expanded={expanded}
+              className="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="min-w-0 break-words font-semibold text-slate-900">
+                    {item.name || `Bản ghi #${item.id}`}
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    {item.date ? formatDateDisplay(item.date) : "Không ghi ngày"}
+                  </span>
+                </div>
+                <div className="mt-1 text-sm text-slate-600">
+                  {item.days} ngày · {formatNumber(item.distance_km)} km
+                  {cheapest && (
+                    <>
+                      {" · Rẻ nhất: "}
+                      <span className="font-tabular font-medium text-emerald-700">
+                        {cheapest.name} {formatCurrency(cheapest.total_cost)}
+                      </span>
+                    </>
+                  )}
+                  {item.saving_amount > 0 &&
+                    ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
+                  {item.total_shared_cost > 0 &&
+                    ` · Chi phí chung ${formatCurrency(item.total_shared_cost)}`}
+                </div>
+              </div>
+              <ChevronDown
+                className={`mt-1 h-5 w-5 flex-shrink-0 text-slate-400 transition-transform ${
+                  expanded ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {expanded && (
+              <div className="border-t border-slate-100 px-4 pb-4">
+                <div className="mt-3">
+                  <CarRentalHistoryDetail item={item} />
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {canUpdate && (
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(item)}
+                      className="btn btn-secondary"
+                    >
+                      Nạp vào máy tính
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(item)}
+                      disabled={deletingId === item.id}
+                      className="btn btn-danger-ghost"
+                    >
+                      {deletingId === item.id ? "Đang xóa..." : "Xóa"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
       {/* Điện thoại: hàng M3 — tên (tối đa 2 dòng), ngày · số ngày · km, phương án rẻ nhất;
           chạm cả hàng mở sheet chi tiết */}
-      <ul className="list-card sm:hidden">
+      <ul className="list-card !mt-0 sm:hidden">
         {items.map((item) => {
           const cheapest = findCheapest(item);
 
@@ -161,89 +244,6 @@ export default function CarRentalHistory({ reloadKey, onEdit, onNew }) {
           );
         })}
       </ul>
-
-      {/* sm trở lên: giữ thẻ mở rộng tại chỗ như cũ */}
-      <div className="hidden space-y-3 sm:block">
-        {items.map((item) => {
-          const cheapest = findCheapest(item);
-          const expanded = expandedId === item.id;
-
-          return (
-            <div
-              key={item.id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card"
-            >
-              <button
-                type="button"
-                onClick={() => setExpandedId(expanded ? null : item.id)}
-                aria-expanded={expanded}
-                className="flex w-full items-start gap-3 p-4 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                    <span className="min-w-0 break-words font-semibold text-slate-900">
-                      {itemTitle(item)}
-                    </span>
-                    <span className="text-sm text-slate-500">
-                      {item.date ? formatDateDisplay(item.date) : "Không ghi ngày"}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-sm text-slate-600">
-                    {item.days} ngày · {formatNumber(item.distance_km)} km
-                    {cheapest && (
-                      <>
-                        {" · Rẻ nhất: "}
-                        <span className="font-tabular font-medium text-emerald-700">
-                          {cheapest.name} {formatCurrency(cheapest.total_cost)}
-                        </span>
-                      </>
-                    )}
-                    {item.saving_amount > 0 &&
-                      ` · Tiết kiệm ${formatCurrency(item.saving_amount)}`}
-                    {item.total_shared_cost > 0 &&
-                      ` · Chi phí chung ${formatCurrency(item.total_shared_cost)}`}
-                  </div>
-                </div>
-                <ChevronDown
-                  className={`mt-1 h-5 w-5 flex-shrink-0 text-slate-400 transition-transform ${
-                    expanded ? "rotate-180" : ""
-                  }`}
-                />
-              </button>
-
-              {expanded && (
-                <div className="border-t border-slate-100 px-4 pb-4">
-                  <div className="mt-3">
-                    <CarRentalHistoryDetail item={item} />
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    {canUpdate && (
-                      <button
-                        type="button"
-                        onClick={() => onEdit?.(item)}
-                        className="btn btn-secondary"
-                      >
-                        Nạp vào máy tính
-                      </button>
-                    )}
-                    {canDelete && (
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(item)}
-                        disabled={deletingId === item.id}
-                        className="btn btn-danger-ghost"
-                      >
-                        {deletingId === item.id ? "Đang xóa..." : "Xóa"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
 
       <Modal
         isOpen={Boolean(sheetItem)}
@@ -313,6 +313,6 @@ export default function CarRentalHistory({ reloadKey, onEdit, onNew }) {
           `Xóa ${deleteTarget.name || `bản ghi #${deleteTarget.id}`}?`
         }
       />
-    </>
+    </div>
   );
 }
