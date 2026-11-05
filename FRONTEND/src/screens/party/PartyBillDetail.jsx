@@ -453,8 +453,8 @@ export default function PartyBillDetail() {
   return (
     <div className="px-4 pb-6 sm:px-0 md:pb-0">
       {/* Điện thoại: PageHeader chỉ đưa ‹ + tên bill + ⋯ lên thanh trên; khối đầu màn chỉ hiện từ sm */}
-      <div className="hidden sm:block">
       <PageHeader
+        hideOnPhone
         back={{ to: "/party-bills", label: "Danh sách" }}
         title={bill.name || "Bill tiệc"}
         menuTitle={`Bill tiệc #${bill.id}`}
@@ -534,7 +534,6 @@ export default function PartyBillDetail() {
           </div>
         }
       />
-      </div>
 
       {/* Điện thoại / máy nhỏ: thẻ tóm tắt + chip lọc + hàng có nút Đã TT; từ md giữ bố cục cũ */}
       <div className="space-y-3 md:hidden">
@@ -874,19 +873,12 @@ export default function PartyBillDetail() {
             ) : (
               <span className="text-emerald-700">Đã thu đủ</span>
             ),
-          value: (
-            <span
-              className={
-                collection.unpaid > 0 ? "text-rose-700" : "text-emerald-700"
-              }
-            >
-              {formatCurrencyRounded(
-                collection.unpaid > 0
-                  ? collection.unpaidAmount
-                  : collection.totalAmount,
-              )}
-            </span>
+          value: formatCurrencyRounded(
+            collection.unpaid > 0
+              ? collection.unpaidAmount
+              : collection.totalAmount,
           ),
+          tone: collection.unpaid > 0 ? "danger" : "success",
         }}
       >
         <button

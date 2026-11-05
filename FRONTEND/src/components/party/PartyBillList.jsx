@@ -18,8 +18,6 @@ const OVERDUE_BADGE = {
   dot: "bg-rose-500",
   text: "Quá hạn",
 };
-// Quá hạn: vạch hồng mép trái như danh sách bill cầu (không tô cả hàng).
-const OVERDUE_BAR = "shadow-[inset_4px_0_0_theme(colors.rose.500)]";
 
 /** Một hàng bill tiệc (M3): cả hàng mở chi tiết, không nút Sửa / Xóa (ở màn chi tiết). */
 function PartyBillRow({ bill, today, index }) {
@@ -36,7 +34,7 @@ function PartyBillRow({ bill, today, index }) {
     <Link
       to={`/party-bills/${bill.id}`}
       data-entry-index={index}
-      className={`list-row pr-4 ${overdue ? OVERDUE_BAR : ""}`}
+      className={`list-row pr-4 ${overdue ? "list-row-warn" : ""}`}
     >
       <div className="list-row-text">
         <div className="list-row-title">{bill.name || "—"}</div>

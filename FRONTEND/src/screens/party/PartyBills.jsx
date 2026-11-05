@@ -257,6 +257,7 @@ export default function PartyBills() {
   return (
     <div className="px-4 sm:px-0">
       <PageHeader
+        hideOnPhone
         title="Bill tiệc"
         description={
           loading ? (
@@ -284,8 +285,8 @@ export default function PartyBills() {
         }
       />
 
-      {/* Điện thoại: thanh trên đã có tiêu đề, khối mô tả / nút của PageHeader ẩn nên kéo lên bù */}
-      <div className="-mt-3.5 sm:mt-0">
+      {/* Điện thoại: thanh trên đã có tiêu đề, khối mô tả / nút của PageHeader không dựng (hideOnPhone) */}
+      <div>
         {/* Người còn nợ (M11) → sheet; từ lg là khối ở cột phải. Ẩn khi không còn ai nợ. */}
         {loading ? (
           <div className="stat-tile mb-3 w-full lg:hidden" aria-hidden="true">
