@@ -253,9 +253,9 @@ body {
     @apply absolute inset-y-0 left-4 w-0.5 bg-sky-300;
     content: "";
   }
-  /* Quá hạn / cần chú ý */
+  /* Quá hạn / cần chú ý: vạch rose 4 px mép trái (không tô cả hàng) */
   .list-row-warn {
-    @apply bg-rose-50/60;
+    @apply shadow-[inset_4px_0_0_theme(colors.rose.500)];
   }
   /* M3b · Hàng có nút đuôi: <div class="list-row list-row-split"> chứa vùng bấm chính
      (.list-row-main, Link / button) + một nút anh em (.list-row-action, có chữ, không bao giờ là Xóa) */
@@ -268,11 +268,13 @@ body {
   .list-row-action {
     @apply h-11 min-w-[5.25rem] flex-none px-3 sm:h-11;
   }
-  /* M3c · Hàng mở tại chỗ: button.list-row[aria-expanded] + .list-row-panel (mỗi lúc một hàng mở) */
+  /* M3c · Hàng mở tại chỗ: button.list-row[aria-expanded] + .list-row-panel (mỗi lúc một hàng mở).
+     M3b + M3c: aria-expanded đặt trên .list-row-main, mũi tên .list-row-chevron cũng tự xoay. */
   .list-row[aria-expanded="true"] {
     @apply bg-slate-50;
   }
-  .list-row[aria-expanded="true"] .list-row-chevron {
+  .list-row[aria-expanded="true"] .list-row-chevron,
+  .list-row-main[aria-expanded="true"] .list-row-chevron {
     @apply rotate-180;
   }
   .list-row-panel {
