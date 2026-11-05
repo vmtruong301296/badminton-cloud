@@ -16,6 +16,8 @@ const FOCUSABLE =
 // Nhiều hộp thoại có thể mở chồng nhau: chỉ mở khóa cuộn khi hộp cuối cùng đóng.
 let openCount = 0;
 let savedOverflow = "";
+// Hộp đang mở theo thứ tự mở; chỉ hộp trên cùng nhận Esc / Tab (mọi hộp nghe cùng document).
+const openStack = [];
 
 /**
  * Hộp thoại dùng chung. Điện thoại: bottom sheet sát đáy; desktop: hộp giữa màn.
@@ -58,6 +60,8 @@ export default function Modal({
     if (!isOpen) return undefined;
 
     const previouslyFocused = document.activeElement;
+    const entry = { panel: panelRef.current };
+    openStack.push(entry);
 
     if (openCount === 0) savedOverflow = document.body.style.overflow;
     openCount += 1;
@@ -73,6 +77,9 @@ export default function Modal({
     (firstField || panelRef.current)?.focus({ preventScroll: true });
 
     const handleKeyDown = (event) => {
+      // Hộp chồng nhau: Esc chỉ đóng hộp trên cùng, Tab chỉ quay vòng trong hộp trên cùng.
+      if (openStack[openStack.length - 1] !== entry) return;
+
       if (event.key === "Escape") {
         event.stopPropagation();
         if (dismissibleRef.current) onCloseRef.current?.();
@@ -89,7 +96,11 @@ export default function Modal({
       }
       const first = items[0];
       const last = items[items.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (!panelRef.current.contains(document.activeElement)) {
+        // Focus đã rơi ra ngoài (vd nút vừa bấm biến mất): đưa về trong hộp.
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      } else if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
@@ -102,9 +113,16 @@ export default function Modal({
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      const index = openStack.indexOf(entry);
+      if (index !== -1) openStack.splice(index, 1);
       openCount -= 1;
       if (openCount === 0) document.body.style.overflow = savedOverflow;
-      if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
+      // Trả focus cho chỗ mở hộp; chỗ đó đã biến mất thì về hộp còn mở bên dưới (nếu có).
+      if (previouslyFocused instanceof HTMLElement && previouslyFocused.isConnected) {
+        previouslyFocused.focus();
+      } else {
+        openStack[openStack.length - 1]?.panel?.focus({ preventScroll: true });
+      }
     };
   }, [isOpen]);
 

@@ -451,3 +451,63 @@ Chưa kiểm được (cần máy thật): sheet nâng trên bàn phím iOS / An
 - Lệnh build của spec mục 5 (`npx vite build --outDir …`) ghi `FRONTEND/.wrangler/deploy/config.json` vào
   worktree (plugin Cloudflare; file nằm trong `.gitignore`). Muốn không ghi gì vào repo: dùng
   `tools/vite.no-repo-write.config.mjs` (xem `tools/README.md`).
+
+## Đợt dọn (05/11/2026)
+
+Nhánh `feature/mobile-don` tách từ `eea5cd1` (đợt 0 + 5 nhóm đợt 1 đã gộp). Sửa component chung theo góp ý trong bàn
+giao của 02, 03, 04, 07. Mọi thay đổi API tương thích ngược: màn không truyền prop mới thì như cũ.
+
+### API mới / đổi
+
+| Chỗ | Mới | Ví dụ / ghi chú |
+| --- | --- | --- |
+| `ActionBar` `summary` | `haspopup` (mặc định `"dialog"`; `false` = nút thường), `icon` (component thay ^, `null` = không biểu tượng), `tone` (`"danger"` số rose, `"success"` số emerald) | `summary={ label, value, onClick: scrollToResults, haspopup: false }`; `summary={ label, value, tone: "danger" }` |
+| Khối báo trong sheet | `.sheet-alert` (rose), `.sheet-alert-success` (emerald) | `<p role="alert" className="sheet-alert"><CircleAlert /><span>{msg}</span></p>`; kết quả: `role="status"` + `sheet-alert sheet-alert-success` + `CircleCheck` |
+| `.list-row-warn` | vạch rose 4 px mép trái (trước: tô hồng cả hàng) | cùng điểm ảnh với vạch 02 tự vẽ trước đó |
+| M3b + M3c | `.list-row-main[aria-expanded="true"] .list-row-chevron` tự xoay | 04 vẫn tự xoay mũi tên riêng (`BillPlayerRow.jsx`), đổi sang `.list-row-chevron` lúc nào cũng được |
+| `PageHeader` | `hideOnPhone`: điện thoại không dựng khối trong nội dung (kể cả `mb-3`) | dùng khi `description` / `actions` chỉ hiện từ sm; tiêu đề / ‹ / ⋯ vẫn lên thanh |
+| `back` (PageHeader / AppBar) | `{ to, label, onClick }`: `onClick(event)` chạy trên nút ‹ của thanh trên và link quay lại desktop; `event.preventDefault()` để ở lại | `back={ to, label, onClick: leave.onBackClick }` |
+| `Modal` chồng nhau | Esc / Tab chỉ tác động hộp trên cùng; Tab khi focus rơi ra ngoài thì đưa về trong hộp; đóng hộp mà chỗ mở đã biến mất thì focus về hộp còn mở bên dưới | không prop mới |
+| Mục `menu` của AppBar | `description` (dòng phụ, `.menu-row-desc`); `disabled` + `to` không thành link | `{ label: "Sửa bill", description: "Có người đã TT nên không sửa được", icon: Pencil, disabled: true }` |
+| `.menu-row:disabled` | nhãn + biểu tượng mờ, dòng lý do slate-600 (trước: mờ 50 % cả hàng) | |
+| Thông báo (M8) | PM đưa lên `z-[60]` và lên đỉnh màn khi có `.modal-backdrop` (eea5cd1) — giữ; đợt dọn áp quy tắc "lên đỉnh" cho **cả desktop** | desktop: hộp cao 85vh giữa màn có chân sát đáy, thông báo ở đáy sẽ che nút |
+
+### Chỗ đã thay ở màn (đúng mục được giao)
+
+- 07 `CarRentalCalculator.jsx`: chạm "Rẻ nhất: …" trên thanh đáy cuộn tới khối Kết quả (`haspopup: false`), focus vào
+  tiêu đề khối, giảm chuyển động thì cuộn ngay; khối có `scroll-mt` để không nằm dưới thanh trên.
+- 07 `TournamentBrackets.jsx` (`SheetError`), `CarRentalHistory.jsx` (lỗi xóa trong sheet): dùng `.sheet-alert`.
+- 02 `MobileBillList.jsx`: bill quá hạn dùng `.list-row-warn` thay cho `shadow-[…]` tự viết.
+- 02 `Dashboard.jsx`: `PageHeader hideOnPhone`, bỏ phần bù `-mt-3.5`; "Đã trả hết" báo bằng thông báo ngắn cả khi
+  đang mở sheet (lỗi có "Thử lại"); `UnpaidPlayersSheet.jsx` bỏ khối kết quả trong sheet (`SheetNotice`, prop `notice`).
+- 03 `useConfirmLeave.js`: bỏ listener bắt click pha capture của document, trả `onBackClick`; `CreateBill.jsx`,
+  `EditBill.jsx` truyền vào `back.onClick` (Ctrl / Cmd + bấm vẫn mở tab mới).
+- 04 `BillDetail.jsx`: `ActionBar` dùng `tone`; "Sửa bill" khóa dùng `description`.
+
+### Kiểm chứng
+
+| Cổng | Kết quả |
+| --- | --- |
+| `npm test` | 17 file, **211 passed**, 0 failed (bằng trước đợt dọn; không thêm hàm thuần) |
+| `npx eslint .` | **2 lỗi + 6 cảnh báo** = mốc `eea5cd1`, cùng các file |
+| build (`tools/vite.no-repo-write.config.mjs`, không ghi gì vào worktree) | ok, cảnh báo chunk > 500 kB có sẵn |
+| `git diff --stat eea5cd1` | 15 file, +203 / −154, chỉ chỗ cần đổi |
+| Ảnh bill xuất so với `main` d438adb | bill cầu #179 (bill con #180), #176, bill tiệc #25, ở 1280 và 390 (điện thoại qua "Gửi ảnh" → "Xuất Bill" của 04, tắt Web Share): **trùng từng byte, 0 điểm ảnh khác** |
+| Màn không có hộp thoại, trước / sau (360 / 390 / 1280, cả trang) | Dashboard, chi tiết bill #179, tạo bill: **0 điểm ảnh khác** (lượt chụp lại); Thuê xe khác đúng chỗ dấu ^ mới trên thanh đáy |
+| Hành vi (playwright, 390) | Esc khi sheet DS chưa thanh toán + hộp xác nhận chồng nhau: trước 2 → 0 hộp, sau 2 → 1; sau "Đã trả hết": còn sheet, focus ở khung sheet, thông báo "Đã đánh dấu … trả hết" ở đỉnh màn; tạo bill đã nhập, bấm ‹: ở lại `/bills/create`, mở hộp hỏi |
+
+Ảnh có hộp thoại (nền mờ `backdrop-blur`) lệch vài nghìn điểm giữa hai lượt chụp **cùng một bản build** (nhiễu kết xuất)
+nên so bằng mắt. Ảnh ở `/private/tmp/claude-501/-Users-admin-Desktop-Github-APACTech-BadmintonNew/0c1bebe2-0704-4215-bcf9-7308f4798c3d/scratchpad/trien-khai/01-don/anh/`: `truoc/`, `sau/` (cùng thao tác: sheet DS chưa thanh toán + "Đã trả hết",
+⋯ chi tiết bill, hỏi rời màn tạo / sửa bill, chạm thanh đáy Thuê xe, lỗi trong sheet Thuê xe / Xếp bảng — 360 / 390 /
+1280), `phang-truoc/`, `phang-sau/` (màn không có hộp), `xuat2/` (ảnh xuất `main/` và `sau/`). Công cụ: thêm
+`tools/xuat-anh.mjs` (xuất ảnh theo luồng mới của 04; `shot.mjs --download` chỉ hợp luồng cũ).
+
+### Còn lại / ghi nhận (không sửa)
+
+- Thông báo nằm ngoài hộp có `aria-modal="true"`: một số trình đọc màn hình có thể không đọc vùng `aria-live` ngoài hộp
+  — cần thử VoiceOver / TalkBack trên máy thật.
+- Bàn phím đang mở nâng sheet sát đỉnh khung nhìn: thông báo ở đỉnh màn có thể đè đầu sheet (cần máy thật).
+- `BillDetail.jsx` (04) bọc `PageHeader` trong `div.hidden.sm:block` — nay dùng được `hideOnPhone`; `BillPlayerRow.jsx`
+  (04) có thể dùng `.list-row-chevron`; dòng thông báo `bg-sky-50` / dải cảnh báo amber của 03 (`PlayerPickerSheet.jsx`,
+  `EditBill.jsx`) có thể thành class chung — để các nhóm quyết, không thuộc mục được giao.
+

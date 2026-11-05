@@ -515,6 +515,18 @@ export default function CarRentalCalculator({
   const cheapest = result.options.find((option) => option.is_cheapest);
   const saveLabel = saving ? "Đang lưu..." : editing ? "Cập nhật" : "Lưu lại";
 
+  // Chạm phần tổng của thanh đáy: cuộn tới khối Kết quả, đưa focus vào tiêu đề khối.
+  const resultsRef = useRef(null);
+  const resultsHeadingRef = useRef(null);
+  const scrollToResults = () => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    resultsRef.current?.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "start",
+    });
+    resultsHeadingRef.current?.focus({ preventScroll: true });
+  };
+
   return (
     // Thanh dính đáy là ActionBar: nội dung tự chừa đáy (.app-main:has(.action-bar)).
     <div className="space-y-5">
@@ -966,8 +978,17 @@ export default function CarRentalCalculator({
       </section>
 
       {/* Kết quả */}
-      <section className="card">
-        <h2 className="mb-3 text-base font-semibold text-slate-900">Kết quả</h2>
+      <section
+        ref={resultsRef}
+        className="card scroll-mt-[calc(var(--app-bar-h)+env(safe-area-inset-top)+0.75rem)]"
+      >
+        <h2
+          ref={resultsHeadingRef}
+          tabIndex={-1}
+          className="mb-3 text-base font-semibold text-slate-900 focus:outline-none"
+        >
+          Kết quả
+        </h2>
 
         <OptionBreakdown options={result.options} />
 
@@ -1121,8 +1142,8 @@ export default function CarRentalCalculator({
         </div>
       </section>
 
-      {/* Mobile (M2): thanh trên tab luôn cho thấy phương án rẻ nhất khi đang gõ, không
-          phải cuộn ~2 màn tới Kết quả; bên phải là "Lưu lại" (không có quyền lưu:
+      {/* Mobile (M2): thanh trên tab luôn cho thấy phương án rẻ nhất khi đang gõ, chạm vào thì
+          cuộn tới Kết quả (không mở hộp thoại); bên phải là "Lưu lại" (không có quyền lưu:
           "Copy kết quả"). Tên phương án dài cắt "…", số tiền giữ nguyên. */}
       <ActionBar
         overTab
@@ -1135,6 +1156,8 @@ export default function CarRentalCalculator({
               </span>
             ),
             value: formatCurrency(cheapest.total_cost),
+            onClick: scrollToResults,
+            haspopup: false,
           }
         }
       >
