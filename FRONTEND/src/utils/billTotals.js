@@ -103,22 +103,44 @@ export const playerCurrentOnlyAmount = (player, subBills = []) =>
   );
 
 /**
- * Tiến độ thu tiền của bill: số người đã / chưa trả, tiền còn thiếu và tổng
- * phải thu (mỗi người tính "TT + Bill sau").
+ * Tiến độ thu tiền của bill chính và các bill con: mỗi người chỉ đếm một lần,
+ * kể cả người chỉ chơi bill con. Một người đã trả đủ khi mọi dòng của họ đã TT;
+ * tiền còn thiếu chỉ cộng các dòng chưa TT, làm tròn từng bill trước khi cộng.
  */
-export const billCollection = (players = [], subBills = []) =>
-  (players || []).reduce(
+export const billCollection = (players = [], subBills = []) => {
+  const byUser = new Map();
+  const allPlayers = [
+    ...(players || []),
+    ...(subBills || []).flatMap((bill) => bill.bill_players || []),
+  ];
+
+  allPlayers.forEach((player) => {
+    const current = byUser.get(player.user_id) || {
+      paid: true,
+      totalAmount: 0,
+      unpaidAmount: 0,
+    };
+    const amount = playerDueAmount(player);
+    current.totalAmount += amount;
+    if (!player.is_paid) {
+      current.paid = false;
+      current.unpaidAmount += amount;
+    }
+    byUser.set(player.user_id, current);
+  });
+
+  return Array.from(byUser.values()).reduce(
     (acc, player) => {
-      const amount = playerTotalWithSubBills(player, subBills);
       acc.total += 1;
-      acc.totalAmount += amount;
-      if (player.is_paid) {
+      acc.totalAmount += player.totalAmount;
+      if (player.paid) {
         acc.paid += 1;
       } else {
         acc.unpaid += 1;
-        acc.unpaidAmount += amount;
+        acc.unpaidAmount += player.unpaidAmount;
       }
       return acc;
     },
     { total: 0, paid: 0, unpaid: 0, unpaidAmount: 0, totalAmount: 0 },
   );
+};

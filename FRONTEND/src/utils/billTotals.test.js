@@ -188,14 +188,54 @@ describe("billCollection", () => {
 
   it("đếm người đã / chưa trả và số tiền còn thiếu (gồm nợ cũ và bill con)", () => {
     expect(billCollection(players, [subBill180])).toEqual({
-      total: 3,
+      // Người 9 chỉ chơi bill con, chưa được đánh dấu TT (dù số tiền là 0).
+      total: 4,
       paid: 1,
-      unpaid: 2,
+      unpaid: 3,
       // 269.000 + 30.000
       unpaidAmount: 299000,
       // 269.000 + 52.000 + 30.000
       totalAmount: 351000,
     });
+  });
+
+  it.each([
+    { parentPaid: false, childPaid: true, unpaidAmount: 100000, paid: 0 },
+    { parentPaid: true, childPaid: false, unpaidAmount: 50000, paid: 0 },
+    { parentPaid: false, childPaid: false, unpaidAmount: 150000, paid: 0 },
+    { parentPaid: true, childPaid: true, unpaidAmount: 0, paid: 1 },
+  ])(
+    "bill chính đã TT=$parentPaid, bill con đã TT=$childPaid: còn thiếu $unpaidAmount",
+    ({ parentPaid, childPaid, unpaidAmount, paid }) => {
+      expect(
+        billCollection(
+          [{ user_id: 1, total_amount: 100000, is_paid: parentPaid }],
+          [{ bill_players: [{ user_id: 1, total_amount: 50000, is_paid: childPaid }] }],
+        ),
+      ).toEqual({ total: 1, paid, unpaid: 1 - paid, unpaidAmount, totalAmount: 150000 });
+    },
+  );
+
+  it("cộng khoản chưa TT của nhiều bill con, làm tròn từng bill và chỉ đếm mỗi người một lần", () => {
+    expect(
+      billCollection(
+        [{ user_id: 1, total_amount: 100000, is_paid: true }],
+        [
+          { bill_players: [{ user_id: 1, total_amount: 50400, is_paid: false }] },
+          { bill_players: [{ user_id: 1, total_amount: 20400, debt_amount: 1000, is_paid: false }] },
+          { bill_players: [{ user_id: 1, total_amount: 30000, is_paid: true }] },
+        ],
+      ),
+    ).toEqual({ total: 1, paid: 0, unpaid: 1, unpaidAmount: 71000, totalAmount: 201000 });
+  });
+
+  it("không bỏ sót người chỉ tham gia bill con", () => {
+    expect(
+      billCollection(
+        [{ user_id: 1, total_amount: 100000, is_paid: true }],
+        [{ bill_players: [{ user_id: 2, total_amount: 50000, is_paid: false }] }],
+      ),
+    ).toEqual({ total: 2, paid: 1, unpaid: 1, unpaidAmount: 50000, totalAmount: 150000 });
   });
 
   it("danh sách rỗng", () => {

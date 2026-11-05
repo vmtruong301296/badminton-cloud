@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { partyBillsApi, playersApi } from "../../services/api";
 import {
@@ -28,6 +28,7 @@ const FORM_ID = "party-bill-form";
 export default function CreatePartyBill() {
   const navigate = useNavigate();
   const toast = useToast();
+  const formRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [players, setPlayers] = useState([]);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
@@ -87,6 +88,7 @@ export default function CreatePartyBill() {
   };
 
   const submit = async () => {
+    if (saving) return;
     const nextErrors = partyBillFormErrors(form);
     setErrors(nextErrors);
     if (nextErrors.name || nextErrors.participants) {
@@ -106,7 +108,7 @@ export default function CreatePartyBill() {
             error.response?.data?.message ||
             error.message ||
             "Tạo chia tiệc thất bại"),
-        { onRetry: submit },
+        { onRetry: () => formRef.current?.requestSubmit() },
       );
     } finally {
       setSaving(false);
@@ -126,6 +128,7 @@ export default function CreatePartyBill() {
       />
 
       <form
+        ref={formRef}
         id={FORM_ID}
         onSubmit={handleSubmit}
         onKeyDown={focusNextOnEnter}
