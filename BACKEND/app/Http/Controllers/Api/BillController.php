@@ -364,6 +364,9 @@ class BillController extends Controller
                 ->pluck('price_each', 'menu_id')
                 ->all();
 
+            // bill_players được tạo lại bên dưới: giữ "Đã TT" của người vẫn còn trong bill
+            $paymentByUser = $this->paymentStatusByUser($bill);
+
             $billDate = \Carbon\Carbon::parse($request->date)->toDateString();
 
             // Calculate total shuttle price
@@ -472,6 +475,9 @@ class BillController extends Controller
                 // Calculate total amount: share_amount + menu_extra_total + debt_amount
                 $playerTotalAmount = $shareAmount + $menuExtraTotal + $debtAmount;
 
+                // Người mới thêm vào bill là chưa TT
+                $payment = $paymentByUser[$user->id] ?? ['is_paid' => false, 'paid_at' => null];
+
                 $billPlayer = BillPlayer::create([
                     'bill_id' => $bill->id,
                     'user_id' => $user->id,
@@ -483,7 +489,8 @@ class BillController extends Controller
                     'debt_date' => $debtDate,
                     'share_amount' => $shareAmount,
                     'total_amount' => $playerTotalAmount,
-                    'is_paid' => false,
+                    'is_paid' => $payment['is_paid'],
+                    'paid_at' => $payment['paid_at'],
                 ]);
 
                 // Create bill player menus
@@ -664,6 +671,21 @@ class BillController extends Controller
             $qty = (int) $shuttleData['quantity'];
             ShuttleType::where('id', $typeId)->decrement('stock_quantity', $qty);
         }
+    }
+
+    /**
+     * Trạng thái thanh toán hiện có của bill theo user_id, để sửa bill (xóa rồi
+     * tạo lại bill_players) không đưa người đã TT về chưa TT.
+     *
+     * @return array<int, array{is_paid: bool, paid_at: \Illuminate\Support\Carbon|null}>
+     */
+    private function paymentStatusByUser(Bill $bill): array
+    {
+        return $bill->billPlayers
+            ->mapWithKeys(fn (BillPlayer $player) => [
+                $player->user_id => ['is_paid' => (bool) $player->is_paid, 'paid_at' => $player->paid_at],
+            ])
+            ->all();
     }
 
     /**

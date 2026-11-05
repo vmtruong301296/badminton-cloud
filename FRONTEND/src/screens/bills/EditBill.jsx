@@ -464,7 +464,7 @@ export default function EditBill() {
         title={`Sửa Bill #${id}`}
       />
 
-      {/* Lưu bill hiện đặt lại mọi người về chưa TT (BillController::update) — báo trước */}
+      {/* Lưu bill giữ Đã TT của người còn trong bill (BillController::update) — báo để biết tiền đổi cũng không bỏ dấu */}
       {paidCount > 0 && (
         <div
           role="note"
@@ -475,7 +475,7 @@ export default function EditBill() {
             <span className="font-semibold">
               {paidCount} người đã TT trong bill này.
             </span>{" "}
-            Lưu thay đổi sẽ đưa họ về Chưa TT.
+            Lưu thay đổi vẫn giữ Đã TT cho người còn trong bill, kể cả khi số tiền thay đổi.
           </p>
         </div>
       )}
