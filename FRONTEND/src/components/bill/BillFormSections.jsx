@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { flushSync } from "react-dom";
 import CurrencyInput from "../common/CurrencyInput";
 import DatePicker from "../common/DatePicker";
 import ActionBar from "../ui/ActionBar";
@@ -232,6 +233,15 @@ export function BillActionBar({
 }) {
   const [summaryOpen, setSummaryOpen] = useState(false);
 
+  // Lưu từ sheet: đóng sheet trước (đồng bộ, để sheet trả con trỏ về chỗ cũ) rồi mới gửi form,
+  // nên khi còn lỗi màn đặt được con trỏ vào ô sai. Đóng trong onClick rồi để trình duyệt tự
+  // gửi thì nút đã bị gỡ khỏi trang trước khi form được gửi.
+  const submitFromSheet = (event) => {
+    event.preventDefault();
+    flushSync(() => setSummaryOpen(false));
+    document.getElementById(formId)?.requestSubmit();
+  };
+
   return (
     <>
       <ActionBar
@@ -262,7 +272,7 @@ export function BillActionBar({
             type="submit"
             form={formId}
             disabled={loading}
-            onClick={() => setSummaryOpen(false)}
+            onClick={submitFromSheet}
             className="btn btn-primary w-full"
           >
             <SubmitLabel
