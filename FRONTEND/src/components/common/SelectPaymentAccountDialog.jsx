@@ -140,7 +140,7 @@ async function saveImageFile(blob, fileName) {
 function PreviewBox({ status, url, alt, onRetry, onZoom, zoomButtonRef }) {
   if (status === 'loading') {
     return (
-      <div role="status" className="flex h-48 flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-500">
+      <div role="status" className="flex h-64 flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-500">
         <Loader className="h-5 w-5 animate-spin" />
         Đang tạo ảnh…
       </div>
@@ -148,7 +148,7 @@ function PreviewBox({ status, url, alt, onRetry, onZoom, zoomButtonRef }) {
   }
   if (status === 'error') {
     return (
-      <div role="alert" className="flex h-48 flex-col items-center justify-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 text-center text-sm text-rose-700">
+      <div role="alert" className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 text-center text-sm text-rose-700">
         <span className="inline-flex items-center gap-1.5">
           <CircleAlert className="h-4 w-4 flex-none" />
           Có lỗi xảy ra khi xuất bill
@@ -290,15 +290,24 @@ function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSend
       initialFocus="panel"
       dismissible={!busy}
       footer={
-        <div className="flex gap-2 sm:justify-end">
-          {primaryAction === 'download' ? [telegramButton, exportButton] : [exportButton, telegramButton]}
-        </div>
+        <>
+          {/* Lỗi gửi / lưu nằm ngay trên nút để luôn thấy (thân hộp có thể đang cuộn) */}
+          {actionError && (
+            <p role="alert" className="mb-3 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
+              <CircleAlert className="mt-0.5 h-4 w-4 flex-none" />
+              <span className="min-w-0 break-words">{actionError}</span>
+            </p>
+          )}
+          <div className="flex gap-2 sm:justify-end">
+            {primaryAction === 'download' ? [telegramButton, exportButton] : [exportButton, telegramButton]}
+          </div>
+        </>
       }
     >
       {accountId === null ? (
         <p className="text-sm text-slate-600">{NO_ACCOUNT_TEXT}</p>
       ) : (
-        <div className={showAccounts ? 'space-y-3 sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:items-start sm:gap-5 sm:space-y-0' : ''}>
+        <div className={showAccounts ? 'space-y-3 sm:grid sm:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] sm:items-start sm:gap-5 sm:space-y-0' : ''}>
           {showAccounts && (
             <fieldset disabled={Boolean(busy)}>
               <legend className="field-label">Chọn tài khoản thanh toán</legend>
@@ -323,12 +332,6 @@ function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSend
             zoomButtonRef={zoomButtonRef}
           />
         </div>
-      )}
-      {actionError && (
-        <p role="alert" className="mt-3 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-700">
-          <CircleAlert className="mt-0.5 h-4 w-4 flex-none" />
-          <span className="min-w-0 break-words">{actionError}</span>
-        </p>
       )}
       {zoomOpen && ready && <BillImageZoom url={current.url} alt={previewAlt} onClose={closeZoom} />}
     </Modal>
