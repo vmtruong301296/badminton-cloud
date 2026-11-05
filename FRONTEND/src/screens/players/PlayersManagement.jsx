@@ -17,6 +17,11 @@ const GENDER_BADGE = {
 
 export default function PlayersManagement() {
   const { hasPermission } = useAuth();
+  // Ẩn nút theo quyền route backend (routes/api.php); Thêm giữ nguyên vì POST /players nhận cả users.view.
+  const canUpdate = hasPermission('users.update');
+  const canDelete = hasPermission('users.delete');
+  const canAssignRoles = hasPermission('roles.assign');
+  const hasRowActions = canUpdate || canAssignRoles || canDelete;
   const [players, setPlayers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,8 +49,16 @@ export default function PlayersManagement() {
 
   useEffect(() => {
     loadPlayers();
-    loadRoles();
   }, [filters]);
+
+  // Danh sách vai trò chỉ dùng cho hộp gán vai trò; GET /roles cần roles.view hoặc roles.assign.
+  useEffect(() => {
+    if (!canAssignRoles) return;
+    rolesApi
+      .getAll()
+      .then((response) => setRoles(response.data))
+      .catch((error) => console.error('Error loading roles:', error));
+  }, [canAssignRoles]);
 
   const loadPlayers = async () => {
     try {
@@ -60,15 +73,6 @@ export default function PlayersManagement() {
       console.error('Error loading players:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const loadRoles = async () => {
-    try {
-      const response = await rolesApi.getAll();
-      setRoles(response.data);
-    } catch (error) {
-      console.error('Error loading roles:', error);
     }
   };
 
@@ -219,11 +223,6 @@ export default function PlayersManagement() {
     );
 
   const hasFilter = Boolean(filters.search || filters.gender);
-  // Ẩn nút theo quyền route backend (routes/api.php); Thêm giữ nguyên vì POST /players nhận cả users.view.
-  const canUpdate = hasPermission('users.update');
-  const canDelete = hasPermission('users.delete');
-  const canAssignRoles = hasPermission('roles.assign');
-  const hasRowActions = canUpdate || canAssignRoles || canDelete;
 
   return (
     <div className="px-4 sm:px-0">
