@@ -92,10 +92,9 @@ export default function Dashboard() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [unpaidSheetOpen, setUnpaidSheetOpen] = useState(false);
   const [stockSheetOpen, setStockSheetOpen] = useState(false);
-  // "Đã trả hết": người đang chờ xác nhận, đang gọi API, kết quả hiện trong sheet
+  // "Đã trả hết": người đang chờ xác nhận, đang gọi API (kết quả: thông báo ngắn M8)
   const [payAllTarget, setPayAllTarget] = useState(null);
   const [payAllBusy, setPayAllBusy] = useState(false);
-  const [sheetNotice, setSheetNotice] = useState(null);
 
   useEffect(() => {
     loadBills();
@@ -283,22 +282,17 @@ export default function Dashboard() {
   };
 
   /**
-   * "Đã trả hết" sau khi xác nhận. Đang mở sheet DS chưa thanh toán (điện thoại) thì báo trong
-   * sheet; không thì thông báo ngắn (M8).
+   * "Đã trả hết" sau khi xác nhận: kết quả là thông báo ngắn (M8), kể cả khi đang mở sheet DS chưa
+   * thanh toán (thông báo nằm trên lớp nền của sheet, lên đỉnh màn).
    */
   const markPlayerPaid = async (player) => {
-    const inSheet = unpaidSheetOpen;
-    const retry = () => markPlayerPaid(player);
-    setSheetNotice(null);
     try {
       await handleMarkPlayerPayment(player.userId);
-      const message = `Đã đánh dấu ${player.name} trả hết`;
-      if (inSheet) setSheetNotice({ type: "success", text: message });
-      else toast.success(message);
+      toast.success(`Đã đánh dấu ${player.name} trả hết`);
     } catch {
-      const message = "Có lỗi xảy ra khi đánh dấu thanh toán";
-      if (inSheet) setSheetNotice({ type: "error", text: message, onRetry: retry });
-      else toast.error(message, { onRetry: retry });
+      toast.error("Có lỗi xảy ra khi đánh dấu thanh toán", {
+        onRetry: () => markPlayerPaid(player),
+      });
     }
   };
 
@@ -537,10 +531,7 @@ export default function Dashboard() {
             loadingBills={loading}
             loadingShuttles={loadingShuttles}
             dateFiltered={hasDateFilter}
-            onOpenUnpaid={() => {
-              setSheetNotice(null);
-              setUnpaidSheetOpen(true);
-            }}
+            onOpenUnpaid={() => setUnpaidSheetOpen(true)}
             onOpenStock={() => setStockSheetOpen(true)}
           />
         )}
@@ -1256,7 +1247,6 @@ export default function Dashboard() {
         canMark={hasPermission("bills.mark_payment")}
         markingIds={markingPayment}
         onPayAll={setPayAllTarget}
-        notice={sheetNotice}
       />
 
       <ShuttleStockSheet
