@@ -51,3 +51,62 @@ export const billProfit = (bill) =>
 /** Tiền lời có dấu: "+7.000 ₫", "-3.000 ₫", "0 ₫". */
 export const formatProfit = (value) =>
   `${value > 0 ? "+" : ""}${formatCurrency(value)}`;
+
+/**
+ * Tiền của một người ở từng bill con (đã làm tròn nghìn), bỏ bill con người đó
+ * không chơi hoặc tiền bằng 0. Nhãn là ghi chú bill con, không có thì "Bill sau".
+ */
+export const playerSubBillLines = (player, subBills = []) =>
+  (subBills || []).flatMap((subBill) => {
+    const subBillPlayer = subBill.bill_players?.find(
+      (p) => p.user_id === player.user_id,
+    );
+    if (!subBillPlayer) return [];
+    const amount = playerDueAmount(subBillPlayer);
+    return amount
+      ? [{ id: subBill.id, label: subBill.note || "Bill sau", amount }]
+      : [];
+  });
+
+/**
+ * "TT + Bill sau": số phải trả của bill chính (gồm nợ cũ) cộng tiền từng bill
+ * con, làm tròn từng số trước khi cộng (như BillContent / ảnh xuất).
+ */
+export const playerTotalWithSubBills = (player, subBills = []) =>
+  playerDueAmount(player) +
+  playerSubBillLines(player, subBills).reduce(
+    (sum, line) => sum + line.amount,
+    0,
+  );
+
+/**
+ * Số thu khi chọn "Chỉ bill hiện tại" ở hộp nợ cũ: tiền bill (không gồm nợ cũ)
+ * cộng các bill con, vì đánh dấu bill chính thì bill con được đánh dấu theo.
+ */
+export const playerCurrentOnlyAmount = (player, subBills = []) =>
+  roundToNearestThousand(Number(player.total_amount) || 0) +
+  playerSubBillLines(player, subBills).reduce(
+    (sum, line) => sum + line.amount,
+    0,
+  );
+
+/**
+ * Tiến độ thu tiền của bill: số người đã / chưa trả, tiền còn thiếu và tổng
+ * phải thu (mỗi người tính "TT + Bill sau").
+ */
+export const billCollection = (players = [], subBills = []) =>
+  (players || []).reduce(
+    (acc, player) => {
+      const amount = playerTotalWithSubBills(player, subBills);
+      acc.total += 1;
+      acc.totalAmount += amount;
+      if (player.is_paid) {
+        acc.paid += 1;
+      } else {
+        acc.unpaid += 1;
+        acc.unpaidAmount += amount;
+      }
+      return acc;
+    },
+    { total: 0, paid: 0, unpaid: 0, unpaidAmount: 0, totalAmount: 0 },
+  );
