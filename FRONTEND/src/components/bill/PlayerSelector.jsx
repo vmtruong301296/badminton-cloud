@@ -5,9 +5,22 @@ import {
   useGenderDefaultRatios,
   ratioForGender,
 } from "../../utils/genderRatio";
+import {
+  findPlayerByName,
+  matchesPlayerSearch,
+} from "../../utils/playerSearch";
 import Modal from "../ui/Modal";
-import { Plus, Search, X } from "../ui/icons";
+import useToast from "../ui/useToast";
+import PlayerPickerSheet from "./PlayerPickerSheet";
+import { CircleAlert, Plus, Search, X } from "../ui/icons";
 
+const LOAD_ERROR = "Không tải được danh sách người chơi.";
+
+/**
+ * Chọn người chơi cho bill. Desktop: hai cột (Danh sách / Đã chọn) như cũ. Điện thoại: sheet
+ * PlayerPickerSheet do màn mở qua `pickerOpen` / `onPickerClose`. Giữ việc tải danh sách và
+ * "Thêm nhanh người chơi" cho cả hai.
+ */
 export default function PlayerSelector({
   selectedPlayers,
   onSelect,
@@ -16,11 +29,19 @@ export default function PlayerSelector({
   // Khi chưa search: danh sách mặc định chỉ hiện những người này.
   // Khi search: tìm trong toàn bộ người chơi để chọn thêm người ngoài bill chính.
   parentPlayerIds = null,
+  pickerOpen = false,
+  onPickerClose,
 }) {
   const [players, setPlayers] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const [saveError, setSaveError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [pickerNotice, setPickerNotice] = useState(null);
+  const toast = useToast();
   const genderRatios = useGenderDefaultRatios();
   const [newPlayer, setNewPlayer] = useState({
     name: "",
@@ -43,22 +64,15 @@ export default function PlayerSelector({
   const loadPlayers = async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const response = await playersApi.getAll();
       setPlayers(response.data);
     } catch (error) {
       console.error("Error loading players:", error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
-  };
-
-  // Hàm loại bỏ dấu tiếng Việt
-  const removeVietnameseTones = (str) => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D");
   };
 
   const parentIdSet = Array.isArray(parentPlayerIds)
@@ -75,9 +89,7 @@ export default function PlayerSelector({
       return true;
     }
     // Có search: tìm trong toàn bộ người chơi (kể cả ngoài bill chính)
-    const searchNoTones = removeVietnameseTones(search.toLowerCase());
-    const playerNameNoTones = removeVietnameseTones(p.name.toLowerCase());
-    return playerNameNoTones.includes(searchNoTones);
+    return matchesPlayerSearch(p.name, search);
   });
 
   const handleSelect = (player) => {
@@ -95,12 +107,20 @@ export default function PlayerSelector({
     setSearch("");
   };
 
-  const openAddModal = () => {
+  // Sheet chọn người đang mở thì thông báo nằm trong sheet (M8 nằm dưới lớp nền mờ).
+  const notify = (message) => {
+    if (pickerOpen) setPickerNotice(message);
+    else toast.info(message);
+  };
+
+  const openAddModal = (name = "") => {
     setNewPlayer({
-      name: "",
+      name,
       gender: "male",
       default_ratio: ratioForGender(genderRatios, "male"),
     });
+    setNameError("");
+    setSaveError("");
     setShowAddModal(true);
   };
 
@@ -108,30 +128,61 @@ export default function PlayerSelector({
     setShowAddModal(false);
   };
 
+  const closePicker = () => {
+    setPickerNotice(null);
+    onPickerClose?.();
+  };
+
+  const handlePickerToggle = (player, nextSelected) => {
+    setPickerNotice(null);
+    if (nextSelected) {
+      handleSelect(player);
+      return;
+    }
+    const index = selectedPlayers.findIndex((sp) => sp.user_id === player.id);
+    if (index >= 0) onRemove(index);
+  };
+
+  // Bill con: chọn một lần mọi người của bill chính chưa có trong bill
+  const parentPlayers = parentIdSet
+    ? players.filter((p) => parentIdSet.has(p.id))
+    : [];
+  const parentNotSelected = parentPlayers.filter(
+    (p) => !selectedPlayers.some((sp) => sp.user_id === p.id),
+  );
+  const bulkAction =
+    parentNotSelected.length > 0
+      ? {
+          label: `Chọn cả ${parentPlayers.length} người bill chính`,
+          onClick: () => parentNotSelected.forEach((p) => handleSelect(p)),
+        }
+      : undefined;
+
   const handleCreatePlayer = async (e) => {
     e.preventDefault();
     e.stopPropagation(); // Ngăn event bubble lên form cha
 
+    if (saving) return;
+    setSaveError("");
+
     if (!newPlayer.name.trim()) {
-      alert("Vui lòng nhập tên người chơi");
+      setNameError("Vui lòng nhập tên người chơi");
+      document.getElementById("quick-player-name")?.focus();
       return;
     }
 
     // Kiểm tra trùng tên: nếu đã tồn tại thì không tạo mới, chọn luôn người có sẵn
-    const nameKey = newPlayer.name.trim().toLowerCase();
-    const existing = players.find(
-      (p) => (p.name || "").trim().toLowerCase() === nameKey,
-    );
+    const existing = findPlayerByName(players, newPlayer.name);
     if (existing) {
       const alreadyInBill = selectedPlayers.some(
         (p) => p.user_id === existing.id,
       );
       if (alreadyInBill) {
-        alert(`Người chơi "${existing.name}" đã có trong bill.`);
+        notify(`Người chơi "${existing.name}" đã có trong bill.`);
         closeAddModal();
         return;
       }
-      alert(
+      notify(
         `Người chơi "${existing.name}" đã tồn tại. Đã chọn người này thay vì tạo mới.`,
       );
       handleSelect({
@@ -151,6 +202,7 @@ export default function PlayerSelector({
     const email = `${slug || "player"}${Date.now()}@badminton.local`;
 
     try {
+      setSaving(true);
       const payload = {
         name: newPlayer.name.trim(),
         gender: newPlayer.gender,
@@ -175,12 +227,14 @@ export default function PlayerSelector({
       closeAddModal();
     } catch (error) {
       console.error("Error creating player:", error);
-      alert("Không thể tạo người chơi mới. Vui lòng thử lại.");
+      setSaveError("Không thể tạo người chơi mới. Vui lòng thử lại.");
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="hidden grid-cols-1 gap-4 sm:grid md:grid-cols-2">
       {/* Cột trái: Danh sách người chơi để chọn */}
       <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 sm:p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
@@ -189,7 +243,7 @@ export default function PlayerSelector({
           </h3>
           <button
             type="button"
-            onClick={openAddModal}
+            onClick={() => openAddModal()}
             className="btn btn-secondary btn-sm"
           >
             <Plus className="h-4 w-4" />
@@ -204,6 +258,7 @@ export default function PlayerSelector({
           <input
             id="player-search"
             type="text"
+            data-field="players"
             placeholder={
               parentIdSet
                 ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
@@ -217,6 +272,20 @@ export default function PlayerSelector({
         {loading ? (
           <div className="py-4 text-center text-sm text-slate-500">
             Đang tải...
+          </div>
+        ) : loadError ? (
+          <div
+            role="alert"
+            className="flex flex-col items-center gap-2 py-4 text-center text-sm text-rose-700"
+          >
+            {LOAD_ERROR}
+            <button
+              type="button"
+              onClick={loadPlayers}
+              className="btn btn-secondary btn-sm"
+            >
+              Thử lại
+            </button>
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto">
@@ -352,14 +421,24 @@ export default function PlayerSelector({
             <button
               type="button"
               onClick={handleCreatePlayer}
+              disabled={saving}
               className="btn btn-primary flex-1 sm:flex-none"
             >
-              Lưu
+              {saving ? "Đang lưu..." : "Lưu"}
             </button>
           </div>
         }
       >
         <div className="space-y-4">
+          {saveError && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700"
+            >
+              <CircleAlert className="mt-0.5 h-4 w-4 flex-none" />
+              {saveError}
+            </p>
+          )}
           <div>
             <label htmlFor="quick-player-name" className="field-label">
               Tên
@@ -368,9 +447,12 @@ export default function PlayerSelector({
               id="quick-player-name"
               type="text"
               value={newPlayer.name}
-              onChange={(e) =>
-                setNewPlayer({ ...newPlayer, name: e.target.value })
-              }
+              onChange={(e) => {
+                setNewPlayer({ ...newPlayer, name: e.target.value });
+                setNameError("");
+              }}
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? "quick-player-name-err" : undefined}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -380,16 +462,48 @@ export default function PlayerSelector({
               className="field-input"
               placeholder="Nhập tên người chơi"
             />
+            {nameError && (
+              <p id="quick-player-name-err" className="field-error">
+                <CircleAlert />
+                {nameError}
+              </p>
+            )}
           </div>
           <div>
-            <label htmlFor="quick-player-gender" className="field-label">
+            <label
+              id="quick-player-gender-label"
+              htmlFor="quick-player-gender"
+              className="field-label"
+            >
               Giới tính
             </label>
+            {/* Điện thoại: 2 nút Nam / Nữ (1 chạm); desktop giữ ô chọn */}
+            <div
+              role="radiogroup"
+              aria-labelledby="quick-player-gender-label"
+              className="choice-list sm:hidden"
+            >
+              {[
+                ["male", "Nam"],
+                ["female", "Nữ"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={newPlayer.gender === value}
+                  onClick={() => handleGenderChange(value)}
+                  className="choice"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
             <select
               id="quick-player-gender"
               value={newPlayer.gender}
               onChange={(e) => handleGenderChange(e.target.value)}
-              className="field-input"
+              className="field-input hidden sm:block"
             >
               <option value="male">Nam</option>
               <option value="female">Nữ</option>
@@ -426,6 +540,26 @@ export default function PlayerSelector({
           </p>
         </div>
       </Modal>
+
+      <PlayerPickerSheet
+        isOpen={pickerOpen}
+        onClose={closePicker}
+        players={players}
+        selectedIds={selectedPlayers.map((p) => p.user_id)}
+        onToggle={handlePickerToggle}
+        loading={loading}
+        error={loadError ? LOAD_ERROR : null}
+        onRetry={loadPlayers}
+        scopeIds={parentPlayerIds}
+        searchPlaceholder={
+          parentIdSet
+            ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
+            : "Tìm kiếm người chơi..."
+        }
+        onQuickAdd={openAddModal}
+        bulkAction={bulkAction}
+        notice={pickerNotice}
+      />
     </div>
   );
 }
