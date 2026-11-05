@@ -401,6 +401,22 @@ body {
     @apply border-rose-500 ring-2 ring-rose-500/15 focus:border-rose-500 focus:ring-rose-500/20;
   }
 
+  /* Khối báo trong sheet / hộp thoại: lỗi khi lưu (role="alert") hoặc kết quả (role="status",
+     .sheet-alert-success). Con: biểu tượng (CircleAlert / CircleCheck) + chữ. */
+  .sheet-alert {
+    @apply flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700;
+    overflow-wrap: anywhere;
+  }
+  .sheet-alert > svg {
+    @apply mt-0.5 h-4 w-4 flex-none;
+  }
+  .sheet-alert > :not(svg) {
+    @apply min-w-0;
+  }
+  .sheet-alert-success {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-800;
+  }
+
   /* M15 · Hàng menu trong sheet ("Thêm", ⋯) */
   .menu-row {
     @apply flex min-h-[52px] w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left text-[15px] font-medium text-slate-800 hover:bg-slate-50 active:bg-slate-100;
