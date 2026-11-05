@@ -303,6 +303,7 @@ export default function CreateBill() {
         back={{
           to: backTo,
           label: parentBill ? "Về Bill chính" : "Danh sách",
+          onClick: leave.onBackClick,
         }}
         title={
           <>

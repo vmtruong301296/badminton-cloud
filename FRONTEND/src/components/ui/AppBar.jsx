@@ -5,10 +5,18 @@ import AppBarContext from "./appBarContext";
 import Modal from "./Modal";
 import { ChevronLeft, Ellipsis } from "./icons";
 
-/** Nút quay lại 44 px của thanh trên; aria-label là nhãn quay lại cũ ("Danh sách bills"…). */
+/**
+ * Nút quay lại 44 px của thanh trên; aria-label là nhãn quay lại cũ ("Danh sách bills"…).
+ * back.onClick(event): gọi event.preventDefault() để không chuyển trang (vd hỏi trước khi rời).
+ */
 export function AppBarBackLink({ back }) {
   return (
-    <Link to={back.to} aria-label={back.label} className="app-bar-btn">
+    <Link
+      to={back.to}
+      onClick={back.onClick}
+      aria-label={back.label}
+      className="app-bar-btn"
+    >
       <ChevronLeft className="h-6 w-6" />
     </Link>
   );
@@ -58,7 +66,8 @@ function MenuItem({ item, onDone }) {
  * tiêu đề cho desktop, vì thanh này chỉ có dưới sm).
  *
  * - title: chữ / node một dòng (cắt "…").
- * - back: { to, label } → màn đẩy vào: nút ‹ thay biểu tượng app, ẩn vòng tài khoản và tab.
+ * - back: { to, label, onClick? } → màn đẩy vào: nút ‹ thay biểu tượng app, ẩn vòng tài khoản và
+ *   tab. onClick(event) chạy trước khi chuyển trang; event.preventDefault() để ở lại.
  * - menu: [{ label, icon, onClick | to, danger, disabled }] → nút ⋯ mở sheet thao tác phụ.
  *   Mảng rỗng / không truyền thì không có ⋯. Thao tác xóa (danger) vẫn phải qua ConfirmDialog.
  * - menuTitle: tiêu đề sheet ⋯ (mặc định = title).
