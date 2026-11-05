@@ -1242,19 +1242,12 @@ export default function BillDetail() {
                 Đã thu đủ {collection.total} người
               </span>
             ),
-          value: (
-            <span
-              className={
-                collection.unpaid > 0 ? "text-rose-700" : "text-emerald-700"
-              }
-            >
-              {formatCurrencyRounded(
-                collection.unpaid > 0
-                  ? collection.unpaidAmount
-                  : collection.totalAmount,
-              )}
-            </span>
+          value: formatCurrencyRounded(
+            collection.unpaid > 0
+              ? collection.unpaidAmount
+              : collection.totalAmount,
           ),
+          tone: collection.unpaid > 0 ? "danger" : "success",
         }}
       >
         <button

@@ -209,6 +209,12 @@ body {
     @apply flex items-center gap-1 whitespace-nowrap text-lg font-bold leading-6 text-slate-900;
     font-variant-numeric: tabular-nums;
   }
+  .action-bar-sum-danger .action-bar-sum-value {
+    @apply text-rose-700;
+  }
+  .action-bar-sum-success .action-bar-sum-value {
+    @apply text-emerald-700;
+  }
 
   /* M3 · Hàng danh sách: cả hàng là một Link / button, không nút Xóa trên hàng */
   .list-card {
