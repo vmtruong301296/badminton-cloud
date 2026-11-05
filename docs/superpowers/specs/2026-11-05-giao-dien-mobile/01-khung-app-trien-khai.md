@@ -437,3 +437,17 @@ Chưa kiểm được (cần máy thật): sheet nâng trên bàn phím iOS / An
   (`BillDetail.jsx`, `Dashboard.jsx`) — quyết định 10, nhóm 02 / 04.
 - `BillDetail.jsx` khi bill không tồn tại tự chuyển về danh sách (sau `alert`) nên ít khi thấy khối lỗi của màn.
 - `CurrencyInput.jsx:40` — lỗi ESLint `set-state-in-effect` có sẵn (nằm trong mốc), chưa sửa.
+- Lúc dựng máy chủ giả (đọc code, chưa kiểm trên máy chủ thật):
+  - `CreateBill.jsx:55`, `EditBill.jsx:63`, `:236` gọi `shuttlesApi.getAll({ params: { as_of } })` trong khi
+    `getAll` đã tự bọc `{ params }` → request ra `?params[as_of]=…`, máy chủ không thấy `as_of`, xem trước dùng
+    giá cầu hôm nay thay vì giá ngày bill (đã chạy axios của repo để xác nhận chuỗi query).
+  - `PartyBillDetail.jsx:539` cộng cả tiền món ăn còn `PartyBillExport.jsx:43` dùng `total_amount` → tổng trên
+    màn khác tổng trong ảnh xuất bill tiệc.
+  - `BillContent.jsx:211`, `BillDetail.jsx:960` làm tròn đơn giá cầu (22.500 → 23.000) nên "12 × 23.000 =
+    270.000" không khớp trên màn.
+  - `ShuttlesManagement.jsx:418`, `:519` in ngày thô `2026-07-01T00:00:00.000000Z` ở sheet giá / lịch sử nhập kho.
+  - `BACKEND/routes/api.php:36` `ratios/defaults` khai báo sau `apiResource('ratios')` → luôn 404 (frontend chưa
+    dùng). `BillController.php:283` hai bill chính cùng ngày ghi đè nhau khi tính nợ bill sau.
+- Lệnh build của spec mục 5 (`npx vite build --outDir …`) ghi `FRONTEND/.wrangler/deploy/config.json` vào
+  worktree (plugin Cloudflare; file nằm trong `.gitignore`). Muốn không ghi gì vào repo: dùng
+  `tools/vite.no-repo-write.config.mjs` (xem `tools/README.md`).
