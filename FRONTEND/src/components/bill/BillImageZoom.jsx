@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from '../ui/icons';
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { X } from "../ui/icons";
 
 // Ảnh bill dựng ở pixelRatio 2 (BillDetail / PartyBillDetail) → cỡ thật trên màn = ảnh / 2.
 const EXPORT_PIXEL_RATIO = 2;
@@ -17,13 +17,16 @@ export default function BillImageZoom({ url, alt, onClose }) {
 
   // Dừng phím ở đây để Modal bên dưới (nghe ở document) không đóng hộp / kéo focus về.
   const handleKeyDown = (event) => {
-    if (event.key === 'Escape') {
+    if (event.key === "Escape") {
       event.stopPropagation();
       onClose();
-    } else if (event.key === 'Tab') {
+    } else if (event.key === "Tab") {
       event.preventDefault();
       event.stopPropagation();
-      const next = document.activeElement === closeRef.current ? scrollerRef.current : closeRef.current;
+      const next =
+        document.activeElement === closeRef.current
+          ? scrollerRef.current
+          : closeRef.current;
       next?.focus();
     }
   };
@@ -55,7 +58,9 @@ export default function BillImageZoom({ url, alt, onClose }) {
         <img
           src={url}
           alt={alt}
-          onLoad={(e) => setWidth(e.currentTarget.naturalWidth / EXPORT_PIXEL_RATIO)}
+          onLoad={(e) =>
+            setWidth(e.currentTarget.naturalWidth / EXPORT_PIXEL_RATIO)
+          }
           style={width ? { width } : undefined}
           className="block max-w-none"
         />

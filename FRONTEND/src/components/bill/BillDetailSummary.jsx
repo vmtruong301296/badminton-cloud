@@ -74,7 +74,8 @@ export default function BillDetailSummary({ bill, collection }) {
   return (
     <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
       <div className="px-4 pb-3 pt-3.5">
-        <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+        {/* Từ sm đầu màn (PageHeader) đã có các badge này */}
+        <div className="mb-3 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 sm:hidden">
           <span className={`badge ${isSubBill ? "badge-sky" : "badge-slate"}`}>
             {isSubBill ? "Bill con" : "Bill chính"}
           </span>
@@ -85,7 +86,7 @@ export default function BillDetailSummary({ bill, collection }) {
           <BillPaymentBadge collection={collection} />
         </div>
 
-        <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[13px] font-medium text-slate-500">Đã thu</div>
             <div className="whitespace-nowrap text-xl font-semibold tracking-tight tabular-nums text-slate-700">

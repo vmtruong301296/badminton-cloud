@@ -487,8 +487,8 @@ export default function BillDetail() {
   if (loading) {
     return (
       <div className="px-4 sm:px-0">
-        {/* Header skeleton */}
-        <div className="mb-6 flex items-center justify-between gap-3">
+        {/* Header skeleton (điện thoại: tiêu đề nằm trên thanh trên) */}
+        <div className="mb-6 hidden items-center justify-between gap-3 sm:flex">
           <div className="flex-1">
             <div className="skeleton h-3 w-24 mb-2" />
             <div className="skeleton h-8 w-56 mb-2" />
