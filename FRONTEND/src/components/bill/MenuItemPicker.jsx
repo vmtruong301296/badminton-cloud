@@ -8,6 +8,8 @@ import { Plus, X } from "../ui/icons";
  * `menus` must be passed in from the parent — fetching the list once at the
  * parent level avoids N duplicate /api/menus calls when this picker is
  * rendered per-player in a bill form.
+ *
+ * Điện thoại: chọn món · số lượng · nút + cùng một hàng; desktop giữ lưới 12 cột.
  */
 export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
   const [selectedMenuId, setSelectedMenuId] = useState("");
@@ -52,8 +54,8 @@ export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
 
   return (
     <div>
-      <div className="grid grid-cols-12 gap-2">
-        <div className="col-span-12 sm:col-span-7">
+      <div className="grid grid-cols-[minmax(0,1fr)_4rem_2.75rem] gap-2 sm:grid-cols-12">
+        <div className="sm:col-span-7">
           <select
             value={selectedMenuId}
             onChange={(e) => setSelectedMenuId(e.target.value)}
@@ -68,25 +70,27 @@ export default function MenuItemPicker({ player, onUpdate, menus = [] }) {
             ))}
           </select>
         </div>
-        <div className="col-span-4 sm:col-span-2">
+        <div className="sm:col-span-2">
           <NumberInput
             value={quantity}
             onChange={setQuantity}
             min={1}
+            selectOnFocus
             aria-label="Số lượng"
             baseClassName="field-input"
             className="text-center font-tabular"
           />
         </div>
-        <div className="col-span-8 sm:col-span-3">
+        <div className="sm:col-span-3">
           <button
             type="button"
             onClick={handleAdd}
             disabled={!selectedMenuId}
-            className="btn btn-secondary w-full"
+            aria-label="Thêm"
+            className="btn btn-secondary w-full px-0 sm:px-4"
           >
             <Plus className="h-4 w-4" />
-            Thêm
+            <span className="hidden sm:inline">Thêm</span>
           </button>
         </div>
       </div>
