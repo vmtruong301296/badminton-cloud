@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { menusApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 import CurrencyInput from '../../components/common/CurrencyInput';
 import Modal from '../../components/ui/Modal';
@@ -35,7 +36,17 @@ function ActiveToggle({ active, disabled, onToggle }) {
   );
 }
 
+/** Trạng thái chỉ đọc cho người không có quyền menus.update: cùng chữ với nút gạt, dạng nhãn như TK nhận tiền. */
+function ActiveStatus({ active }) {
+  return (
+    <span className={`badge ${active ? 'badge-emerald' : 'badge-slate'}`}>
+      {active ? 'Đang dùng' : 'Đã tắt'}
+    </span>
+  );
+}
+
 export default function MenusManagement() {
+  const { hasPermission, hasAnyPermission } = useAuth();
   const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -122,21 +133,30 @@ export default function MenusManagement() {
     setEditingMenu(null);
   };
 
+  // Ẩn nút theo quyền route backend (routes/api.php): POST /menus nhận cả quyền tạo / sửa bill
+  // (thêm menu nhanh trong form bill); sửa và bật / tắt cùng gọi PUT /menus/{id}.
+  const canCreate = hasAnyPermission(['menus.create', 'bills.create', 'bills.update']);
+  const canUpdate = hasPermission('menus.update');
+  const canDelete = hasPermission('menus.delete');
+  const hasRowActions = canUpdate || canDelete;
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">Quản lý Menu nước</h2>
-        <button
-          onClick={() => {
-            setShowForm(true);
-            setEditingMenu(null);
-            setFormData({ name: '', price: 0 });
-          }}
-          className="btn btn-primary flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Thêm menu
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => {
+              setShowForm(true);
+              setEditingMenu(null);
+              setFormData({ name: '', price: 0 });
+            }}
+            className="btn btn-primary flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Thêm menu
+          </button>
+        )}
       </div>
 
       <Modal
@@ -192,7 +212,7 @@ export default function MenusManagement() {
                   <th className="px-6 py-3 text-left font-medium">Tên</th>
                   <th className="px-6 py-3 text-right font-medium">Giá</th>
                   <th className="px-6 py-3 text-left font-medium">Trạng thái</th>
-                  <th className="px-6 py-3 text-left font-medium">Thao tác</th>
+                  {hasRowActions && <th className="px-6 py-3 text-left font-medium">Thao tác</th>}
                 </tr>
               </thead>
               <tbody>
@@ -210,25 +230,35 @@ export default function MenusManagement() {
                       {formatCurrency(menu.price)}
                     </td>
                     <td className="whitespace-nowrap px-6 py-2">
-                      <ActiveToggle
-                        active={menu.is_active !== false}
-                        disabled={togglingId === menu.id}
-                        onToggle={() => handleToggleActive(menu)}
-                      />
+                      {canUpdate ? (
+                        <ActiveToggle
+                          active={menu.is_active !== false}
+                          disabled={togglingId === menu.id}
+                          onToggle={() => handleToggleActive(menu)}
+                        />
+                      ) : (
+                        <ActiveStatus active={menu.is_active !== false} />
+                      )}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-3">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => handleEdit(menu)} className="btn btn-ghost btn-sm">
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(menu.id)}
-                          className="btn btn-danger-ghost btn-sm"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
+                    {hasRowActions && (
+                      <td className="whitespace-nowrap px-6 py-3">
+                        <div className="flex items-center gap-1">
+                          {canUpdate && (
+                            <button onClick={() => handleEdit(menu)} className="btn btn-ghost btn-sm">
+                              Sửa
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(menu.id)}
+                              className="btn btn-danger-ghost btn-sm"
+                            >
+                              Xóa
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -247,24 +277,34 @@ export default function MenusManagement() {
                   <h3 className="min-w-0 break-words font-semibold">{menu.name}</h3>
                   <span className="font-tabular flex-shrink-0 text-lg font-semibold">{formatCurrency(menu.price)}</span>
                 </div>
-                <div className="mb-3">
-                  <ActiveToggle
-                    active={menu.is_active !== false}
-                    disabled={togglingId === menu.id}
-                    onToggle={() => handleToggleActive(menu)}
-                  />
+                <div className="mb-3 last:mb-0">
+                  {canUpdate ? (
+                    <ActiveToggle
+                      active={menu.is_active !== false}
+                      disabled={togglingId === menu.id}
+                      onToggle={() => handleToggleActive(menu)}
+                    />
+                  ) : (
+                    <ActiveStatus active={menu.is_active !== false} />
+                  )}
                 </div>
-                <div className="flex gap-2 border-t border-slate-100 pt-3">
-                  <button onClick={() => handleEdit(menu)} className="btn btn-secondary btn-sm flex-1">
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => handleDelete(menu.id)}
-                    className="btn btn-danger-soft btn-sm flex-1"
-                  >
-                    Xóa
-                  </button>
-                </div>
+                {hasRowActions && (
+                  <div className="flex gap-2 border-t border-slate-100 pt-3">
+                    {canUpdate && (
+                      <button onClick={() => handleEdit(menu)} className="btn btn-secondary btn-sm flex-1">
+                        Sửa
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(menu.id)}
+                        className="btn btn-danger-soft btn-sm flex-1"
+                      >
+                        Xóa
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

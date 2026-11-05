@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ratiosApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import { formatRatio } from '../../utils/formatters';
 import NumberInput from '../../components/common/NumberInput';
 import Modal from '../../components/ui/Modal';
@@ -7,6 +8,7 @@ import EmptyState from '../../components/ui/EmptyState';
 import { Plus, Inbox } from '../../components/ui/icons';
 
 export default function RatiosManagement() {
+  const { hasPermission } = useAuth();
   const [ratios, setRatios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -83,21 +85,29 @@ export default function RatiosManagement() {
   const genderLabel = (gender) =>
     gender === 'male' ? 'Nam' : gender === 'female' ? 'Nữ' : 'Chung';
 
+  // Ẩn nút theo quyền route backend (routes/api.php): vào tab chỉ cần một quyền xem Master.
+  const canCreate = hasPermission('ratios.create');
+  const canUpdate = hasPermission('ratios.update');
+  const canDelete = hasPermission('ratios.delete');
+  const hasRowActions = canUpdate || canDelete;
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">Quản lý Mức tính</h2>
-        <button
-          onClick={() => {
-            setShowForm(true);
-            setEditingRatio(null);
-            setFormData({ name: '', gender: '', value: 1.0, is_default: false });
-          }}
-          className="btn btn-primary flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Thêm mức tính
-        </button>
+        {canCreate && (
+          <button
+            onClick={() => {
+              setShowForm(true);
+              setEditingRatio(null);
+              setFormData({ name: '', gender: '', value: 1.0, is_default: false });
+            }}
+            className="btn btn-primary flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Thêm mức tính
+          </button>
+        )}
       </div>
 
       <Modal
@@ -182,7 +192,7 @@ export default function RatiosManagement() {
                   <th className="px-6 py-3 font-medium">Giới tính</th>
                   <th className="px-6 py-3 font-medium">Giá trị</th>
                   <th className="px-6 py-3 font-medium">Mặc định</th>
-                  <th className="px-6 py-3 font-medium">Thao tác</th>
+                  {hasRowActions && <th className="px-6 py-3 font-medium">Thao tác</th>}
                 </tr>
               </thead>
               <tbody>
@@ -204,19 +214,25 @@ export default function RatiosManagement() {
                         <span className="text-slate-400">-</span>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-3">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => handleEdit(ratio)} className="btn btn-ghost btn-sm">
-                          Sửa
-                        </button>
-                        <button
-                          onClick={() => handleDelete(ratio.id)}
-                          className="btn btn-danger-ghost btn-sm"
-                        >
-                          Xóa
-                        </button>
-                      </div>
-                    </td>
+                    {hasRowActions && (
+                      <td className="whitespace-nowrap px-6 py-3">
+                        <div className="flex items-center gap-1">
+                          {canUpdate && (
+                            <button onClick={() => handleEdit(ratio)} className="btn btn-ghost btn-sm">
+                              Sửa
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(ratio.id)}
+                              className="btn btn-danger-ghost btn-sm"
+                            >
+                              Xóa
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -236,20 +252,26 @@ export default function RatiosManagement() {
                     <span className="badge badge-emerald flex-shrink-0">Mặc định</span>
                   )}
                 </div>
-                <div className="mb-3 text-sm text-slate-600">
+                <div className="mb-3 text-sm text-slate-600 last:mb-0">
                   Giá trị: <span className="font-tabular font-medium text-slate-900">{formatRatio(ratio.value)}</span>
                 </div>
-                <div className="flex gap-2 border-t border-slate-100 pt-3">
-                  <button onClick={() => handleEdit(ratio)} className="btn btn-secondary btn-sm flex-1">
-                    Sửa
-                  </button>
-                  <button
-                    onClick={() => handleDelete(ratio.id)}
-                    className="btn btn-danger-soft btn-sm flex-1"
-                  >
-                    Xóa
-                  </button>
-                </div>
+                {hasRowActions && (
+                  <div className="flex gap-2 border-t border-slate-100 pt-3">
+                    {canUpdate && (
+                      <button onClick={() => handleEdit(ratio)} className="btn btn-secondary btn-sm flex-1">
+                        Sửa
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(ratio.id)}
+                        className="btn btn-danger-soft btn-sm flex-1"
+                      >
+                        Xóa
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>

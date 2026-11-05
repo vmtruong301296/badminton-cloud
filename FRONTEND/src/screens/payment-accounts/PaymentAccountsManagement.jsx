@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { paymentAccountsApi } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Modal from '../../components/ui/Modal';
 import EmptyState from '../../components/ui/EmptyState';
 import { Plus, Inbox } from '../../components/ui/icons';
 
 export default function PaymentAccountsManagement() {
+  const { hasPermission } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -140,19 +142,26 @@ export default function PaymentAccountsManagement() {
 
   // No longer needed - images are now base64 strings directly from database
 
+  // Ẩn nút theo quyền route backend (routes/api.php): vào tab chỉ cần một quyền xem Master.
+  const canCreate = hasPermission('payment_accounts.create');
+  const canUpdate = hasPermission('payment_accounts.update');
+  const canDelete = hasPermission('payment_accounts.delete');
+
   return (
     <div>
       {/* Không cho nút xuống dòng riêng trên điện thoại: tiêu đề tự xuống 2 dòng bên trái nút */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="min-w-0 text-lg font-semibold tracking-tight text-slate-900">Quản lý Tài khoản Nhận tiền</h2>
-        <button
-          type="button"
-          onClick={() => handleOpenModal()}
-          className="btn btn-primary flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Thêm tài khoản
-        </button>
+        {canCreate && (
+          <button
+            type="button"
+            onClick={() => handleOpenModal()}
+            className="btn btn-primary flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            Thêm tài khoản
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -168,7 +177,7 @@ export default function PaymentAccountsManagement() {
                 account.is_active ? '!border-emerald-200' : 'opacity-70'
               }`}
             >
-              <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="mb-4 flex items-start justify-between gap-3 last:mb-0">
                 <div className="min-w-0">
                   <h3 className="break-words text-base font-semibold text-slate-900">{account.bank_name}</h3>
                   <p className="break-words text-sm text-slate-600">{account.account_holder_name}</p>
@@ -184,7 +193,7 @@ export default function PaymentAccountsManagement() {
               </div>
 
               {account.qr_code_image && (
-                <div className="mb-4">
+                <div className="mb-4 last:mb-0">
                   <img
                     src={account.qr_code_image}
                     alt="QR Code"
@@ -198,25 +207,31 @@ export default function PaymentAccountsManagement() {
               )}
 
               {account.note && (
-                <p className="mb-4 break-words text-sm italic text-slate-600">{account.note}</p>
+                <p className="mb-4 break-words text-sm italic text-slate-600 last:mb-0">{account.note}</p>
               )}
 
-              <div className="mt-auto flex gap-2 border-t border-slate-100 pt-3">
-                <button
-                  type="button"
-                  onClick={() => handleOpenModal(account)}
-                  className="btn btn-secondary btn-sm flex-1"
-                >
-                  Sửa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleDeleteClick(account.id)}
-                  className="btn btn-danger-soft btn-sm flex-1"
-                >
-                  Xóa
-                </button>
-              </div>
+              {(canUpdate || canDelete) && (
+                <div className="mt-auto flex gap-2 border-t border-slate-100 pt-3">
+                  {canUpdate && (
+                    <button
+                      type="button"
+                      onClick={() => handleOpenModal(account)}
+                      className="btn btn-secondary btn-sm flex-1"
+                    >
+                      Sửa
+                    </button>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteClick(account.id)}
+                      className="btn btn-danger-soft btn-sm flex-1"
+                    >
+                      Xóa
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

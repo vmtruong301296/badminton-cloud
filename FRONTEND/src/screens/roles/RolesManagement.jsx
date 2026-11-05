@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { rolesApi, permissionsApi } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
@@ -8,6 +9,7 @@ import { Plus, ShieldCheck } from "../../components/ui/icons";
 import { groupPermissions } from "../../utils/permissionGroups";
 
 export default function RolesManagement() {
+	const { hasPermission } = useAuth();
 	const [roles, setRoles] = useState([]);
 	const [permissions, setPermissions] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -113,6 +115,12 @@ export default function RolesManagement() {
 	// Nhóm theo thứ tự menu, nhãn tiếng Việt (utils/permissionGroups)
 	const permissionGroups = groupPermissions(permissions);
 
+	// Ẩn nút theo quyền route backend (routes/api.php): vào màn cần roles.view.
+	const canCreate = hasPermission("roles.create");
+	const canUpdate = hasPermission("roles.update");
+	const canDelete = hasPermission("roles.delete");
+	const hasRowActions = canUpdate || canDelete;
+
 	if (loading) {
 		return <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-0">Đang tải...</div>;
 	}
@@ -122,10 +130,12 @@ export default function RolesManagement() {
 			<PageHeader
 				title="Quyền"
 				actions={
-					<button onClick={handleCreate} className="btn btn-primary">
-						<Plus className="h-4 w-4" />
-						Tạo Quyền mới
-					</button>
+					canCreate && (
+						<button onClick={handleCreate} className="btn btn-primary">
+							<Plus className="h-4 w-4" />
+							Tạo Quyền mới
+						</button>
+					)
 				}
 			/>
 
@@ -142,7 +152,7 @@ export default function RolesManagement() {
 									<th className="px-6 py-3 font-medium">Hiển thị</th>
 									<th className="px-6 py-3 font-medium">Mô tả</th>
 									<th className="px-6 py-3 text-right font-medium">Số người dùng</th>
-									<th className="px-6 py-3 font-medium">Thao tác</th>
+									{hasRowActions && <th className="px-6 py-3 font-medium">Thao tác</th>}
 								</tr>
 							</thead>
 							<tbody>
@@ -160,20 +170,26 @@ export default function RolesManagement() {
 										<td className="font-tabular whitespace-nowrap px-6 py-3 text-right text-sm text-slate-900">
 											{role.users_count || 0}
 										</td>
-										<td className="whitespace-nowrap px-6 py-3">
-											<div className="flex items-center gap-1">
-												<button
-													onClick={() => handleEdit(role)}
-													className="btn btn-ghost btn-sm">
-													Sửa
-												</button>
-												<button
-													onClick={() => handleDeleteClick(role.id)}
-													className="btn btn-danger-ghost btn-sm">
-													Xóa
-												</button>
-											</div>
-										</td>
+										{hasRowActions && (
+											<td className="whitespace-nowrap px-6 py-3">
+												<div className="flex items-center gap-1">
+													{canUpdate && (
+														<button
+															onClick={() => handleEdit(role)}
+															className="btn btn-ghost btn-sm">
+															Sửa
+														</button>
+													)}
+													{canDelete && (
+														<button
+															onClick={() => handleDeleteClick(role.id)}
+															className="btn btn-danger-ghost btn-sm">
+															Xóa
+														</button>
+													)}
+												</div>
+											</td>
+										)}
 									</tr>
 								))}
 							</tbody>
@@ -191,23 +207,29 @@ export default function RolesManagement() {
 								{role.description && (
 									<p className="mb-3 text-sm text-slate-600">{role.description}</p>
 								)}
-								<div className="mb-3 text-sm text-slate-600">
+								<div className="mb-3 text-sm text-slate-600 last:mb-0">
 									Số người dùng: <span className="font-tabular font-medium text-slate-900">{role.users_count || 0}</span>
 								</div>
-								<div className="flex gap-2 border-t border-slate-100 pt-3">
-									<button
-										onClick={() => handleEdit(role)}
-										className="btn btn-secondary btn-sm flex-1"
-									>
-										Sửa
-									</button>
-									<button
-										onClick={() => handleDeleteClick(role.id)}
-										className="btn btn-danger-soft btn-sm flex-1"
-									>
-										Xóa
-									</button>
-								</div>
+								{hasRowActions && (
+									<div className="flex gap-2 border-t border-slate-100 pt-3">
+										{canUpdate && (
+											<button
+												onClick={() => handleEdit(role)}
+												className="btn btn-secondary btn-sm flex-1"
+											>
+												Sửa
+											</button>
+										)}
+										{canDelete && (
+											<button
+												onClick={() => handleDeleteClick(role.id)}
+												className="btn btn-danger-soft btn-sm flex-1"
+											>
+												Xóa
+											</button>
+										)}
+									</div>
+								)}
 							</div>
 						))}
 					</div>
