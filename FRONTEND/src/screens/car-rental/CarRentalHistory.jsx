@@ -135,7 +135,7 @@ export default function CarRentalHistory({ reloadKey, onEdit, onNew }) {
                   <div className="list-row-title line-clamp-2 whitespace-normal">
                     {itemTitle(item)}
                   </div>
-                  <div className="list-row-sub">
+                  <div className="list-row-sub whitespace-normal">
                     {item.date ? formatDateShort(item.date) : "Không ghi ngày"}
                     {" · "}
                     {item.days} ngày · {formatNumber(item.distance_km)} km
