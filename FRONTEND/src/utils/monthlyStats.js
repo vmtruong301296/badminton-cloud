@@ -1,3 +1,5 @@
+import { roundToNearestThousand } from "./formatters";
+
 /**
  * Số bill và số cầu theo từng tháng, cho biểu đồ ở modal Thống kê.
  *
@@ -38,4 +40,90 @@ export function monthlyBillStats(bills, endYear, endMonth) {
   });
 
   return months;
+}
+
+/** Lùi / tiến `delta` tháng: shiftMonthKey("2026-01", -1) === "2025-12". */
+export function shiftMonthKey(key, delta) {
+  const [year, month] = key.split("-").map(Number);
+  const index = year * 12 + (month - 1) + delta;
+  return monthKey(Math.floor(index / 12), (index % 12) + 1);
+}
+
+/** "2026-09" -> "Tháng 9/2026". */
+export function formatMonthLabel(key) {
+  const [year, month] = key.split("-").map(Number);
+  return `Tháng ${month}/${year}`;
+}
+
+/** Các năm có bill, kèm năm hiện tại, mới -> cũ (cho nút ‹ › theo năm). */
+export function availableYears(bills, currentYear) {
+  const years = new Set([currentYear]);
+  (bills || []).forEach((bill) => {
+    if (typeof bill.date !== "string") return;
+    const year = Number(bill.date.slice(0, 4));
+    if (!Number.isNaN(year)) years.add(year);
+  });
+  return Array.from(years).sort((a, b) => b - a);
+}
+
+/**
+ * Tổng của một kỳ cho sheet Thống kê. period: { mode: "month", month: "YYYY-MM" } hoặc
+ * { mode: "year", year }.
+ * - billCount: số bill chính; cầu: mọi bill kể cả bill con, gộp theo loại, xếp theo tên.
+ * - players: chỉ bill chính, tiền (gồm nợ cũ) làm tròn nghìn từng bill, nhiều tiền trước,
+ *   bỏ người 0 đồng.
+ */
+export function periodSummary(bills, period) {
+  const prefix =
+    period.mode === "year" ? String(period.year) : String(period.month);
+  const inPeriod = (bills || []).filter(
+    (bill) => typeof bill.date === "string" && bill.date.startsWith(prefix),
+  );
+
+  const shuttleMap = new Map();
+  const playerMap = new Map();
+  let billCount = 0;
+
+  inPeriod.forEach((bill) => {
+    (bill.bill_shuttles || []).forEach((shuttle) => {
+      const id = shuttle.shuttle_type_id;
+      if (!shuttleMap.has(id)) {
+        shuttleMap.set(id, {
+          name: shuttle.shuttle_type?.name || "Unknown",
+          totalQuantity: 0,
+        });
+      }
+      shuttleMap.get(id).totalQuantity += shuttle.quantity || 0;
+    });
+
+    if (bill.parent_bill_id) return;
+    billCount += 1;
+    (bill.bill_players || []).forEach((player) => {
+      if (!playerMap.has(player.user_id)) {
+        playerMap.set(player.user_id, {
+          name: player.user?.name || "Unknown",
+          totalAmount: 0,
+          billCount: 0,
+        });
+      }
+      const current = playerMap.get(player.user_id);
+      current.totalAmount += roundToNearestThousand(
+        (player.total_amount || 0) + (player.debt_amount || 0),
+      );
+      current.billCount += 1;
+    });
+  });
+
+  const shuttles = Array.from(shuttleMap.values()).sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+
+  return {
+    billCount,
+    shuttles,
+    totalShuttles: shuttles.reduce((sum, s) => sum + s.totalQuantity, 0),
+    players: Array.from(playerMap.values())
+      .filter((p) => p.totalAmount > 0)
+      .sort((a, b) => b.totalAmount - a.totalAmount),
+  };
 }
