@@ -16,6 +16,8 @@ import { ChevronLeft } from "./icons";
  *   thao tác phụ; menuTitle: tiêu đề sheet (mặc định = title).
  * - barAction: một nút 44 px trên thanh của màn gốc (class app-bar-btn + aria-label).
  * - hideTabBar: ẩn tab dưới đáy (khi đường dẫn chưa nằm trong danh sách màn đẩy vào).
+ * - hideOnPhone: trên điện thoại không dựng khối trong nội dung (kể cả khoảng cách dưới) — dùng khi
+ *   description / actions chỉ hiện từ sm; tiêu đề / ‹ / ⋯ vẫn lên thanh trên.
  */
 export default function PageHeader({
   title,
@@ -27,6 +29,7 @@ export default function PageHeader({
   menuTitle,
   barAction,
   hideTabBar = false,
+  hideOnPhone = false,
 }) {
   // Có khe thanh trên (đang trong Layout): điện thoại ẩn tiêu đề / quay lại trong nội dung.
   const inBar = Boolean(useContext(AppBarContext));
@@ -46,7 +49,7 @@ export default function PageHeader({
           hideTabBar={hideTabBar}
         />
       )}
-      <div className={inBar && !description && !actions ? "hidden sm:mb-6 sm:block" : "mb-3 sm:mb-6"}>
+      <div className={inBar && (hideOnPhone || (!description && !actions)) ? "hidden sm:mb-6 sm:block" : "mb-3 sm:mb-6"}>
         {back && (
           <Link
             to={back.to}

@@ -477,6 +477,7 @@ export default function Dashboard() {
     <div className="px-4 sm:px-0">
       <PageHeader
         compactActions
+        hideOnPhone
         title="Bill cầu"
         barAction={
           <button
@@ -525,8 +526,8 @@ export default function Dashboard() {
         }
       />
 
-      {/* Điện thoại: thanh trên đã có tiêu đề, khối mô tả / nút của PageHeader ẩn nên kéo lên bù */}
-      <div className="-mt-3.5 sm:mt-0">
+      {/* Điện thoại: thanh trên đã có tiêu đề, khối mô tả / nút của PageHeader không dựng (hideOnPhone) */}
+      <div>
         {!loadError && (
           <DashboardSummary
             unpaidTotal={unpaidTotal}
