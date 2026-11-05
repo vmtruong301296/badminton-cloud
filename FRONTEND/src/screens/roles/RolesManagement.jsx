@@ -5,6 +5,7 @@ import PageHeader from "../../components/ui/PageHeader";
 import Modal from "../../components/ui/Modal";
 import EmptyState from "../../components/ui/EmptyState";
 import { Plus, ShieldCheck } from "../../components/ui/icons";
+import { groupPermissions } from "../../utils/permissionGroups";
 
 export default function RolesManagement() {
 	const [roles, setRoles] = useState([]);
@@ -109,14 +110,8 @@ export default function RolesManagement() {
 		}));
 	};
 
-	const groupedPermissions = permissions.reduce((acc, permission) => {
-		const group = permission.group || "other";
-		if (!acc[group]) {
-			acc[group] = [];
-		}
-		acc[group].push(permission);
-		return acc;
-	}, {});
+	// Nhóm theo thứ tự menu, nhãn tiếng Việt (utils/permissionGroups)
+	const permissionGroups = groupPermissions(permissions);
 
 	if (loading) {
 		return <div className="px-4 py-8 text-center text-sm text-slate-500 sm:px-0">Đang tải...</div>;
@@ -125,7 +120,7 @@ export default function RolesManagement() {
 	return (
 		<div className="px-4 sm:px-0">
 			<PageHeader
-				title="Quản lý Quyền"
+				title="Quyền"
 				actions={
 					<button onClick={handleCreate} className="btn btn-primary">
 						<Plus className="h-4 w-4" />
@@ -225,6 +220,8 @@ export default function RolesManagement() {
 				onClose={() => setShowModal(false)}
 				title={editingRole ? "Sửa Quyền" : "Tạo Quyền mới"}
 				size="xl"
+				// Sửa: việc chính là bật / tắt quyền, không bật bàn phím khi mở (ô tên quyền bị khóa)
+				initialFocus={editingRole ? "panel" : "field"}
 				footer={
 					<div className="flex gap-2 sm:justify-end">
 						<button
@@ -280,12 +277,13 @@ export default function RolesManagement() {
 						</div>
 						<fieldset>
 							<legend className="field-label">Quyền chức năng</legend>
-							<div className="max-h-96 overflow-y-auto rounded-xl border border-slate-200 p-3 sm:p-4">
-								{Object.entries(groupedPermissions).map(([group, groupPermissions]) => (
-									<div key={group} className="mb-3 last:mb-0">
-										<div className="mb-1 text-sm font-semibold capitalize text-slate-900">{group}</div>
-										<div className="pl-1 sm:pl-2">
-											{groupPermissions.map((permission) => (
+							{/* Điện thoại: không khung cuộn lồng, cả sheet cuộn một lần; từ sm giữ khung cũ */}
+							<div className="sm:max-h-96 sm:overflow-y-auto sm:rounded-xl sm:border sm:border-slate-200 sm:p-4">
+								{permissionGroups.map((group) => (
+									<div key={group.key} className="mb-3 last:mb-0">
+										<div className="mb-1 text-sm font-semibold text-slate-900">{group.label}</div>
+										<div className="-mx-2 sm:mx-0 sm:pl-2">
+											{group.permissions.map((permission) => (
 												<label
 													key={permission.id}
 													htmlFor={`perm-${permission.id}`}
