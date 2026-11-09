@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   MATCH_FORM_MESSAGES,
   pickerTeamAfterPick,
@@ -6,12 +6,18 @@ import {
   teamLabel,
   toggleTeamPlayer,
 } from "../../utils/matchBill";
+import {
+  RECENT_SCOPE_TEXT,
+  recentPlayerIds,
+  sortByRecentBills,
+} from "../../utils/playerSearch";
 import PlayerPickerSheet from "./PlayerPickerSheet";
 
 /**
  * Sheet "Chọn người chơi" cho một bên (Cặp A / Cặp B) của một trận, giống sheet chọn người
  * của bill con. Có `scopeIds` (bill con): chưa gõ thì chỉ hiện người của bill chính, gõ tìm
- * thì tìm trong mọi người chơi. `scopeIds` null (bill chính): hiện mọi người chơi. Bên đủ người
+ * thì tìm trong mọi người chơi. `scopeIds` null (bill chính): chưa gõ thì hiện người các bill
+ * chính gần đây (ai đánh gần nhất lên đầu), gõ tìm thì tìm trong mọi người chơi. Bên đủ người
  * (đôi 2, đơn 1) thì không chọn thêm; chọn người đang ở bên kia thì chuyển sang bên này. Cả
  * hai trường hợp đều báo ngay trong sheet. Vừa chọn đủ một bên thì tự sang bên kia nếu bên kia
  * còn thiếu (sheet đóng rồi mở lại cho bên kia), cả hai đủ thì tự đóng — không cần bấm Xong.
@@ -40,6 +46,12 @@ export default function MatchPlayerPicker({
   onClose,
 }) {
   const [notice, setNotice] = useState(null);
+  const isMainBill = !scopeIds;
+  const loaded = allPlayers.players;
+  const players = useMemo(
+    () => (isMainBill ? sortByRecentBills(loaded || []) : loaded || []),
+    [isMainBill, loaded],
+  );
   const label = match ? teamLabel(match.size, team) : "";
   const capacity = match ? teamCapacity(match) : 0;
 
@@ -89,18 +101,20 @@ export default function MatchPlayerPicker({
       key={`${number}-${team}`}
       isOpen={Boolean(match)}
       onClose={close}
-      players={allPlayers.players || []}
+      players={players}
       selectedIds={match?.teams[team] ?? []}
       onToggle={handleToggle}
       loading={allPlayers.loading}
       error={allPlayers.error}
       onRetry={allPlayers.load}
       showRatio={false}
-      scopeIds={scopeIds}
+      scopeIds={isMainBill ? recentPlayerIds(players) : scopeIds}
+      scopeHint={isMainBill ? RECENT_SCOPE_TEXT.hint : undefined}
+      scopeEmptyText={isMainBill ? RECENT_SCOPE_TEXT.empty : undefined}
       searchPlaceholder={
-        scopeIds
-          ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
-          : "Tìm kiếm người chơi..."
+        isMainBill
+          ? RECENT_SCOPE_TEXT.placeholder
+          : "Tìm kiếm để chọn thêm người ngoài bill chính..."
       }
       title={`Chọn người chơi · Trận ${number} · ${label}`}
       doneLabel={(count) => `Xong · ${count}/${capacity} người`}

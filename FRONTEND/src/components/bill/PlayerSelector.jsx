@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { playersApi } from "../../services/api";
 import { formatRatio, formatCurrency } from "../../utils/formatters";
 import {
@@ -6,8 +6,11 @@ import {
   ratioForGender,
 } from "../../utils/genderRatio";
 import {
+  RECENT_SCOPE_TEXT,
   findPlayerByName,
   matchesPlayerSearch,
+  recentPlayerIds,
+  sortByRecentBills,
 } from "../../utils/playerSearch";
 import Modal from "../ui/Modal";
 import useToast from "../ui/useToast";
@@ -28,6 +31,7 @@ export default function PlayerSelector({
   // Danh sách user_id người chơi từ bill chính (chỉ dùng khi tạo bill con).
   // Khi chưa search: danh sách mặc định chỉ hiện những người này.
   // Khi search: tìm trong toàn bộ người chơi để chọn thêm người ngoài bill chính.
+  // Bill chính (không truyền): danh sách mặc định là người các bill chính gần đây.
   parentPlayerIds = null,
   pickerOpen = false,
   onPickerClose,
@@ -75,19 +79,23 @@ export default function PlayerSelector({
     }
   };
 
-  const parentIdSet = Array.isArray(parentPlayerIds)
-    ? new Set(parentPlayerIds)
-    : null;
+  const isChildBill = Array.isArray(parentPlayerIds);
+  const parentIdSet = isChildBill ? new Set(parentPlayerIds) : null;
   const hasSearch = search.trim().length > 0;
 
-  const filteredPlayers = players.filter((p) => {
+  // Chưa search: bill con chỉ hiện người của bill chính (thứ tự API); bill chính chỉ hiện người
+  // các bill chính gần đây, ai đánh gần nhất lên đầu
+  const listPlayers = useMemo(
+    () => (isChildBill ? players : sortByRecentBills(players)),
+    [players, isChildBill],
+  );
+  const scopeIds = isChildBill ? parentPlayerIds : recentPlayerIds(listPlayers);
+  const scopeSet = new Set(scopeIds);
+
+  const filteredPlayers = listPlayers.filter((p) => {
     const isSelected = selectedPlayers.some((sp) => sp.user_id === p.id);
     if (isSelected) return false;
-    if (!hasSearch) {
-      // Chưa search: nếu là bill con thì chỉ hiện người chơi từ bill chính
-      if (parentIdSet) return parentIdSet.has(p.id);
-      return true;
-    }
+    if (!hasSearch) return scopeSet.has(p.id);
     // Có search: tìm trong toàn bộ người chơi (kể cả ngoài bill chính)
     return matchesPlayerSearch(p.name, search);
   });
@@ -262,7 +270,7 @@ export default function PlayerSelector({
             placeholder={
               parentIdSet
                 ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
-                : "Tìm kiếm người chơi..."
+                : RECENT_SCOPE_TEXT.placeholder
             }
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -289,13 +297,20 @@ export default function PlayerSelector({
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto">
+            {!isChildBill && !hasSearch && filteredPlayers.length > 0 && (
+              <p className="mb-2 text-xs text-slate-500">
+                {RECENT_SCOPE_TEXT.hint}
+              </p>
+            )}
             {filteredPlayers.length === 0 ? (
               <div className="py-4 text-center text-sm text-slate-500">
                 {search
                   ? "Không tìm thấy"
                   : parentIdSet
                     ? "Bill chính chưa có người chơi — hãy tìm kiếm để chọn thêm"
-                    : "Không còn người chơi nào"}
+                    : scopeIds.length === 0
+                      ? RECENT_SCOPE_TEXT.empty
+                      : RECENT_SCOPE_TEXT.allPicked}
               </div>
             ) : (
               <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white">
@@ -544,17 +559,19 @@ export default function PlayerSelector({
       <PlayerPickerSheet
         isOpen={pickerOpen}
         onClose={closePicker}
-        players={players}
+        players={listPlayers}
         selectedIds={selectedPlayers.map((p) => p.user_id)}
         onToggle={handlePickerToggle}
         loading={loading}
         error={loadError ? LOAD_ERROR : null}
         onRetry={loadPlayers}
-        scopeIds={parentPlayerIds}
+        scopeIds={scopeIds}
+        scopeHint={isChildBill ? undefined : RECENT_SCOPE_TEXT.hint}
+        scopeEmptyText={isChildBill ? undefined : RECENT_SCOPE_TEXT.empty}
         searchPlaceholder={
           parentIdSet
             ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
-            : "Tìm kiếm người chơi..."
+            : RECENT_SCOPE_TEXT.placeholder
         }
         onQuickAdd={openAddModal}
         bulkAction={bulkAction}

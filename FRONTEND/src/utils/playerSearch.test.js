@@ -6,6 +6,8 @@ import {
   matchesPlayerSearch,
   normalizeSearch,
   orderPickerPlayers,
+  recentPlayerIds,
+  sortByRecentBills,
 } from "./playerSearch";
 
 const p = (id, name) => ({ id, name });
@@ -93,6 +95,35 @@ describe("orderPickerPlayers", () => {
   it("không đổi mảng truyền vào", () => {
     const input = [...PLAYERS];
     orderPickerPlayers(input, [5]);
+    expect(input.map((x) => x.id)).toEqual([1, 2, 3, 4, 5]);
+  });
+});
+
+describe("sortByRecentBills / recentPlayerIds", () => {
+  // recent_bill_rank: bill gần nhất người đó có mặt trong 10 bill chính mới nhất (1 = mới nhất)
+  const withRank = (player, recent_bill_rank) => ({
+    ...player,
+    recent_bill_rank,
+  });
+  const RANKED = [
+    withRank(PLAYERS[0], null),
+    withRank(PLAYERS[1], 3),
+    withRank(PLAYERS[2], 1),
+    withRank(PLAYERS[3], null),
+    withRank(PLAYERS[4], 1),
+  ];
+
+  it("ai đánh gần nhất lên đầu, cùng bill giữ thứ tự API, người ngoài các bill đó xếp sau", () => {
+    expect(sortByRecentBills(RANKED).map((x) => x.id)).toEqual([3, 5, 2, 1, 4]);
+  });
+
+  it("chỉ người có mặt trong các bill gần đây vào danh sách mặc định", () => {
+    expect(recentPlayerIds(sortByRecentBills(RANKED))).toEqual([3, 5, 2]);
+  });
+
+  it("không đổi mảng truyền vào", () => {
+    const input = [...RANKED];
+    sortByRecentBills(input);
     expect(input.map((x) => x.id)).toEqual([1, 2, 3, 4, 5]);
   });
 });

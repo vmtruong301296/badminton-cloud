@@ -82,6 +82,8 @@ function PickerBody({
   onRetry,
   showRatio,
   scopeIds,
+  scopeHint,
+  scopeEmptyText,
   searchPlaceholder,
   onQuickAdd,
   bulkAction,
@@ -143,7 +145,7 @@ function PickerBody({
           {hasQuery
             ? "Không tìm thấy"
             : scopeIds
-              ? "Bill chính chưa có người chơi — hãy tìm kiếm để chọn thêm"
+              ? scopeEmptyText
               : "Không còn người chơi nào"}
           {hasQuery && onQuickAdd && (
             <button
@@ -245,6 +247,10 @@ function PickerBody({
         </button>
       )}
 
+      {scopeIds && scopeHint && !hasQuery && (
+        <p className="-mb-1 text-xs text-slate-500">{scopeHint}</p>
+      )}
+
       {renderList()}
     </div>
   );
@@ -265,7 +271,9 @@ function PickerBody({
  * - onToggle(player, nextSelected): màn cha thêm (nextSelected = true) hoặc bỏ người
  * - loading, error (câu lỗi tải hoặc null), onRetry
  * - showRatio (mặc định true): hiện "Nam : 1"; bill tiệc truyền false (chỉ "Nam" / "Nữ")
- * - scopeIds: bill con — chưa gõ thì chỉ hiện người của bill chính
+ * - scopeIds: chưa gõ thì chỉ hiện những người này (bill con: người của bill chính; bill chính:
+ *   người các bill gần đây); scopeHint: dòng chú thích trên danh sách khi chưa gõ;
+ *   scopeEmptyText: chữ khi không có ai trong scopeIds
  * - searchPlaceholder, title, doneLabel(count)
  * - onQuickAdd(name): có thì hiện "Thêm nhanh" và nút tạo người mới mang tên vừa gõ
  * - bulkAction: { label, onClick } — nút chọn nhanh cả nhóm (vd "Chọn cả 12 người bill chính")
@@ -282,6 +290,8 @@ export default function PlayerPickerSheet({
   onRetry,
   showRatio = true,
   scopeIds = null,
+  scopeHint = null,
+  scopeEmptyText = "Bill chính chưa có người chơi — hãy tìm kiếm để chọn thêm",
   searchPlaceholder = "Tìm kiếm người chơi...",
   title = "Chọn người chơi",
   doneLabel = defaultDoneLabel,
@@ -316,6 +326,8 @@ export default function PlayerPickerSheet({
           onRetry={onRetry}
           showRatio={showRatio}
           scopeIds={scopeIds}
+          scopeHint={scopeHint}
+          scopeEmptyText={scopeEmptyText}
           searchPlaceholder={searchPlaceholder}
           onQuickAdd={onQuickAdd}
           bulkAction={bulkAction}

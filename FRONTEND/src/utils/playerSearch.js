@@ -27,8 +27,9 @@ export const matchesPlayerSearch = (name, query) => {
 /**
  * Danh sách hiện trong sheet, giữ thứ tự `players`.
  * - Có gõ: mọi người khớp tên (gồm cả người đã chọn — hàng không biến mất khi tick).
- * - Chưa gõ, có `scopeIds` (bill con): chỉ người của bill chính, cộng `includeIds` (người đang
- *   chọn) để người chọn thêm ngoài bill chính vẫn thấy được.
+ * - Chưa gõ, có `scopeIds` (bill con: người của bill chính; bill chính: người các bill gần đây):
+ *   chỉ những người đó, cộng `includeIds` (người đang chọn) để người chọn thêm ngoài danh sách
+ *   vẫn thấy được.
  */
 export const filterPickerPlayers = (
   players = [],
@@ -53,6 +54,33 @@ export const orderPickerPlayers = (players = [], pinnedIds = []) => {
     ...players.filter((p) => !pinned.has(p.id)),
   ];
 };
+
+/** Chữ của danh sách chọn người bill chính: chưa gõ chỉ hiện người các bill chính gần đây. */
+export const RECENT_SCOPE_TEXT = {
+  placeholder: "Tìm trong tất cả người chơi...",
+  hint: "Người chơi các bill gần đây — gõ tên để tìm người khác.",
+  empty: "Chưa có ai trong các bill gần đây — hãy tìm kiếm để chọn",
+  allPicked: "Đã chọn hết người các bill gần đây — gõ tên để tìm người khác",
+};
+
+const recentRank = (player) => player.recent_bill_rank ?? Infinity;
+
+/**
+ * Bill chính: ai có mặt ở bill chính gần đây hơn (recent_bill_rank của API, 1 = bill mới nhất)
+ * lên trước, người không có mặt trong các bill đó xếp sau; cùng hạng giữ thứ tự API.
+ */
+export const sortByRecentBills = (players = []) =>
+  players
+    .map((player, index) => ({ player, index }))
+    .sort(
+      (a, b) =>
+        recentRank(a.player) - recentRank(b.player) || a.index - b.index,
+    )
+    .map(({ player }) => player);
+
+/** user_id người có mặt trong các bill chính gần đây — danh sách mặc định của bill chính. */
+export const recentPlayerIds = (players = []) =>
+  players.filter((p) => p.recent_bill_rank != null).map((p) => p.id);
 
 /** Người đầu tiên chưa chọn — Enter trong ô tìm chọn người này. */
 export const firstUnselectedPlayer = (players = [], selectedIds = []) => {
