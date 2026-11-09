@@ -2,6 +2,7 @@ import { useState } from "react";
 import BillPlayerRow, { BillPlayerTag } from "./BillPlayerRow";
 import EmptyState from "../ui/EmptyState";
 import { CircleCheck, Clock } from "../ui/icons";
+import { playerWeightLabel } from "../../utils/matchBill";
 import {
   formatCurrency,
   formatCurrencyRounded,
@@ -42,12 +43,12 @@ function DetailLine({ label, value, indent = false }) {
 }
 
 /** Chi tiết mở tại chỗ của một người: mức tính, chi phí thêm, nợ cũ, bill chính + bill sau. */
-function BillPlayerDetail({ player, subBillLines }) {
+function BillPlayerDetail({ player, subBillLines, weightLabel }) {
   return (
     <>
       <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-600">
         <DetailLine
-          label="Mức tính"
+          label={weightLabel}
           value={
             <b className="font-semibold text-slate-900">
               {formatRatio(player.ratio_value)}
@@ -150,7 +151,7 @@ function BillPlayerDetail({ player, subBillLines }) {
   );
 }
 
-function rowMeta(player, subBillLines) {
+function rowMeta(player, subBillLines, weightLabel) {
   return [
     player.is_paid && player.paid_at ? (
       <span
@@ -162,7 +163,7 @@ function rowMeta(player, subBillLines) {
       </span>
     ) : (
       <span key="ratio">
-        Mức tính{" "}
+        {weightLabel}{" "}
         <b className="font-medium tabular-nums text-slate-700">
           {formatRatio(player.ratio_value)}
         </b>
@@ -285,7 +286,7 @@ export default function BillPlayerList({
         key={player.id}
         index={indexOf.get(player.id)}
         name={player.user?.name}
-        meta={rowMeta(player, subBillLines)}
+        meta={rowMeta(player, subBillLines, playerWeightLabel(bill))}
         amount={formatCurrencyRounded(
           multi
             ? playerTotalWithSubBills(player, subBills)
@@ -304,7 +305,11 @@ export default function BillPlayerList({
         onToggleExpand={() => setExpandedId(expanded ? null : player.id)}
         panelId={panelId}
       >
-        <BillPlayerDetail player={player} subBillLines={subBillLines} />
+        <BillPlayerDetail
+          player={player}
+          subBillLines={subBillLines}
+          weightLabel={playerWeightLabel(bill)}
+        />
       </BillPlayerRow>
     );
   };

@@ -27,6 +27,10 @@ import {
   focusNextOnEnter,
 } from "../../components/bill/billFormFocus";
 import useConfirmLeave from "../../components/bill/useConfirmLeave";
+import MatchBillForm, {
+  SplitModeSwitch,
+} from "../../components/bill/MatchBillForm";
+import { SPLIT_MATCH, matchCandidates } from "../../utils/matchBill";
 import PageHeader from "../../components/ui/PageHeader";
 import useToast from "../../components/ui/useToast";
 import { CalendarDays, Check, Loader } from "../../components/ui/icons";
@@ -53,6 +57,8 @@ export default function CreateBill() {
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
   const [parentBill, setParentBill] = useState(null);
+  // Bill con: chia theo mức tính (mặc định) hoặc theo trận
+  const [splitMode, setSplitMode] = useState("ratio");
   // Người dùng đã sửa gì chưa (để hỏi lại khi rời màn); đã bấm lưu lần nào chưa (để hiện lỗi M14)
   const [touched, setTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -297,57 +303,112 @@ export default function CreateBill() {
   const playerCount = formData.players.length;
   const isChildBill = Boolean(parentBillId);
 
+  const matchPlayerCandidates = useMemo(
+    () => matchCandidates(parentBill?.bill_players),
+    [parentBill],
+  );
+
+  const renderHeader = (onBackClick) => (
+    <PageHeader
+      back={{
+        to: backTo,
+        label: parentBill ? "Về Bill chính" : "Danh sách",
+        onClick: onBackClick,
+      }}
+      title={
+        <>
+          <span className="sm:hidden">
+            {parentBill ? `Bill con cho #${parentBill.id}` : "Tạo Bill mới"}
+          </span>
+          <span className="hidden sm:inline">
+            {parentBill
+              ? `Tạo Bill con cho Bill #${parentBill.id}`
+              : "Tạo Bill mới"}
+          </span>
+        </>
+      }
+    />
+  );
+
+  const parentCard = parentBill && (
+    <section className="mb-4 overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-card ring-1 ring-sky-50 sm:mb-6">
+      <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-sky-700">Bill chính</p>
+          <h2 className="mt-0.5 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
+            #{parentBill.id}
+          </h2>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 sm:text-sm">
+            <span className="inline-flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5" strokeWidth={2} />
+              <span className="sm:hidden">
+                {formatDateShort(parentBill.date)}
+              </span>
+              <span className="hidden sm:inline">
+                {formatDate(parentBill.date)}
+              </span>
+            </span>
+            <span className="font-tabular font-semibold text-slate-700">
+              {formatCurrencyRounded(parentBill.total_amount)}
+            </span>
+            <span className="text-slate-500">
+              {parentBill.bill_players?.length || 0} người chơi
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+
+  const splitSwitch = isChildBill && (
+    <SplitModeSwitch value={splitMode} onChange={setSplitMode} />
+  );
+
+  if (isChildBill && splitMode === SPLIT_MATCH) {
+    return (
+      <div className="px-4 sm:px-0">
+        <MatchBillForm
+          header={renderHeader}
+          intro={
+            <>
+              {parentCard}
+              {splitSwitch}
+            </>
+          }
+          initialForm={{
+            date: formData.date,
+            note: formData.note,
+            court_total: formData.court_total,
+            matches: [],
+          }}
+          candidates={matchPlayerCandidates}
+          backTo={backTo}
+          onSave={async (payload) => {
+            const response = await billsApi.create({
+              ...payload,
+              parent_bill_id: parentBillId,
+            });
+            navigate(`/bills/${response.data.id}`);
+          }}
+          submitLabel="Tạo Bill"
+          busyLabel="Đang tạo…"
+          errorPrefix="Có lỗi xảy ra khi tạo bill"
+          leave={{
+            title: "Bỏ bill đang tạo?",
+            message: "Các trận đã nhập sẽ mất.",
+            confirmLabel: "Bỏ bill",
+          }}
+          noteHint={CHILD_NOTE_HINT}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 sm:px-0">
-      <PageHeader
-        back={{
-          to: backTo,
-          label: parentBill ? "Về Bill chính" : "Danh sách",
-          onClick: leave.onBackClick,
-        }}
-        title={
-          <>
-            <span className="sm:hidden">
-              {parentBill ? `Bill con cho #${parentBill.id}` : "Tạo Bill mới"}
-            </span>
-            <span className="hidden sm:inline">
-              {parentBill
-                ? `Tạo Bill con cho Bill #${parentBill.id}`
-                : "Tạo Bill mới"}
-            </span>
-          </>
-        }
-      />
-
-      {parentBill && (
-        <section className="mb-4 overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-card ring-1 ring-sky-50 sm:mb-6">
-          <div className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-sky-700">Bill chính</p>
-              <h2 className="mt-0.5 text-base font-semibold tracking-tight text-slate-900 sm:text-lg">
-                #{parentBill.id}
-              </h2>
-              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 sm:text-sm">
-                <span className="inline-flex items-center gap-1.5">
-                  <CalendarDays className="h-3.5 w-3.5" strokeWidth={2} />
-                  <span className="sm:hidden">
-                    {formatDateShort(parentBill.date)}
-                  </span>
-                  <span className="hidden sm:inline">
-                    {formatDate(parentBill.date)}
-                  </span>
-                </span>
-                <span className="font-tabular font-semibold text-slate-700">
-                  {formatCurrencyRounded(parentBill.total_amount)}
-                </span>
-                <span className="text-slate-500">
-                  {parentBill.bill_players?.length || 0} người chơi
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
+      {renderHeader(leave.onBackClick)}
+      {parentCard}
+      {splitSwitch}
 
       <form id={FORM_ID} onSubmit={handleSubmit} onKeyDown={focusNextOnEnter}>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">

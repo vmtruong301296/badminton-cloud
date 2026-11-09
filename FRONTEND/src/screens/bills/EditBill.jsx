@@ -26,6 +26,12 @@ import {
   focusNextOnEnter,
 } from "../../components/bill/billFormFocus";
 import useConfirmLeave from "../../components/bill/useConfirmLeave";
+import MatchBillForm from "../../components/bill/MatchBillForm";
+import {
+  SPLIT_MATCH,
+  matchCandidates,
+  matchFormFromBill,
+} from "../../utils/matchBill";
 import ActionBar from "../../components/ui/ActionBar";
 import AppBar from "../../components/ui/AppBar";
 import EmptyState from "../../components/ui/EmptyState";
@@ -37,6 +43,23 @@ const FORM_ID = "bill-form";
 
 /** Bill con: ghi chú chính là nhãn dòng bill sau trong khối "TT + Bill sau" của bill chính. */
 const CHILD_NOTE_HINT = 'Ghi chú hiện ở dòng "TT + Bill sau" của bill chính.';
+
+/** Lưu bill giữ Đã TT của người còn trong bill (BillController::update) — báo để biết tiền đổi cũng không bỏ dấu. */
+function PaidNotice({ count }) {
+  if (count === 0) return null;
+  return (
+    <div
+      role="note"
+      className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 sm:mb-6"
+    >
+      <CircleAlert className="mt-0.5 h-4 w-4 flex-none text-amber-600" />
+      <p>
+        <span className="font-semibold">{count} người đã TT trong bill này.</span>{" "}
+        Lưu thay đổi vẫn giữ Đã TT cho người còn trong bill, kể cả khi số tiền thay đổi.
+      </p>
+    </div>
+  );
+}
 
 /**
  * Xem trước khi sửa: giá cầu theo ngày bill (thiếu thì giá đã lưu), không tính nợ. Tính cả
@@ -161,6 +184,8 @@ export default function EditBill() {
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
   const [billPrices, setBillPrices] = useState({});
+  // Bill chia theo trận: { bill, candidates } — sửa bằng MatchBillForm thay cho form mức tính
+  const [matchBill, setMatchBill] = useState(null);
   // Người dùng đã sửa gì chưa (để hỏi lại khi rời màn); đã bấm lưu lần nào chưa (để hiện lỗi M14)
   const [touched, setTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -200,6 +225,17 @@ export default function EditBill() {
       setLoadFailed(false);
       const billRes = await billsApi.getById(id);
       const bill = billRes.data;
+      if (bill.split_mode === SPLIT_MATCH) {
+        const parent = bill.parent_bill_id
+          ? (await billsApi.getById(bill.parent_bill_id)).data
+          : null;
+        setMatchBill({
+          bill,
+          candidates: matchCandidates(parent?.bill_players, bill.matches),
+        });
+        return;
+      }
+      setMatchBill(null);
       const billDateStr = bill.date
         ? formatDate(bill.date)
         : new Date().toISOString().split("T")[0];
@@ -455,30 +491,51 @@ export default function EditBill() {
     );
   }
 
+  const renderHeader = (onBackClick) => (
+    <PageHeader
+      back={{ to: backTo, label: "Về chi tiết Bill", onClick: onBackClick }}
+      title={`Sửa Bill #${id}`}
+    />
+  );
+
+  if (matchBill) {
+    const { bill } = matchBill;
+    return (
+      <div className="px-4 sm:px-0">
+        <MatchBillForm
+          header={renderHeader}
+          intro={
+            <PaidNotice
+              count={(bill.bill_players || []).filter((p) => p.is_paid).length}
+            />
+          }
+          initialForm={matchFormFromBill(bill)}
+          candidates={matchBill.candidates}
+          backTo={backTo}
+          onSave={async (payload) => {
+            const response = await billsApi.update(id, payload);
+            navigate(`/bills/${response.data.id}`);
+          }}
+          submitLabel="Lưu thay đổi"
+          busyLabel="Đang lưu…"
+          errorPrefix="Có lỗi xảy ra khi cập nhật bill"
+          leave={{
+            title: "Bỏ thay đổi?",
+            message: "Các thay đổi chưa lưu sẽ mất.",
+            confirmLabel: "Bỏ thay đổi",
+          }}
+          noteHint={bill.parent_bill_id ? CHILD_NOTE_HINT : undefined}
+        />
+      </div>
+    );
+  }
+
   const paidCount = formData.players.filter((p) => p.is_paid).length;
 
   return (
     <div className="px-4 sm:px-0">
-      <PageHeader
-        back={{ to: backTo, label: "Về chi tiết Bill", onClick: leave.onBackClick }}
-        title={`Sửa Bill #${id}`}
-      />
-
-      {/* Lưu bill giữ Đã TT của người còn trong bill (BillController::update) — báo để biết tiền đổi cũng không bỏ dấu */}
-      {paidCount > 0 && (
-        <div
-          role="note"
-          className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 sm:mb-6"
-        >
-          <CircleAlert className="mt-0.5 h-4 w-4 flex-none text-amber-600" />
-          <p>
-            <span className="font-semibold">
-              {paidCount} người đã TT trong bill này.
-            </span>{" "}
-            Lưu thay đổi vẫn giữ Đã TT cho người còn trong bill, kể cả khi số tiền thay đổi.
-          </p>
-        </div>
-      )}
+      {renderHeader(leave.onBackClick)}
+      <PaidNotice count={paidCount} />
 
       <form id={FORM_ID} onSubmit={handleSubmit} onKeyDown={focusNextOnEnter}>
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">

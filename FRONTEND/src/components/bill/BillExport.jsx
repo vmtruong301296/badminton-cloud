@@ -1,6 +1,7 @@
 import { useMemo } from "react";
-import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from "../../utils/formatters";
+import { formatCurrency, formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from "../../utils/formatters";
 import { hasExtraCosts } from "../../utils/billTotals";
+import { isMatchSplit, matchDisplayLines, playerWeightLabel } from "../../utils/matchBill";
 
 export default function BillExport({ bill, paymentAccounts = [], paymentAccountImages = {} }) {
 	// Get active payment accounts (memoized to avoid re-renders)
@@ -56,10 +57,40 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 						<div className="text-xl font-bold text-blue-600">{formatCurrencyRounded(billData.total_amount)}</div>
 					</div>
 					<div className="col-span-1">
-						<div className="text-sm text-gray-600 mb-1">Tiền/người</div>
-						<div className="text-lg font-semibold text-green-600">{formatCurrencyRounded(perPersonAmount)}</div>
+						<div className="text-sm text-gray-600 mb-1">{isMatchSplit(billData) ? "Số trận" : "Tiền/người"}</div>
+						<div className="text-lg font-semibold text-green-600">
+							{isMatchSplit(billData) ? billData.matches?.length || 0 : formatCurrencyRounded(perPersonAmount)}
+						</div>
 					</div>
 				</div>
+
+				{/* Bill chia theo trận: từng trận, người đánh, tiền mỗi người của trận */}
+				{isMatchSplit(billData) && (
+					<table className="mb-6 w-full border-collapse text-sm">
+						<thead>
+							<tr className="bg-gray-100">
+								<th className="border border-gray-300 px-2 py-2 w-20 text-left">Trận</th>
+								<th className="border border-gray-300 px-3 py-2 text-left">Người chơi</th>
+								<th className="border border-gray-300 px-3 py-2 text-left">Cầu</th>
+								<th className="border border-gray-300 px-3 py-2 text-right">Mỗi người</th>
+							</tr>
+						</thead>
+						<tbody>
+							{matchDisplayLines(billData).map((line) => (
+								<tr key={line.id}>
+									<td className="border border-gray-300 px-2 py-2">
+										{line.position} ({line.kind})
+									</td>
+									<td className="border border-gray-300 px-3 py-2">{line.names.join(", ")}</td>
+									<td className="border border-gray-300 px-3 py-2">
+										{line.shuttle_name} × {line.quantity} = {formatCurrency(line.subtotal)}
+									</td>
+									<td className="border border-gray-300 px-3 py-2 text-right font-semibold">{formatCurrency(line.per_player)}</td>
+								</tr>
+							))}
+						</tbody>
+					</table>
+				)}
 
 			{/* Players Table */}
 			<div className="mb-6">
@@ -68,7 +99,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 						<tr className="bg-gray-100">
 							<th className="border border-gray-300 px-2 py-2 w-10 text-center">TT</th>
 							<th className="border border-gray-300 px-3 py-2 text-left">Tên</th>
-							<th className="border border-gray-300 px-2 py-2 w-14 text-right">Mức tính</th>
+							<th className="border border-gray-300 px-2 py-2 w-14 text-right">{playerWeightLabel(billData)}</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Chi phí thêm</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Tiền nợ</th>
 							<th className="border border-gray-300 px-3 py-2 text-right">Tổng tiền</th>

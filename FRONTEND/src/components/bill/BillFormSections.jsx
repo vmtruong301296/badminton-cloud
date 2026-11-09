@@ -221,7 +221,8 @@ function SubmitLabel({ loading, label, busyLabel }) {
 /**
  * Thanh đáy điện thoại (M2): "Tổng tiền · N người" + số tiền (chạm mở sheet Tóm tắt Bill) và
  * nút lưu. Sheet có nút lưu ở chân để xem xong lưu luôn. Nút gửi form qua thuộc tính `form`
- * (sheet nằm ngoài <form>).
+ * (sheet nằm ngoài <form>). `summaryContent`: thân sheet thay cho BillSummary (bill chia theo
+ * trận).
  */
 export function BillActionBar({
   formId,
@@ -230,6 +231,7 @@ export function BillActionBar({
   loading,
   label,
   busyLabel,
+  summaryContent,
 }) {
   const [summaryOpen, setSummaryOpen] = useState(false);
 
@@ -283,7 +285,7 @@ export function BillActionBar({
           </button>
         }
       >
-        <BillSummary preview={preview} variant="sheet" />
+        {summaryContent ?? <BillSummary preview={preview} variant="sheet" />}
       </Modal>
     </>
   );

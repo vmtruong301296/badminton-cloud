@@ -8,6 +8,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bill extends Model
 {
+    /** Tổng tiền (sân + cầu) chia theo mức tính của từng người. */
+    public const SPLIT_RATIO = 'ratio';
+
+    /** Bill con chia theo từng trận (xem MatchBillCalculator). */
+    public const SPLIT_MATCH = 'match';
+
     protected $fillable = [
         'date',
         'note',
@@ -18,6 +24,7 @@ class Bill extends Model
         'total_amount',
         'unit_price',
         'parent_bill_id',
+        'split_mode',
     ];
 
     protected function casts(): array
@@ -42,6 +49,12 @@ class Bill extends Model
     public function billPlayers(): HasMany
     {
         return $this->hasMany(BillPlayer::class);
+    }
+
+    /** Các trận, chỉ có ở bill chia theo trận. */
+    public function matches(): HasMany
+    {
+        return $this->hasMany(BillMatch::class)->orderBy('position');
     }
 
     // Sub-bills relationship

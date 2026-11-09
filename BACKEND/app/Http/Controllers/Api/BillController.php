@@ -11,6 +11,7 @@ use App\Models\BillShuttle;
 use App\Models\Menu;
 use App\Models\ShuttleType;
 use App\Models\User;
+use App\Services\MatchBillWriter;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,11 @@ use Illuminate\Support\Facades\Http;
 
 class BillController extends Controller
 {
+    /** Quan hệ trả kèm bill chia theo trận (Bill::SPLIT_MATCH). */
+    private const MATCH_RELATIONS = ['matches.players', 'matches.shuttleType'];
+
+    public function __construct(private MatchBillWriter $matchBills) {}
+
     /**
      * Display a listing of the resource.
      */
@@ -82,6 +88,17 @@ class BillController extends Controller
             }
 
             $billDate = \Carbon\Carbon::parse($request->date)->toDateString();
+
+            if ($request->input('split_mode') === Bill::SPLIT_MATCH) {
+                $bill = $this->matchBills->save(new Bill([
+                    'created_by' => $createdBy,
+                    'parent_bill_id' => $request->integer('parent_bill_id') ?: null,
+                ]), $request->validated());
+                $this->deductShuttleStock($bill->billShuttles()->get()->toArray());
+                DB::commit();
+
+                return response()->json($this->loadMatchBill($bill), 201);
+            }
 
             // Calculate total shuttle price (giá theo ngày bill)
             $totalShuttlePrice = 0;
@@ -238,6 +255,9 @@ class BillController extends Controller
             'subBills.billShuttles.shuttleType',
             'subBills.billPlayers.user',
             'subBills.billPlayers.billPlayerMenus.menu',
+            'subBills.matches.players',
+            'subBills.matches.shuttleType',
+            ...self::MATCH_RELATIONS,
         ])
             ->findOrFail($id);
 
@@ -367,6 +387,15 @@ class BillController extends Controller
             // bill_players được tạo lại bên dưới: giữ "Đã TT" của người vẫn còn trong bill
             $paymentByUser = $this->paymentStatusByUser($bill);
 
+            if ($request->input('split_mode') === Bill::SPLIT_MATCH) {
+                $this->clearBillLines($bill);
+                $this->matchBills->save($bill, $request->validated(), $paymentByUser);
+                $this->deductShuttleStock($bill->billShuttles()->get()->toArray());
+                DB::commit();
+
+                return response()->json($this->loadMatchBill($bill));
+            }
+
             $billDate = \Carbon\Carbon::parse($request->date)->toDateString();
 
             // Calculate total shuttle price
@@ -432,16 +461,10 @@ class BillController extends Controller
                 'total_amount' => $totalAmount,
                 'unit_price' => $unitPrice,
                 'parent_bill_id' => $request->parent_bill_id ?? $bill->parent_bill_id,
+                'split_mode' => Bill::SPLIT_RATIO,
             ]);
 
-            // Remove existing related records
-            foreach ($bill->billPlayers as $billPlayer) {
-                $billPlayer->billPlayerMenus()->delete();
-            }
-            $this->restoreShuttleStockFromBill($bill);
-
-            $bill->billPlayers()->delete();
-            $bill->billShuttles()->delete();
+            $this->clearBillLines($bill);
 
             // Re-create bill shuttles
             foreach ($request->shuttles as $shuttleData) {
@@ -637,6 +660,7 @@ class BillController extends Controller
             'billShuttles.shuttleType',
             'billPlayers.user',
             'billPlayers.billPlayerMenus.menu',
+            ...self::MATCH_RELATIONS,
         ])
             ->where('parent_bill_id', $id)
             ->orderBy('created_at', 'desc')
@@ -686,6 +710,33 @@ class BillController extends Controller
                 $player->user_id => ['is_paid' => (bool) $player->is_paid, 'paid_at' => $player->paid_at],
             ])
             ->all();
+    }
+
+    /**
+     * Xoá người chơi (kèm menu), chi tiết cầu và các trận của bill để ghi lại khi
+     * sửa; hoàn kho theo chi tiết cầu cũ.
+     */
+    private function clearBillLines(Bill $bill): void
+    {
+        foreach ($bill->billPlayers as $billPlayer) {
+            $billPlayer->billPlayerMenus()->delete();
+        }
+        $this->restoreShuttleStockFromBill($bill);
+
+        $bill->billPlayers()->delete();
+        $bill->billShuttles()->delete();
+        $bill->matches()->delete();
+    }
+
+    private function loadMatchBill(Bill $bill): Bill
+    {
+        return $bill->load([
+            'creator',
+            'billShuttles.shuttleType',
+            'billPlayers.user',
+            'billPlayers.billPlayerMenus.menu',
+            ...self::MATCH_RELATIONS,
+        ]);
     }
 
     /**

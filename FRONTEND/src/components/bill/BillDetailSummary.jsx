@@ -8,6 +8,7 @@ import {
 } from "../ui/icons";
 import { formatCurrencyRounded, formatDateShort } from "../../utils/formatters";
 import { billPerPersonAmount } from "../../utils/billTotals";
+import { isMatchSplit } from "../../utils/matchBill";
 
 const STATUS = {
   paid: {
@@ -142,12 +143,16 @@ export default function BillDetailSummary({ bill, collection }) {
               label="Tiền cầu"
               value={formatCurrencyRounded(bill.total_shuttle_price)}
             />
-            <InfoValue
-              label="Tiền/người"
-              value={formatCurrencyRounded(
-                billPerPersonAmount(bill.bill_players, bill.total_amount),
-              )}
-            />
+            {isMatchSplit(bill) ? (
+              <InfoValue label="Số trận" value={bill.matches?.length || 0} />
+            ) : (
+              <InfoValue
+                label="Tiền/người"
+                value={formatCurrencyRounded(
+                  billPerPersonAmount(bill.bill_players, bill.total_amount),
+                )}
+              />
+            )}
           </div>
           {(bill.bill_shuttles || []).map((shuttle, index) => (
             <div

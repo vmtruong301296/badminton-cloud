@@ -27,6 +27,8 @@ import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
 import BillDetailSummary from "../../components/bill/BillDetailSummary";
 import BillPlayerList from "../../components/bill/BillPlayerList";
+import BillMatchesCard from "../../components/bill/BillMatchesCard";
+import { isMatchSplit, playerWeightLabel } from "../../utils/matchBill";
 import { waitForImagesReady, nodeToBlob } from "../../utils/exportImage";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
@@ -700,6 +702,7 @@ export default function BillDetail() {
       {/* Điện thoại / máy nhỏ: thẻ tóm tắt + chip lọc + hàng có nút Đã TT; từ md giữ bố cục cũ */}
       <div className="space-y-3 md:hidden">
         <BillDetailSummary key={`s-${bill.id}`} bill={bill} collection={collection} />
+        {isMatchSplit(bill) && <BillMatchesCard bill={bill} />}
         <BillPlayerList
           key={`p-${bill.id}`}
           bill={bill}
@@ -805,10 +808,12 @@ export default function BillDetail() {
                       </div>
                       <div className="sm:order-last">
                         <div className="text-xs font-medium text-slate-500">
-                          Tiền/người
+                          {isMatchSplit(bill) ? "Số trận" : "Tiền/người"}
                         </div>
                         <div className="font-tabular mt-1 text-sm font-semibold text-slate-900 sm:text-lg">
-                          {formatCurrencyRounded(perPersonAmount)}
+                          {isMatchSplit(bill)
+                            ? bill.matches?.length || 0
+                            : formatCurrencyRounded(perPersonAmount)}
                         </div>
                       </div>
                       <div className="col-span-3 rounded-xl bg-emerald-50 p-3 sm:order-3 sm:col-span-1">
@@ -833,8 +838,13 @@ export default function BillDetail() {
               </div>
             </section>
 
+            {/* Bill chia theo trận: từng trận thay cho bảng cầu gộp - 4 phần */}
+            {isMatchSplit(bill) && (
+              <BillMatchesCard bill={bill} className="lg:col-span-4" />
+            )}
+
             {/* Shuttles - 4 phần */}
-            {bill.bill_shuttles && bill.bill_shuttles.length > 0 && (
+            {!isMatchSplit(bill) && bill.bill_shuttles && bill.bill_shuttles.length > 0 && (
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card lg:col-span-4">
                 <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
                   <h2 className="text-base font-semibold text-slate-900">
@@ -898,7 +908,7 @@ export default function BillDetail() {
                       Tên
                     </th>
                     <th scope="col" className="px-4 py-2.5 text-right">
-                      Mức tính
+                      {playerWeightLabel(bill)}
                     </th>
                     <th scope="col" className="px-4 py-2.5 text-right">
                       Chi phí thêm

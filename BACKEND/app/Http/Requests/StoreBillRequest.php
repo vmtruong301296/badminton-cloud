@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesMatchSplit;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreBillRequest extends FormRequest
 {
+    use ValidatesMatchSplit;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -30,7 +33,7 @@ class StoreBillRequest extends FormRequest
             'shuttles' => 'nullable|array',
             'shuttles.*.shuttle_type_id' => 'required|exists:shuttle_types,id',
             'shuttles.*.quantity' => 'required|integer|min:1',
-            'players' => 'required|array|min:1',
+            'players' => 'required_unless:split_mode,match|array|min:1',
             'players.*.user_id' => 'required|exists:users,id',
             'players.*.ratio_value' => 'nullable|numeric|min:0',
             'players.*.extra_amount' => 'nullable|integer',
@@ -38,7 +41,16 @@ class StoreBillRequest extends FormRequest
             'players.*.menus' => 'nullable|array',
             'players.*.menus.*.menu_id' => 'required_with:players.*.menus|exists:menus,id',
             'players.*.menus.*.quantity' => 'required_with:players.*.menus|integer|min:1',
+            ...$this->matchSplitRules(),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return $this->matchSplitMessages();
     }
 
     /**
@@ -47,6 +59,11 @@ class StoreBillRequest extends FormRequest
     public function withValidator($validator): void
     {
         $validator->after(function ($validator) {
+            // Chia theo trận: cầu nằm trong từng trận
+            if ($this->isMatchSplit()) {
+                return;
+            }
+
             $shuttles = $this->input('shuttles', []);
             $courtTotal = (float) $this->input('court_total', 0);
 

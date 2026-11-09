@@ -1,6 +1,8 @@
 import { Check } from '../ui/icons';
 import { formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from '../../utils/formatters';
 import { billCollectedTotal, billPlayingTotal, billProfit, formatProfit, hasExtraCosts } from '../../utils/billTotals';
+import { isMatchSplit, playerWeightLabel } from '../../utils/matchBill';
+import BillMatchesCard from './BillMatchesCard';
 
 // Hiển thị bill trên màn hình chi tiết (KHÔNG phải ảnh xuất: ảnh xuất do BillExport.jsx dựng riêng).
 // Danh sách người chơi dạng hàng/thẻ thay cho bảng 8 cột: cột chứa nó chỉ rộng ~600 px trên desktop
@@ -189,8 +191,11 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
           </div>
         </div>
 
+        {/* Bill chia theo trận: từng trận thay cho bảng cầu gộp */}
+        {isMatchSplit(bill) && <BillMatchesCard bill={bill} variant="plain" />}
+
         {/* Shuttles */}
-        {bill.bill_shuttles && bill.bill_shuttles.length > 0 && (
+        {!isMatchSplit(bill) && bill.bill_shuttles && bill.bill_shuttles.length > 0 && (
           <div className="rounded-xl border border-slate-200 bg-white p-3 sm:p-4">
             <h4 className="mb-2 text-sm font-semibold text-slate-900">Chi tiết cầu</h4>
             <div className="overflow-x-auto">
@@ -261,7 +266,7 @@ export default function BillContent({ bill, showHeader = true, onMarkPayment, is
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-xs text-slate-500">
-                          Mức tính <span className="font-tabular font-medium text-slate-700">{formatRatio(player.ratio_value)}</span>
+                          {playerWeightLabel(bill)} <span className="font-tabular font-medium text-slate-700">{formatRatio(player.ratio_value)}</span>
                         </div>
                         {renderPaidControl(player)}
                       </div>
