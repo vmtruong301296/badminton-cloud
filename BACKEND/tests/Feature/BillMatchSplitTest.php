@@ -152,6 +152,29 @@ class BillMatchSplitTest extends TestCase
         $this->assertSame($bill['id'], $sub['parent_bill_id']);
     }
 
+    public function test_luu_cap_a_va_cap_b_theo_thu_tu_nguoi_choi(): void
+    {
+        $bill = $this->createSubBill($this->examplePayload([
+            'matches' => [
+                $this->match(['Trường', 'Nguyên', 'Hiển', 'Huỳnh'], $this->s70, 1),
+                $this->match(['Lộc', 'Tân'], $this->s70, 1),
+            ],
+        ]));
+
+        $sides = fn (array $match) => collect($match['players'])
+            ->map(fn (array $p) => [$p['name'], $p['pivot']['side']])->all();
+        $this->assertSame(
+            [['Trường', 1], ['Nguyên', 1], ['Hiển', 2], ['Huỳnh', 2]],
+            $sides($bill['matches'][0]),
+            'Đánh đôi: 2 người đầu là Cặp A, 2 người sau là Cặp B',
+        );
+        $this->assertSame([['Lộc', 1], ['Tân', 2]], $sides($bill['matches'][1]), 'Đánh đơn: mỗi bên một người');
+
+        // Tiền vẫn chia đều cho người đánh trận, không phụ thuộc cặp
+        $players = $this->playersByName($bill);
+        $this->assertSame($players['Trường']['share_amount'], $players['Huỳnh']['share_amount']);
+    }
+
     public function test_luu_tung_tran_va_gop_chi_tiet_cau_theo_loai(): void
     {
         $bill = $this->createSubBill($this->examplePayload([

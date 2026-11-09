@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { formatCurrency, formatCurrencyRounded, formatDateDisplay, formatDateWithWeekday, formatRatio, roundToNearestThousand } from "../../utils/formatters";
 import { hasExtraCosts } from "../../utils/billTotals";
 import { isMatchSplit, matchDisplayLines, playerWeightLabel } from "../../utils/matchBill";
+import { MatchTeams } from "./BillMatchesCard";
 
 export default function BillExport({ bill, paymentAccounts = [], paymentAccountImages = {} }) {
 	// Get active payment accounts (memoized to avoid re-renders)
@@ -65,7 +66,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 					</div>
 				</div>
 
-				{/* Bill chia theo trận: từng trận, người đánh, cầu */}
+				{/* Bill chia theo trận: từng trận, Cặp A vs Cặp B, cầu */}
 				{isMatchSplit(billData) && (
 					<table className="mb-6 w-full border-collapse text-sm">
 						<thead>
@@ -81,7 +82,9 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 									<td className="border border-gray-300 px-2 py-2">
 										{line.position} ({line.kind})
 									</td>
-									<td className="border border-gray-300 px-3 py-2">{line.names.join(", ")}</td>
+									<td className="border border-gray-300 px-3 py-2">
+										<MatchTeams teams={line.teams} />
+									</td>
 									<td className="border border-gray-300 px-3 py-2">
 										{line.shuttle_text} = {formatCurrency(line.subtotal)}
 									</td>

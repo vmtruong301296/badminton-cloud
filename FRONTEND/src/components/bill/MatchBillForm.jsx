@@ -122,7 +122,8 @@ export default function MatchBillForm({
   const [typesLoading, setTypesLoading] = useState(true);
   // Người chọn từ sheet mà không có trong candidates (để hiện tên)
   const [extraPlayers, setExtraPlayers] = useState([]);
-  const [pickerKey, setPickerKey] = useState(null);
+  // Sheet chọn người đang mở: { key: key của trận, team: 0 (Cặp A) | 1 (Cặp B) }
+  const [picker, setPicker] = useState(null);
   const allPlayers = useAllPlayers();
 
   useEffect(() => {
@@ -190,9 +191,9 @@ export default function MatchBillForm({
     update((prev) => ({ ...prev, matches: [...prev.matches, match] }));
   };
 
-  const pickerIndex = form.matches.findIndex((m) => m.key === pickerKey);
-  const openPicker = (key) => {
-    setPickerKey(key);
+  const pickerIndex = form.matches.findIndex((m) => m.key === picker?.key);
+  const openPicker = (key, team) => {
+    setPicker({ key, team });
     allPlayers.loadOnce();
   };
   /** Người chọn ngoài candidates: nhớ tên để hiện ở trận và phần tóm tắt. */
@@ -267,7 +268,7 @@ export default function MatchBillForm({
                       line={preview.matches[index]}
                       errors={errors?.matches[index]}
                       onChange={(updated) => updateMatch(match.key, updated)}
-                      onOpenPicker={() => openPicker(match.key)}
+                      onOpenPicker={(team) => openPicker(match.key, team)}
                       onRemove={() => removeMatch(match.key)}
                     />
                   ))}
@@ -333,6 +334,7 @@ export default function MatchBillForm({
 
       <MatchPlayerPicker
         match={form.matches[pickerIndex] ?? null}
+        team={picker?.team ?? 0}
         number={pickerIndex + 1}
         scopeIds={
           scopeToCandidates ? baseCandidates.map((c) => c.user_id) : null
@@ -340,7 +342,7 @@ export default function MatchBillForm({
         allPlayers={allPlayers}
         onChange={(updated) => updateMatch(updated.key, updated)}
         onPicked={rememberPlayer}
-        onClose={() => setPickerKey(null)}
+        onClose={() => setPicker(null)}
       />
 
       <ConfirmDialog

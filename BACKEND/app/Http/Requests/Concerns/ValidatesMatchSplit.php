@@ -8,7 +8,7 @@ use Illuminate\Validation\Rule;
 /**
  * Luật cho bill chia theo trận (split_mode = match), dùng chung cho tạo và sửa
  * bill. Kiểu này không gửi players / shuttles: máy chủ suy ra người chơi và
- * chi tiết cầu từ các trận.
+ * chi tiết cầu từ các trận. matches.*.player_ids: nửa đầu là Cặp A, nửa sau là Cặp B.
  */
 trait ValidatesMatchSplit
 {

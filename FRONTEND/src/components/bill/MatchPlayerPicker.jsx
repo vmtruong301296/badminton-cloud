@@ -1,15 +1,22 @@
 import { useState } from "react";
-import { MATCH_FORM_MESSAGES, toggleMatchPlayer } from "../../utils/matchBill";
+import {
+  MATCH_FORM_MESSAGES,
+  teamCapacity,
+  teamLabel,
+  toggleTeamPlayer,
+} from "../../utils/matchBill";
 import PlayerPickerSheet from "./PlayerPickerSheet";
 
 /**
- * Sheet "Chọn người chơi" của một trận (giống sheet chọn người của bill con). Có `scopeIds`
- * (bill con): chưa gõ thì chỉ hiện người của bill chính, gõ tìm thì tìm trong mọi người chơi.
- * `scopeIds` null (bill chính): hiện mọi người chơi. Trận đủ người (đôi 4, đơn 2) thì không
- * chọn thêm, báo ngay trong sheet.
+ * Sheet "Chọn người chơi" cho một bên (Cặp A / Cặp B) của một trận, giống sheet chọn người
+ * của bill con. Có `scopeIds` (bill con): chưa gõ thì chỉ hiện người của bill chính, gõ tìm
+ * thì tìm trong mọi người chơi. `scopeIds` null (bill chính): hiện mọi người chơi. Bên đủ người
+ * (đôi 2, đơn 1) thì không chọn thêm; chọn người đang ở bên kia thì chuyển sang bên này. Cả
+ * hai trường hợp đều báo ngay trong sheet.
  *
  * @param {{
- *   match: { size: number, player_ids: number[] } | null,
+ *   match: { size: number, teams: number[][] } | null,
+ *   team: 0 | 1,
  *   number: number,
  *   scopeIds: number[] | null,
  *   allPlayers: ReturnType<typeof import("./useAllPlayers").default>,
@@ -20,6 +27,7 @@ import PlayerPickerSheet from "./PlayerPickerSheet";
  */
 export default function MatchPlayerPicker({
   match,
+  team,
   number,
   scopeIds,
   allPlayers,
@@ -28,6 +36,8 @@ export default function MatchPlayerPicker({
   onClose,
 }) {
   const [notice, setNotice] = useState(null);
+  const label = match ? teamLabel(match.size, team) : "";
+  const capacity = match ? teamCapacity(match) : 0;
 
   const close = () => {
     setNotice(null);
@@ -36,13 +46,26 @@ export default function MatchPlayerPicker({
 
   const handleToggle = (player, nextSelected) => {
     setNotice(null);
-    if (nextSelected === match.player_ids.includes(player.id)) return;
-    if (nextSelected && match.player_ids.length >= match.size) {
-      setNotice(MATCH_FORM_MESSAGES.matchFull(number, match.size));
+    const ids = match.teams[team];
+    if (nextSelected === ids.includes(player.id)) return;
+    if (nextSelected && ids.length >= capacity) {
+      setNotice(MATCH_FORM_MESSAGES.teamFull(label, capacity));
       return;
     }
-    if (nextSelected) onPicked({ user_id: player.id, name: player.name });
-    onChange(toggleMatchPlayer(match, player.id));
+    if (nextSelected) {
+      onPicked({ user_id: player.id, name: player.name });
+      const other = 1 - team;
+      if (match.teams[other].includes(player.id)) {
+        setNotice(
+          MATCH_FORM_MESSAGES.movedTeam(
+            player.name,
+            teamLabel(match.size, other),
+            label,
+          ),
+        );
+      }
+    }
+    onChange(toggleTeamPlayer(match, team, player.id));
   };
 
   return (
@@ -50,7 +73,7 @@ export default function MatchPlayerPicker({
       isOpen={Boolean(match)}
       onClose={close}
       players={allPlayers.players || []}
-      selectedIds={match?.player_ids ?? []}
+      selectedIds={match?.teams[team] ?? []}
       onToggle={handleToggle}
       loading={allPlayers.loading}
       error={allPlayers.error}
@@ -62,8 +85,8 @@ export default function MatchPlayerPicker({
           ? "Tìm kiếm để chọn thêm người ngoài bill chính..."
           : "Tìm kiếm người chơi..."
       }
-      title={`Chọn người chơi · Trận ${number}`}
-      doneLabel={(count) => `Xong · ${count}/${match?.size ?? 0} người`}
+      title={`Chọn người chơi · Trận ${number} · ${label}`}
+      doneLabel={(count) => `Xong · ${count}/${capacity} người`}
       notice={notice}
     />
   );

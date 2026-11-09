@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class BillMatch extends Model
 {
+    /** bill_match_players.side: bên của người đánh (đánh đôi là cặp). */
+    public const SIDE_A = 1;
+
+    public const SIDE_B = 2;
+
     protected $fillable = [
         'bill_id',
         'position',
@@ -30,10 +35,12 @@ class BillMatch extends Model
         return $this->hasMany(BillMatchShuttle::class)->orderBy('id');
     }
 
-    /** Người đánh trận này, theo thứ tự đã chọn. */
+    /** Người đánh trận này: Cặp A rồi Cặp B (pivot.side), mỗi bên theo thứ tự đã chọn. */
     public function players(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'bill_match_players')
+            ->withPivot('side')
+            ->orderBy('bill_match_players.side')
             ->orderBy('bill_match_players.id');
     }
 }

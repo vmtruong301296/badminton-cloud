@@ -5,7 +5,9 @@ import {
   MATCH_SIZES,
   addMatchShuttle,
   setMatchSize,
-  toggleMatchPlayer,
+  teamCapacity,
+  teamLabel,
+  toggleTeamPlayer,
 } from "../../utils/matchBill";
 import { CircleAlert, Plus, Users, X } from "../ui/icons";
 
@@ -20,10 +22,11 @@ function FieldError({ id, message }) {
 
 const money = (value) => formatCurrency(Math.round(value));
 
-/** Người đã chọn của trận (chạm × để bỏ) + nút mở sheet chọn người. */
-function MatchPlayers({
+/** Một bên của trận (Cặp A / Cặp B): người đã chọn (chạm × để bỏ) + nút mở sheet chọn người. */
+function TeamBox({
   uid,
   index,
+  team,
   match,
   nameOf,
   error,
@@ -31,39 +34,45 @@ function MatchPlayers({
   onOpenPicker,
 }) {
   const number = index + 1;
-  const count = match.player_ids.length;
-  const full = count >= match.size;
-  const errorId = `${uid}-players-err`;
+  const label = teamLabel(match.size, team);
+  const capacity = teamCapacity(match);
+  const ids = match.teams[team];
+  const full = ids.length >= capacity;
+  const labelId = `${uid}-team-${team}-label`;
+  const errorId = `${uid}-team-${team}-err`;
   const pickLabel =
-    count === 0 ? `Chọn ${match.size} người` : full ? "Đổi người" : "Chọn thêm";
+    ids.length === 0
+      ? `Chọn ${capacity} người`
+      : full
+        ? "Đổi người"
+        : "Chọn thêm";
 
   return (
-    <div className="mt-3">
+    <div
+      className={`min-w-0 rounded-lg border bg-slate-50/60 p-2.5 ${error ? "border-rose-300" : "border-slate-200"}`}
+    >
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span id={`${uid}-players-label`} className="field-label !mb-0">
-          Người chơi
+        <span id={labelId} className="text-sm font-semibold text-slate-800">
+          {label}
         </span>
         <span
           className={`font-tabular text-xs font-medium ${full ? "text-emerald-700" : "text-slate-500"}`}
         >
-          {count}/{match.size}
+          {ids.length}/{capacity}
         </span>
       </div>
-      <ul
-        aria-labelledby={`${uid}-players-label`}
-        className="flex flex-wrap gap-2"
-      >
-        {match.player_ids.map((userId) => (
+      <ul aria-labelledby={labelId} className="flex flex-wrap gap-2">
+        {ids.map((userId) => (
           <li
             key={userId}
-            className="inline-flex h-11 items-center rounded-lg border border-emerald-600 bg-emerald-50 pl-3 text-sm font-medium text-emerald-800 sm:h-9"
+            className="inline-flex h-11 max-w-full items-center rounded-lg border border-emerald-600 bg-emerald-50 pl-3 text-sm font-medium text-emerald-800 sm:h-9"
           >
-            {nameOf(userId)}
+            <span className="truncate">{nameOf(userId)}</span>
             <button
               type="button"
-              onClick={() => onChange(toggleMatchPlayer(match, userId))}
-              aria-label={`Bỏ ${nameOf(userId)} khỏi trận ${number}`}
-              className="ml-0.5 flex h-11 w-9 items-center justify-center rounded-r-lg text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 sm:h-9 sm:w-8"
+              onClick={() => onChange(toggleTeamPlayer(match, team, userId))}
+              aria-label={`Bỏ ${nameOf(userId)} khỏi ${label} trận ${number}`}
+              className="ml-0.5 flex h-11 w-9 flex-none items-center justify-center rounded-r-lg text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 sm:h-9 sm:w-8"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -72,11 +81,12 @@ function MatchPlayers({
         <li>
           <button
             type="button"
-            onClick={onOpenPicker}
-            data-field={`match-${index}-players`}
+            onClick={() => onOpenPicker(team)}
+            data-field={`match-${index}-team-${team}`}
+            aria-label={`${pickLabel} cho ${label} trận ${number}`}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className={`inline-flex h-11 items-center gap-1.5 rounded-lg border border-dashed px-3 text-sm font-semibold transition sm:h-9 ${
+            className={`inline-flex h-11 items-center gap-1.5 rounded-lg border border-dashed bg-white px-3 text-sm font-semibold transition sm:h-9 ${
               error
                 ? "border-rose-400 text-rose-700 hover:bg-rose-50"
                 : "border-emerald-400 text-emerald-700 hover:bg-emerald-50"
@@ -88,6 +98,25 @@ function MatchPlayers({
         </li>
       </ul>
       {error && <FieldError id={errorId} message={error} />}
+    </div>
+  );
+}
+
+/** Người đánh của trận theo bên: Cặp A vs Cặp B (điện thoại xếp chồng, màn rộng nằm ngang). */
+function MatchTeamsField({ teamErrors = {}, ...props }) {
+  return (
+    <div className="mt-3">
+      <span className="field-label">Người chơi</span>
+      <div className="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-2">
+        <TeamBox team={0} error={teamErrors[0]} {...props} />
+        <span
+          aria-hidden="true"
+          className="self-center text-center text-xs font-semibold text-slate-400"
+        >
+          vs
+        </span>
+        <TeamBox team={1} error={teamErrors[1]} {...props} />
+      </div>
     </div>
   );
 }
@@ -227,19 +256,20 @@ function MatchShuttleLines({
 }
 
 /**
- * Một trận của bill chia theo trận: đôi / đơn, người đánh (sheet chọn người), một hoặc nhiều
- * loại cầu + số quả, dòng phụ tiền mỗi người của trận. `data-field` khớp matchFormErrorList.
+ * Một trận của bill chia theo trận: đôi / đơn, người đánh theo Cặp A vs Cặp B (sheet chọn người
+ * cho từng bên), một hoặc nhiều loại cầu + số quả, dòng phụ tiền mỗi người của trận.
+ * `data-field` khớp matchFormErrorList.
  *
  * @param {{
  *   index: number,
- *   match: { size: number, player_ids: number[], shuttles: { key: number, shuttle_type_id: number|null, quantity: number }[] },
+ *   match: { size: number, teams: number[][], shuttles: { key: number, shuttle_type_id: number|null, quantity: number }[] },
  *   nameOf: (userId: number) => string,
  *   shuttleTypes: object[],
  *   typesLoading?: boolean,
  *   line?: { subtotal: number, court_share: number, shuttle_share: number, per_player: number },
- *   errors?: { players?: string, noShuttleLines?: string, lines?: Record<number, { shuttle?: string, quantity?: string }> },
+ *   errors?: { teams?: Record<number, string>, noShuttleLines?: string, lines?: Record<number, { shuttle?: string, quantity?: string }> },
  *   onChange: (match: object) => void,
- *   onOpenPicker: () => void,
+ *   onOpenPicker: (team: 0 | 1) => void,
  *   onRemove: () => void,
  * }} props
  */
@@ -294,12 +324,12 @@ export default function MatchCard({
         </button>
       </div>
 
-      <MatchPlayers
+      <MatchTeamsField
         uid={uid}
         index={index}
         match={match}
         nameOf={nameOf}
-        error={errors.players}
+        teamErrors={errors.teams}
         onChange={onChange}
         onOpenPicker={onOpenPicker}
       />

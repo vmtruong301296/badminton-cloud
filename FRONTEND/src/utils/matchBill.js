@@ -8,8 +8,9 @@ import { formatDate, shuttleUnitPrice } from "./formatters";
  * - tiền cầu của trận chia cho người đánh trận đó;
  * - mỗi người trả tổng phần các trận mình đánh (màn hình làm tròn nghìn khi hiện).
  *
- * Một trận trong form: { key, size: 4 | 2, player_ids: number[], shuttles: ShuttleLine[] },
- * mỗi dòng cầu { key, shuttle_type_id, quantity } — một trận có thể dùng nhiều loại cầu.
+ * Một trận trong form: { key, size: 4 | 2, teams: [number[], number[]], shuttles: ShuttleLine[] }
+ * — teams là Cặp A và Cặp B (đánh đơn: mỗi bên một người); mỗi dòng cầu
+ * { key, shuttle_type_id, quantity } — một trận có thể dùng nhiều loại cầu.
  */
 
 export const SPLIT_MATCH = "match";
@@ -21,19 +22,42 @@ export const MATCH_SIZES = [
   { size: 2, label: "Đơn" },
 ];
 
+/** bill_match_players.side của Cặp A, Cặp B (BillMatch::SIDE_A / SIDE_B). */
+const MATCH_SIDES = [1, 2];
+
+/** Tên hai bên của trận: đánh đôi là cặp, đánh đơn là bên. */
+const TEAM_LABELS = {
+  4: ["Cặp A", "Cặp B"],
+  2: ["Bên A", "Bên B"],
+};
+
 const DEFAULT_MATCH_SHUTTLE_NAME = "Cầu S70";
 
 export const MATCH_FORM_MESSAGES = {
   noCourt: BILL_FORM_MESSAGES.noCourt,
   noMatches: "Cần ít nhất một trận",
-  players: (size) => `Chọn đủ ${size} người cho trận này`,
+  team: (label, count) =>
+    count === 1
+      ? `Chọn người cho ${label}`
+      : `Chọn đủ ${count} người cho ${label}`,
   noShuttleLines: "Thêm ít nhất một loại cầu",
   noShuttle: "Chọn loại cầu",
   duplicateShuttle: "Loại cầu này đã có trong trận",
   zeroQuantity: "Số lượng cầu phải lớn hơn 0",
-  matchFull: (number, size) =>
-    `Trận ${number} đã đủ ${size} người — bỏ bớt một người trước khi chọn thêm.`,
+  teamFull: (label, count) =>
+    `${label} đã đủ ${count} người — bỏ bớt một người trước khi chọn thêm.`,
+  movedTeam: (name, from, to) => `Đã chuyển ${name} từ ${from} sang ${to}.`,
 };
+
+/** Tên bên `team` (0 = A, 1 = B) của trận đôi / đơn. */
+export const teamLabel = (size, team) =>
+  (TEAM_LABELS[size] ?? TEAM_LABELS[4])[team];
+
+/** Số người mỗi bên: đôi 2, đơn 1. */
+export const teamCapacity = (match) => match.size / 2;
+
+/** Mọi người đánh của trận: Cặp A rồi Cặp B. */
+export const matchPlayerIds = (match) => match.teams.flat();
 
 /** Loại cầu điền sẵn cho trận mới: Cầu S70, không có thì loại đầu tiên. */
 export const defaultMatchShuttleTypeId = (shuttleTypes = []) =>
@@ -53,7 +77,7 @@ const newShuttleLine = (key, shuttleTypeId = null) => ({
 export const newMatch = (key, shuttleTypeId = null) => ({
   key,
   size: 4,
-  player_ids: [],
+  teams: [[], []],
   shuttles: [newShuttleLine(1, shuttleTypeId)],
 });
 
@@ -113,23 +137,34 @@ export const matchShuttleSubtotal = (match, shuttleTypes = []) =>
     return sum + shuttleUnitPrice(type) * (Number(line.quantity) || 0);
   }, 0);
 
-/** Chọn / bỏ một người: bấm lại thì bỏ; trận đủ người thì không chọn thêm. */
-export const toggleMatchPlayer = (match, userId) => {
-  if (match.player_ids.includes(userId)) {
+/**
+ * Chọn / bỏ một người ở bên `team`: bấm lại thì bỏ; bên đủ người thì không chọn thêm; người
+ * đang ở bên kia thì chuyển sang bên này.
+ */
+export const toggleTeamPlayer = (match, team, userId) => {
+  const current = match.teams[team];
+  if (current.includes(userId)) {
     return {
       ...match,
-      player_ids: match.player_ids.filter((id) => id !== userId),
+      teams: match.teams.map((ids, i) =>
+        i === team ? ids.filter((id) => id !== userId) : ids,
+      ),
     };
   }
-  if (match.player_ids.length >= match.size) return match;
-  return { ...match, player_ids: [...match.player_ids, userId] };
+  if (current.length >= teamCapacity(match)) return match;
+  return {
+    ...match,
+    teams: match.teams.map((ids, i) =>
+      i === team ? [...ids, userId] : ids.filter((id) => id !== userId),
+    ),
+  };
 };
 
-/** Đổi đôi / đơn: giữ những người chọn trước, bỏ người thừa. */
+/** Đổi đôi / đơn: mỗi bên giữ những người chọn trước, bỏ người thừa. */
 export const setMatchSize = (match, size) => ({
   ...match,
   size,
-  player_ids: match.player_ids.slice(0, size),
+  teams: match.teams.map((ids) => ids.slice(0, size / 2)),
 });
 
 /**
@@ -156,7 +191,7 @@ export const calculateMatchPreview = (
     const subtotal = matchShuttleSubtotal(match, shuttleTypes);
     const courtShare = courtPerMatch / match.size;
     const shuttleShare = subtotal / match.size;
-    match.player_ids.forEach((userId) => {
+    matchPlayerIds(match).forEach((userId) => {
       raw.set(userId, (raw.get(userId) || 0) + courtShare + shuttleShare);
       counts.set(userId, (counts.get(userId) || 0) + 1);
     });
@@ -200,9 +235,24 @@ const validateShuttleLines = (shuttles) => {
   return lineErrors;
 };
 
+/** Lỗi từng bên của trận chưa đủ người: { [0 | 1]: thông báo }. */
+const validateTeams = (match) => {
+  const teamErrors = {};
+  const capacity = teamCapacity(match);
+  match.teams.forEach((ids, team) => {
+    if (ids.length !== capacity) {
+      teamErrors[team] = MATCH_FORM_MESSAGES.team(
+        teamLabel(match.size, team),
+        capacity,
+      );
+    }
+  });
+  return teamErrors;
+};
+
 /**
- * Lỗi theo ô: { court?, noMatches?, matches: { [chỉ số trận]: { players?, noShuttleLines?,
- * lines?: { [chỉ số dòng cầu]: { shuttle?, quantity? } } } } }.
+ * Lỗi theo ô: { court?, noMatches?, matches: { [chỉ số trận]: { teams?: { [0 | 1]: string },
+ * noShuttleLines?, lines?: { [chỉ số dòng cầu]: { shuttle?, quantity? } } } } }.
  */
 export const validateMatchForm = ({ court_total, matches = [] } = {}) => {
   const errors = { matches: {} };
@@ -211,9 +261,8 @@ export const validateMatchForm = ({ court_total, matches = [] } = {}) => {
 
   matches.forEach((match, index) => {
     const matchErrors = {};
-    if (match.player_ids.length !== match.size) {
-      matchErrors.players = MATCH_FORM_MESSAGES.players(match.size);
-    }
+    const teamErrors = validateTeams(match);
+    if (Object.keys(teamErrors).length > 0) matchErrors.teams = teamErrors;
     if (match.shuttles.length === 0) {
       matchErrors.noShuttleLines = MATCH_FORM_MESSAGES.noShuttleLines;
     }
@@ -237,12 +286,15 @@ export const matchFormErrorList = (errors = {}) => {
     .sort((a, b) => a - b)
     .forEach((index) => {
       const matchErrors = errors.matches[index];
-      if (matchErrors.players) {
-        list.push({
-          field: `match-${index}-players`,
-          message: matchErrors.players,
+      Object.keys(matchErrors.teams || {})
+        .map(Number)
+        .sort((a, b) => a - b)
+        .forEach((team) => {
+          list.push({
+            field: `match-${index}-team-${team}`,
+            message: matchErrors.teams[team],
+          });
         });
-      }
       if (matchErrors.noShuttleLines) {
         list.push({
           field: `match-${index}-add-shuttle`,
@@ -263,14 +315,14 @@ export const matchFormErrorList = (errors = {}) => {
   return list;
 };
 
-/** Dữ liệu gửi máy chủ (POST / PUT /bills). */
+/** Dữ liệu gửi máy chủ (POST / PUT /bills); player_ids: Cặp A trước, Cặp B sau. */
 export const matchBillPayload = ({ date, note, court_total, matches }) => ({
   date,
   note: note || null,
   court_total: Number(court_total) || 0,
   split_mode: SPLIT_MATCH,
   matches: matches.map((match) => ({
-    player_ids: match.player_ids,
+    player_ids: matchPlayerIds(match),
     shuttles: match.shuttles.map((line) => ({
       shuttle_type_id: line.shuttle_type_id,
       quantity: Number(line.quantity) || 0,
@@ -295,16 +347,22 @@ export const matchCandidates = (parentPlayers = [], matches = []) => {
   return list;
 };
 
+/** Người đánh của trận (API, kèm players.pivot.side) chia theo bên: [Cặp A, Cặp B]. */
+const playersBySide = (match) =>
+  MATCH_SIDES.map((side) =>
+    (match.players || []).filter((u) => u.pivot?.side === side),
+  );
+
 /** Bill chia theo trận của API (kèm matches.players, matches.shuttles) → dữ liệu form (chưa có key trận). */
 export const matchFormFromBill = (bill) => ({
   date: formatDate(bill.date),
   note: bill.note || "",
   court_total: Number(bill.court_total) || 0,
   matches: (bill.matches || []).map((m) => {
-    const playerIds = (m.players || []).map((u) => u.id);
+    const teams = playersBySide(m).map((users) => users.map((u) => u.id));
     return {
-      size: playerIds.length === 2 ? 2 : 4,
-      player_ids: playerIds,
+      size: (m.players || []).length === 2 ? 2 : 4,
+      teams,
       shuttles: (m.shuttles || []).map((line, index) => ({
         key: index + 1,
         shuttle_type_id: line.shuttle_type_id,
@@ -322,7 +380,8 @@ export const playerWeightLabel = (bill) =>
 
 /**
  * Dòng hiển thị từng trận của bill chia theo trận (API, kèm matches.players và
- * matches.shuttles.shuttle_type): người đánh, cầu, tiền mỗi người của trận (làm tròn đồng).
+ * matches.shuttles.shuttle_type): tên người đánh theo bên (teams: [Cặp A, Cặp B]), cầu, tiền
+ * mỗi người của trận (làm tròn đồng).
  */
 export const matchDisplayLines = (bill) => {
   const matches = bill?.matches || [];
@@ -330,22 +389,22 @@ export const matchDisplayLines = (bill) => {
     matches.length > 0 ? (Number(bill.court_total) || 0) / matches.length : 0;
 
   return matches.map((m) => {
-    const names = (m.players || []).map((u) => u.name);
-    const playerCount = names.length || 1;
+    const playerCount = (m.players || []).length;
+    const teams = playersBySide(m).map((users) => users.map((u) => u.name));
     const subtotal = Number(m.subtotal) || 0;
     return {
       id: m.id,
       position: m.position,
       kind: (
-        MATCH_SIZES.find((option) => option.size === names.length) ??
+        MATCH_SIZES.find((option) => option.size === playerCount) ??
         MATCH_SIZES[0]
       ).label,
-      names,
+      teams,
       shuttle_text: (m.shuttles || [])
         .map((line) => `${line.shuttle_type?.name ?? ""} × ${line.quantity}`)
         .join(" + "),
       subtotal,
-      per_player: Math.round((courtPerMatch + subtotal) / playerCount),
+      per_player: Math.round((courtPerMatch + subtotal) / (playerCount || 1)),
     };
   });
 };

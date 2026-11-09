@@ -1,8 +1,27 @@
+import { Fragment } from "react";
 import { formatCurrency } from "../../utils/formatters";
 import { matchDisplayLines } from "../../utils/matchBill";
 
 /**
- * Các trận của bill chia theo trận (màn chi tiết): người đánh, cầu, tiền mỗi người của trận.
+ * Người đánh của trận theo bên: "A + B vs C + D" (đánh đơn "A vs B").
+ *
+ * @param {{ teams: string[][] }} props
+ */
+export function MatchTeams({ teams }) {
+  return teams.map((names, index) => (
+    <Fragment key={index}>
+      {index > 0 && (
+        <span className="whitespace-pre text-xs font-semibold text-slate-400">
+          {" vs "}
+        </span>
+      )}
+      <span>{names.join(" + ")}</span>
+    </Fragment>
+  ));
+}
+
+/**
+ * Các trận của bill chia theo trận (màn chi tiết): Cặp A vs Cặp B, cầu, tiền mỗi người của trận.
  * `variant`: "section" (thẻ riêng của màn chi tiết bill) | "plain" (khối trong BillContent).
  *
  * @param {{ bill: object, variant?: "section" | "plain", className?: string }} props
@@ -45,7 +64,7 @@ export default function BillMatchesCard({
             </span>
           </div>
           <div className="mt-0.5 break-words text-sm text-slate-700">
-            {line.names.join(", ")}
+            <MatchTeams teams={line.teams} />
           </div>
           <div className="font-tabular mt-0.5 text-xs text-slate-500">
             {line.shuttle_text} = {formatCurrency(line.subtotal)}

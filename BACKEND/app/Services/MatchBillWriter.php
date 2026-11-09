@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Bill;
+use App\Models\BillMatch;
 use App\Models\BillPlayer;
 use App\Models\BillShuttle;
 use App\Models\ShuttleType;
@@ -14,6 +15,7 @@ use Illuminate\Support\Arr;
  * Ghi bill chia theo trận: tổng tiền, các trận, chi tiết cầu gộp theo loại (để
  * kho cầu và thống kê tháng đọc như bill thường) và tiền từng người theo
  * MatchBillCalculator. bill_players.ratio_value lưu số trận người đó đánh.
+ * player_ids của trận: nửa đầu là Cặp A, nửa sau là Cặp B (bill_match_players.side).
  *
  * Người gọi lo transaction, xoá dòng cũ khi sửa bill và trừ kho theo bill_shuttles.
  */
@@ -45,7 +47,7 @@ class MatchBillWriter
         foreach ($matches as $match) {
             $saved = $bill->matches()->create(Arr::only($match, ['position', 'subtotal']));
             $saved->shuttles()->createMany($match['shuttles']);
-            $saved->players()->attach($match['player_ids']);
+            $saved->players()->attach($this->playersWithSide($match['player_ids']));
         }
 
         $this->saveShuttleLines($bill, $matches);
@@ -91,6 +93,23 @@ class MatchBillWriter
         }
 
         return $priced;
+    }
+
+    /**
+     * Nửa đầu người đánh là Cặp A, nửa sau là Cặp B, giữ thứ tự đã chọn.
+     *
+     * @param  array<int, int>  $playerIds
+     * @return array<int, array{side: int}>
+     */
+    private function playersWithSide(array $playerIds): array
+    {
+        $half = intdiv(count($playerIds), 2);
+        $attach = [];
+        foreach (array_values($playerIds) as $index => $userId) {
+            $attach[$userId] = ['side' => $index < $half ? BillMatch::SIDE_A : BillMatch::SIDE_B];
+        }
+
+        return $attach;
     }
 
     /** Một dòng bill_shuttles cho mỗi loại cầu, cộng dồn mọi trận. */
