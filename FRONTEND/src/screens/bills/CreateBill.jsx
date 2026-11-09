@@ -45,6 +45,9 @@ const DEFAULT_SHUTTLES = [
   { name: "Cầu Thành Công", quantity: 12 },
 ];
 
+/** Bill con chia theo mức tính: điền sẵn 1 quả Cầu S70. */
+const CHILD_DEFAULT_SHUTTLES = [{ name: "Cầu S70", quantity: 1 }];
+
 /** Bill con: ghi chú chính là nhãn dòng bill sau trong khối "TT + Bill sau" của bill chính. */
 const CHILD_NOTE_HINT = 'Ghi chú hiện ở dòng "TT + Bill sau" của bill chính.';
 
@@ -66,7 +69,8 @@ export default function CreateBill() {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     note: "",
-    court_total: DEFAULT_COURT_TOTAL,
+    // Bill con để trống tiền sân cho người dùng tự nhập
+    court_total: parentBillId ? null : DEFAULT_COURT_TOTAL,
     shuttles: [],
     players: [],
     parent_bill_id: parentBillId || null,
@@ -146,7 +150,8 @@ export default function CreateBill() {
 
   useEffect(() => {
     if (shuttlesDefaultedRef.current || shuttleTypes.length === 0) return;
-    const defaultShuttles = DEFAULT_SHUTTLES.flatMap(({ name, quantity }) => {
+    const defaults = parentBillId ? CHILD_DEFAULT_SHUTTLES : DEFAULT_SHUTTLES;
+    const defaultShuttles = defaults.flatMap(({ name, quantity }) => {
       const type = shuttleTypes.find((st) => st.name === name);
       return type
         ? [
@@ -163,7 +168,7 @@ export default function CreateBill() {
       if (prev.shuttles.length > 0) return prev;
       return { ...prev, shuttles: defaultShuttles };
     });
-  }, [shuttleTypes]);
+  }, [shuttleTypes, parentBillId]);
 
   /**
    * Xem trước (calculateBillPreview). Tính cả khi chưa có người để thanh đáy luôn có tổng
@@ -171,7 +176,7 @@ export default function CreateBill() {
    */
   const fullPreview = useMemo(() => {
     const previewData = calculateBillPreview(
-      formData.court_total,
+      Number(formData.court_total) || 0,
       formData.shuttles
         .filter((s) => s.shuttle_type_id)
         .map((s) => {

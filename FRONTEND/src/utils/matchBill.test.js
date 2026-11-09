@@ -180,6 +180,7 @@ describe("addMatchShuttle / fillDefaultShuttleTypes", () => {
 describe("validateMatchForm", () => {
   it("báo trận thiếu người, chưa chọn cầu, 0 quả, theo thứ tự trên màn", () => {
     const errors = validateMatchForm({
+      court_total: 55000,
       matches: [
         match([TRUONG, NGUYEN, HIEN]),
         match([TRUONG, NGUYEN], null, 1, 2),
@@ -202,6 +203,7 @@ describe("validateMatchForm", () => {
 
   it("một loại cầu chọn hai dòng trong trận, trận không còn dòng cầu", () => {
     const errors = validateMatchForm({
+      court_total: 55000,
       matches: [
         {
           ...match([TRUONG, NGUYEN, HIEN, HUYNH]),
@@ -224,13 +226,25 @@ describe("validateMatchForm", () => {
   });
 
   it("chưa có trận nào", () => {
-    expect(matchFormErrorList(validateMatchForm({ matches: [] }))).toEqual([
-      { field: "matches", message: MATCH_FORM_MESSAGES.noMatches },
-    ]);
+    expect(
+      matchFormErrorList(validateMatchForm({ court_total: 0, matches: [] })),
+    ).toEqual([{ field: "matches", message: MATCH_FORM_MESSAGES.noMatches }]);
+  });
+
+  it("chưa nhập tiền sân: lỗi ở ô tiền sân trước; gõ 0 vẫn hợp lệ", () => {
+    const matches = [match([TRUONG, NGUYEN, HIEN, HUYNH])];
+    expect(
+      matchFormErrorList(validateMatchForm({ court_total: null, matches })),
+    ).toEqual([{ field: "court", message: MATCH_FORM_MESSAGES.noCourt }]);
+    expect(MATCH_FORM_MESSAGES.noCourt).toBe("Vui lòng nhập tổng tiền sân");
+    expect(
+      matchFormErrorList(validateMatchForm({ court_total: 0, matches })),
+    ).toEqual([]);
   });
 
   it("đủ người, có cầu thì không lỗi", () => {
     const errors = validateMatchForm({
+      court_total: 55000,
       matches: [
         match([TRUONG, NGUYEN, HIEN, HUYNH]),
         match([LOC, TAN], S70.id, 1, 2),

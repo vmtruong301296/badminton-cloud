@@ -80,6 +80,7 @@ export function BillBasicInfoCard({
               id="bill-court-total"
               value={formData.court_total}
               onChange={(value) => onChange({ court_total: value })}
+              placeholder="Nhập tiền sân"
               selectOnFocus
               enterKeyHint="next"
               data-next="money"

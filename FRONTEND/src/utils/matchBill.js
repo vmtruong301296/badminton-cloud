@@ -1,3 +1,4 @@
+import { BILL_FORM_MESSAGES, isCourtBlank } from "./billFormErrors";
 import { formatDate, shuttleUnitPrice } from "./formatters";
 
 /**
@@ -22,6 +23,7 @@ export const MATCH_SIZES = [
 const DEFAULT_MATCH_SHUTTLE_NAME = "Cầu S70";
 
 export const MATCH_FORM_MESSAGES = {
+  noCourt: BILL_FORM_MESSAGES.noCourt,
   noMatches: "Cần ít nhất một trận",
   players: (size) => `Chọn đủ ${size} người cho trận này`,
   noShuttleLines: "Thêm ít nhất một loại cầu",
@@ -198,11 +200,12 @@ const validateShuttleLines = (shuttles) => {
 };
 
 /**
- * Lỗi theo ô: { noMatches?, matches: { [chỉ số trận]: { players?, noShuttleLines?,
+ * Lỗi theo ô: { court?, noMatches?, matches: { [chỉ số trận]: { players?, noShuttleLines?,
  * lines?: { [chỉ số dòng cầu]: { shuttle?, quantity? } } } } }.
  */
-export const validateMatchForm = ({ matches = [] } = {}) => {
+export const validateMatchForm = ({ court_total, matches = [] } = {}) => {
   const errors = { matches: {} };
+  if (isCourtBlank(court_total)) errors.court = MATCH_FORM_MESSAGES.noCourt;
   if (matches.length === 0) errors.noMatches = MATCH_FORM_MESSAGES.noMatches;
 
   matches.forEach((match, index) => {
@@ -225,6 +228,7 @@ export const validateMatchForm = ({ matches = [] } = {}) => {
 /** Lỗi theo thứ tự trên màn để cuộn tới ô sai đầu tiên; `field` khớp data-field của ô. */
 export const matchFormErrorList = (errors = {}) => {
   const list = [];
+  if (errors.court) list.push({ field: "court", message: errors.court });
   if (errors.noMatches)
     list.push({ field: "matches", message: errors.noMatches });
   Object.keys(errors.matches || {})

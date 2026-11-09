@@ -5,6 +5,7 @@
 
 export const BILL_FORM_MESSAGES = {
   noPlayers: "Vui lòng chọn ít nhất một người chơi",
+  noCourt: "Vui lòng nhập tổng tiền sân",
   noShuttleOrCourt:
     "Vui lòng thêm ít nhất một loại cầu hợp lệ hoặc nhập tổng tiền sân lớn hơn 0",
   zeroQuantity: "Số lượng cầu phải lớn hơn 0",
@@ -19,6 +20,10 @@ export const sumPlayerRatios = (players = []) =>
     0,
   );
 
+/** Ô tiền sân để trống (bill con mở ra chưa điền tiền sân); số 0 gõ vào vẫn hợp lệ. */
+export const isCourtBlank = (courtTotal) =>
+  courtTotal === null || courtTotal === undefined || courtTotal === "";
+
 /**
  * Trả lỗi theo ô: { court?, shuttleQuantity: { [chỉ số dòng]: câu }, players? }.
  * Dòng cầu chưa chọn loại bị bỏ qua khi lưu nên không báo lỗi.
@@ -31,7 +36,9 @@ export const validateBillForm = ({
   const errors = { shuttleQuantity: {} };
 
   const hasValidShuttle = shuttles.some((s) => s.shuttle_type_id);
-  if (!hasValidShuttle && !((Number(court_total) || 0) > 0)) {
+  if (isCourtBlank(court_total)) {
+    errors.court = BILL_FORM_MESSAGES.noCourt;
+  } else if (!hasValidShuttle && !((Number(court_total) || 0) > 0)) {
     errors.court = BILL_FORM_MESSAGES.noShuttleOrCourt;
   }
 

@@ -52,6 +52,17 @@ describe("validateBillForm", () => {
     expect(billFormErrorList(validateBillForm(validForm()))).toEqual([]);
   });
 
+  it("tiền sân để trống (bill con): lỗi ở ô tiền sân dù đã có cầu; gõ 0 vẫn hợp lệ", () => {
+    for (const blank of [null, ""]) {
+      expect(validateBillForm(validForm({ court_total: blank })).court).toBe(
+        "Vui lòng nhập tổng tiền sân",
+      );
+    }
+    expect(
+      billFormErrorList(validateBillForm(validForm({ court_total: 0 }))),
+    ).toEqual([]);
+  });
+
   it("chưa chọn người chơi: lỗi ở khối người chơi, giữ câu cũ", () => {
     const errors = validateBillForm(validForm({ players: [] }));
     expect(errors.players).toBe(BILL_FORM_MESSAGES.noPlayers);

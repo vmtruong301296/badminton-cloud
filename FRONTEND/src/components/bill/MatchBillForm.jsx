@@ -236,6 +236,7 @@ export default function MatchBillForm({
               <BillBasicInfoCard
                 formData={form}
                 onChange={(patch) => update((prev) => ({ ...prev, ...patch }))}
+                courtError={errors?.court}
                 noteHint={noteHint}
               />
 
