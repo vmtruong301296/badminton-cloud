@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { billsApi, shuttlesApi, menusApi } from "../../services/api";
 import { formatDate, shuttleUnitPrice } from "../../utils/formatters";
 import {
@@ -132,6 +132,15 @@ const buildEditPreview = (formData, shuttleTypes) => {
   };
 };
 
+/**
+ * Nơi về khi lưu xong / bấm quay lại: bill chính nếu mở từ nút "Sửa bill con" ở chi tiết bill
+ * chính (location.state.returnTo), không thì chi tiết chính bill đang sửa.
+ */
+const returnPathOf = (state, id) =>
+  typeof state?.returnTo === "string" && state.returnTo.startsWith("/bills/")
+    ? state.returnTo
+    : `/bills/${id}`;
+
 /** Khung xương khi đang tải (desktop như cũ; điện thoại có thanh trên + thanh đáy mờ). */
 function EditBillSkeleton({ id }) {
   return (
@@ -177,6 +186,10 @@ function EditBillSkeleton({ id }) {
 export default function EditBill() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backTo = returnPathOf(location.state, id);
+  const backLabel =
+    backTo === `/bills/${id}` ? "Về chi tiết Bill" : "Về Bill chính";
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -443,8 +456,8 @@ export default function EditBill() {
         })),
       };
 
-      const response = await billsApi.update(id, payload);
-      navigate(`/bills/${response.data.id}`);
+      await billsApi.update(id, payload);
+      navigate(backTo);
     } catch (error) {
       console.error("Error updating bill:", error);
       toast.error(
@@ -470,7 +483,6 @@ export default function EditBill() {
     save();
   };
 
-  const backTo = `/bills/${id}`;
   const leave = useConfirmLeave({ when: touched && !loading, backTo });
 
   if (initialLoading) return <EditBillSkeleton id={id} />;
@@ -479,7 +491,7 @@ export default function EditBill() {
     return (
       <div className="px-4 sm:px-0">
         <PageHeader
-          back={{ to: backTo, label: "Về chi tiết Bill" }}
+          back={{ to: backTo, label: backLabel }}
           title={`Sửa Bill #${id}`}
         />
         <EmptyState
@@ -493,7 +505,7 @@ export default function EditBill() {
 
   const renderHeader = (onBackClick) => (
     <PageHeader
-      back={{ to: backTo, label: "Về chi tiết Bill", onClick: onBackClick }}
+      back={{ to: backTo, label: backLabel, onClick: onBackClick }}
       title={`Sửa Bill #${id}`}
     />
   );
@@ -513,8 +525,8 @@ export default function EditBill() {
           candidates={matchBill.candidates}
           backTo={backTo}
           onSave={async (payload) => {
-            const response = await billsApi.update(id, payload);
-            navigate(`/bills/${response.data.id}`);
+            await billsApi.update(id, payload);
+            navigate(backTo);
           }}
           submitLabel="Lưu thay đổi"
           busyLabel="Đang lưu…"

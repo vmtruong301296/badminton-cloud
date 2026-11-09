@@ -144,3 +144,7 @@ export const billCollection = (players = [], subBills = []) => {
     { total: 0, paid: 0, unpaid: 0, unpaidAmount: 0, totalAmount: 0 },
   );
 };
+
+/** Bill đã có người đánh dấu "Đã TT" — màn chi tiết ẩn nút sửa bill như bill chính. */
+export const billHasPaidPlayers = (bill) =>
+  (bill?.bill_players || []).some((p) => p.is_paid);

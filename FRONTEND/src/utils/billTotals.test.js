@@ -4,6 +4,7 @@ import {
   billPlayingTotal,
   billProfit,
   billCollection,
+  billHasPaidPlayers,
   billPerPersonAmount,
   formatProfit,
   hasExtraCosts,
@@ -270,5 +271,20 @@ describe("billPerPersonAmount", () => {
   it("không có người chơi thì 0", () => {
     expect(billPerPersonAmount([], 500000)).toBe(0);
     expect(billPerPersonAmount(undefined, 500000)).toBe(0);
+  });
+});
+
+describe("billHasPaidPlayers", () => {
+  it("có người Đã TT thì true, chưa ai / không có người thì false", () => {
+    expect(
+      billHasPaidPlayers({
+        bill_players: [{ is_paid: false }, { is_paid: true }],
+      }),
+    ).toBe(true);
+    expect(billHasPaidPlayers({ bill_players: [{ is_paid: false }] })).toBe(
+      false,
+    );
+    expect(billHasPaidPlayers({})).toBe(false);
+    expect(billHasPaidPlayers(null)).toBe(false);
   });
 });

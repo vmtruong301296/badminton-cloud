@@ -5,9 +5,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Pencil,
 } from "../ui/icons";
 import { formatCurrencyRounded, formatDateShort } from "../../utils/formatters";
-import { billPerPersonAmount } from "../../utils/billTotals";
+import {
+  billHasPaidPlayers,
+  billPerPersonAmount,
+} from "../../utils/billTotals";
 import { isMatchSplit } from "../../utils/matchBill";
 
 const STATUS = {
@@ -42,8 +46,9 @@ export function BillPaymentBadge({ collection }) {
   );
 }
 
-const STRIP =
-  "flex min-h-[52px] items-center gap-2 border-t border-sky-100 bg-sky-50/70 py-1.5 pl-4 pr-3 text-slate-800 active:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40";
+const STRIP_BODY =
+  "flex min-h-[52px] items-center gap-2 bg-sky-50/70 py-1.5 pl-4 pr-3 text-slate-800 active:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40";
+const STRIP = `border-t border-sky-100 ${STRIP_BODY}`;
 
 function InfoValue({ label, value }) {
   return (
@@ -59,11 +64,16 @@ function InfoValue({ label, value }) {
 /**
  * Thẻ tóm tắt đầu màn chi tiết bill trên điện thoại: loại bill, ngày, trạng thái, "Đã thu x/y người"
  * + thanh tiến độ, tổng tiền; "Thông tin Bill" (tiền sân, cầu, ghi chú) gập lại; dải bấm sang
- * từng bill con (bill chính) hoặc về bill chính (bill con).
+ * từng bill con (bill chính) hoặc về bill chính (bill con). `canEdit`: có quyền sửa bill — hiện nút
+ * bút chì sửa từng bill con (ẩn khi bill con đã có người Đã TT, như nút sửa bill chính).
  *
  * collection: kết quả billCollection(bill.bill_players, subBills).
  */
-export default function BillDetailSummary({ bill, collection }) {
+export default function BillDetailSummary({
+  bill,
+  collection,
+  canEdit = false,
+}) {
   const [infoOpen, setInfoOpen] = useState(false);
   const isSubBill = Boolean(bill.parent_bill_id);
   const subBills = isSubBill ? [] : bill.sub_bills || [];
@@ -179,20 +189,35 @@ export default function BillDetailSummary({ bill, collection }) {
       )}
 
       {subBills.map((subBill) => (
-        <Link key={subBill.id} to={`/bills/${subBill.id}`} className={STRIP}>
-          <span className="badge badge-sky flex-none">Bill con</span>
-          <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight">
-            #{subBill.id}
-            {subBill.note ? ` — ${subBill.note}` : ""}
-            <small className="block text-xs font-medium text-slate-500">
-              {(subBill.bill_players || []).length} người
-            </small>
-          </span>
-          <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
-            {formatCurrencyRounded(subBill.total_amount)}
-          </span>
-          <ChevronRight className="h-[18px] w-[18px] flex-none text-sky-700" />
-        </Link>
+        <div key={subBill.id} className="flex border-t border-sky-100">
+          <Link
+            to={`/bills/${subBill.id}`}
+            className={`${STRIP_BODY} min-w-0 flex-1`}
+          >
+            <span className="badge badge-sky flex-none">Bill con</span>
+            <span className="min-w-0 flex-1 break-words text-sm font-semibold leading-tight">
+              #{subBill.id}
+              {subBill.note ? ` — ${subBill.note}` : ""}
+              <small className="block text-xs font-medium text-slate-500">
+                {(subBill.bill_players || []).length} người
+              </small>
+            </span>
+            <span className="whitespace-nowrap text-sm font-semibold tabular-nums">
+              {formatCurrencyRounded(subBill.total_amount)}
+            </span>
+            <ChevronRight className="h-[18px] w-[18px] flex-none text-sky-700" />
+          </Link>
+          {canEdit && !billHasPaidPlayers(subBill) && (
+            <Link
+              to={`/bills/${subBill.id}/edit`}
+              state={{ returnTo: `/bills/${bill.id}` }}
+              aria-label={`Sửa bill con #${subBill.id}`}
+              className="flex w-12 flex-none items-center justify-center border-l border-sky-100 bg-sky-50/70 text-sky-700 active:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40"
+            >
+              <Pencil className="h-[18px] w-[18px]" />
+            </Link>
+          )}
+        </div>
       ))}
 
       {isSubBill && bill.parent_bill && (

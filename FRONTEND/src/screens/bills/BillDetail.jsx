@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { billsApi, paymentAccountsApi } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import {
@@ -12,6 +12,7 @@ import {
 import {
   billCollectedTotal,
   billCollection,
+  billHasPaidPlayers,
   billPlayingTotal,
   billProfit,
   formatProfit,
@@ -701,7 +702,12 @@ export default function BillDetail() {
 
       {/* Điện thoại / máy nhỏ: thẻ tóm tắt + chip lọc + hàng có nút Đã TT; từ md giữ bố cục cũ */}
       <div className="space-y-3 md:hidden">
-        <BillDetailSummary key={`s-${bill.id}`} bill={bill} collection={collection} />
+        <BillDetailSummary
+          key={`s-${bill.id}`}
+          bill={bill}
+          collection={collection}
+          canEdit={canUpdate}
+        />
         {isMatchSplit(bill) && <BillMatchesCard bill={bill} />}
         <BillPlayerList
           key={`p-${bill.id}`}
@@ -743,19 +749,32 @@ export default function BillDetail() {
                 key={subBill.id}
                 className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-card ring-1 ring-sky-50"
               >
-                <div className="border-b border-sky-100 bg-sky-50/60 px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-sm font-medium text-sky-700">Bill con</p>
-                  <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900">
-                    #{subBill.id}
-                    {subBill.note ? (
-                      <span className="ml-2 text-sm font-medium text-slate-500">
-                        — {subBill.note}
-                      </span>
-                    ) : null}
-                  </h3>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {formatDate(subBill.date)}
-                  </p>
+                <div className="flex items-start justify-between gap-3 border-b border-sky-100 bg-sky-50/60 px-4 py-3 sm:px-5 sm:py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-sky-700">Bill con</p>
+                    <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900">
+                      #{subBill.id}
+                      {subBill.note ? (
+                        <span className="ml-2 text-sm font-medium text-slate-500">
+                          — {subBill.note}
+                        </span>
+                      ) : null}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {formatDate(subBill.date)}
+                    </p>
+                  </div>
+                  {/* Sửa bill con ngay tại bill chính; ẩn khi bill con đã có người Đã TT (như bill chính) */}
+                  {canUpdate && !billHasPaidPlayers(subBill) && (
+                    <Link
+                      to={`/bills/${subBill.id}/edit`}
+                      state={{ returnTo: `/bills/${bill.id}` }}
+                      className="btn btn-secondary btn-sm flex-none"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      Sửa bill con
+                    </Link>
+                  )}
                 </div>
                 <div className="p-3 sm:p-4">
                   <BillContent bill={subBill} showHeader={false} />
