@@ -523,6 +523,8 @@ export default function EditBill() {
           }
           initialForm={matchFormFromBill(bill)}
           candidates={matchBill.candidates}
+          // Bill chính: sheet chọn người hiện mọi người chơi; bill con: người của bill chính
+          scopeToCandidates={Boolean(bill.parent_bill_id)}
           backTo={backTo}
           onSave={async (payload) => {
             await billsApi.update(id, payload);

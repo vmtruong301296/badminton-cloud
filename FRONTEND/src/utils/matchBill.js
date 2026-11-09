@@ -2,8 +2,8 @@ import { BILL_FORM_MESSAGES, isCourtBlank } from "./billFormErrors";
 import { formatDate, shuttleUnitPrice } from "./formatters";
 
 /**
- * Bill con chia theo trận (split_mode = "match"). Hàm thuần, cùng công thức với
- * BACKEND/app/Services/MatchBillCalculator.php:
+ * Bill chia theo trận (split_mode = "match"), cả bill chính lẫn bill con. Hàm thuần, cùng
+ * công thức với BACKEND/app/Services/MatchBillCalculator.php:
  * - tiền sân chia đều cho số trận, phần sân của trận chia cho người đánh trận đó;
  * - tiền cầu của trận chia cho người đánh trận đó;
  * - mỗi người trả tổng phần các trận mình đánh (màn hình làm tròn nghìn khi hiện).
@@ -13,6 +13,7 @@ import { formatDate, shuttleUnitPrice } from "./formatters";
  */
 
 export const SPLIT_MATCH = "match";
+export const SPLIT_RATIO = "ratio";
 
 /** Số người một trận: đôi (mặc định) / đơn. */
 export const MATCH_SIZES = [

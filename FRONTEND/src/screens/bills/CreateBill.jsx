@@ -30,7 +30,11 @@ import useConfirmLeave from "../../components/bill/useConfirmLeave";
 import MatchBillForm, {
   SplitModeSwitch,
 } from "../../components/bill/MatchBillForm";
-import { SPLIT_MATCH, matchCandidates } from "../../utils/matchBill";
+import {
+  SPLIT_MATCH,
+  SPLIT_RATIO,
+  matchCandidates,
+} from "../../utils/matchBill";
 import PageHeader from "../../components/ui/PageHeader";
 import useToast from "../../components/ui/useToast";
 import { CalendarDays, Check, Loader } from "../../components/ui/icons";
@@ -60,8 +64,10 @@ export default function CreateBill() {
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
   const [parentBill, setParentBill] = useState(null);
-  // Bill con: chia theo trận (mặc định) hoặc theo mức tính
-  const [splitMode, setSplitMode] = useState(SPLIT_MATCH);
+  // Cách chia tiền: bill con mặc định theo trận, bill chính mặc định theo mức tính
+  const [splitMode, setSplitMode] = useState(() =>
+    parentBillId ? SPLIT_MATCH : SPLIT_RATIO,
+  );
   // Người dùng đã sửa gì chưa (để hỏi lại khi rời màn); đã bấm lưu lần nào chưa (để hiện lỗi M14)
   const [touched, setTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -365,16 +371,22 @@ export default function CreateBill() {
     </section>
   );
 
-  const splitSwitch = isChildBill && (
+  const splitSwitch = (
     <SplitModeSwitch value={splitMode} onChange={setSplitMode} />
   );
 
-  if (isChildBill && splitMode === SPLIT_MATCH) {
+  if (splitMode === SPLIT_MATCH) {
     return (
       <div className="px-4 sm:px-0">
         <MatchBillForm
-          // Dựng lại khi tải xong bill chính để form nhận ngày của bill chính
-          key={parentBill ? `parent-${parentBill.id}` : "loading"}
+          // Bill con: dựng lại khi tải xong bill chính để form nhận ngày của bill chính
+          key={
+            !isChildBill
+              ? "main"
+              : parentBill
+                ? `parent-${parentBill.id}`
+                : "loading"
+          }
           header={renderHeader}
           intro={
             <>
@@ -389,11 +401,12 @@ export default function CreateBill() {
             matches: [],
           }}
           candidates={matchPlayerCandidates}
+          scopeToCandidates={isChildBill}
           backTo={backTo}
           onSave={async (payload) => {
             const response = await billsApi.create({
               ...payload,
-              parent_bill_id: parentBillId,
+              parent_bill_id: parentBillId || null,
             });
             navigate(`/bills/${response.data.id}`);
           }}
@@ -405,7 +418,7 @@ export default function CreateBill() {
             message: "Các trận đã nhập sẽ mất.",
             confirmLabel: "Bỏ bill",
           }}
-          noteHint={CHILD_NOTE_HINT}
+          noteHint={isChildBill ? CHILD_NOTE_HINT : undefined}
         />
       </div>
     );

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { shuttlesApi } from "../../services/api";
 import {
+  SPLIT_MATCH,
+  SPLIT_RATIO,
   calculateMatchPreview,
   defaultMatchShuttleTypeId,
   fillDefaultShuttleTypes,
@@ -24,11 +26,11 @@ import useConfirmLeave from "./useConfirmLeave";
 const FORM_ID = "match-bill-form";
 
 const SPLIT_OPTIONS = [
-  { value: "match", label: "Theo trận" },
-  { value: "ratio", label: "Theo mức tính" },
+  { value: SPLIT_MATCH, label: "Theo trận" },
+  { value: SPLIT_RATIO, label: "Theo mức tính" },
 ];
 
-/** Chọn cách chia tiền của bill con (màn tạo bill con). */
+/** Chọn cách chia tiền ở màn tạo bill (bill chính và bill con). */
 export function SplitModeSwitch({ value, onChange }) {
   return (
     <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:mb-6">
@@ -65,8 +67,10 @@ export function SplitModeSwitch({ value, onChange }) {
 }
 
 /**
- * Form bill chia theo trận (tạo bill con / sửa bill chia theo trận): ngày, tiền sân, ghi chú,
+ * Form bill chia theo trận (tạo / sửa, bill chính hoặc bill con): ngày, tiền sân, ghi chú,
  * rồi từng trận. Tự tải loại cầu theo ngày, kiểm lỗi (M14), hỏi lại khi rời màn và báo lỗi lưu.
+ * `scopeToCandidates` (mặc định true, bill con): sheet chọn người chưa gõ chỉ hiện `candidates`;
+ * false (bill chính): hiện mọi người chơi.
  *
  * @param {{
  *   header: (onBackClick: Function) => import("react").ReactNode,
@@ -80,6 +84,7 @@ export function SplitModeSwitch({ value, onChange }) {
  *   errorPrefix: string,
  *   leave: { title: string, message: string, confirmLabel: string },
  *   noteHint?: string,
+ *   scopeToCandidates?: boolean,
  * }} props
  */
 export default function MatchBillForm({
@@ -94,6 +99,7 @@ export default function MatchBillForm({
   errorPrefix,
   leave: leaveText,
   noteHint,
+  scopeToCandidates = true,
 }) {
   const toast = useToast();
   const keyRef = useRef(0);
@@ -114,7 +120,7 @@ export default function MatchBillForm({
   const [loading, setLoading] = useState(false);
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [typesLoading, setTypesLoading] = useState(true);
-  // Người ngoài bill chính đã chọn vào trận (để hiện tên)
+  // Người chọn từ sheet mà không có trong candidates (để hiện tên)
   const [extraPlayers, setExtraPlayers] = useState([]);
   const [pickerKey, setPickerKey] = useState(null);
   const allPlayers = useAllPlayers();
@@ -189,7 +195,7 @@ export default function MatchBillForm({
     setPickerKey(key);
     allPlayers.loadOnce();
   };
-  /** Người chọn từ ngoài bill chính: nhớ tên để hiện ở trận và phần tóm tắt. */
+  /** Người chọn ngoài candidates: nhớ tên để hiện ở trận và phần tóm tắt. */
   const rememberPlayer = (player) =>
     setExtraPlayers((prev) =>
       prev.some((p) => p.user_id === player.user_id) ? prev : [...prev, player],
@@ -328,7 +334,9 @@ export default function MatchBillForm({
       <MatchPlayerPicker
         match={form.matches[pickerIndex] ?? null}
         number={pickerIndex + 1}
-        scopeIds={baseCandidates.map((c) => c.user_id)}
+        scopeIds={
+          scopeToCandidates ? baseCandidates.map((c) => c.user_id) : null
+        }
         allPlayers={allPlayers}
         onChange={(updated) => updateMatch(updated.key, updated)}
         onPicked={rememberPlayer}

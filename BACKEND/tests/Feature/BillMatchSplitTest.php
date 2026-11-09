@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /**
- * Bill con chia theo trận: nhập tiền sân chung + từng trận (người đánh, một
+ * Bill chia theo trận (bill con hoặc bill chính): nhập tiền sân chung + từng trận (người đánh, một
  * hoặc nhiều loại cầu + số quả). Tiền sân chia đều theo trận, mỗi trận chia cho người đánh trận
  * đó; tiền cầu của trận chia cho người đánh trận đó.
  */
@@ -127,6 +127,29 @@ class BillMatchSplitTest extends TestCase
             $this->assertEquals($matchCount, $players[$name]['ratio_value'], "Số trận của {$name}");
             $this->assertSame(0, $players[$name]['menu_extra_total'], $name);
         }
+    }
+
+    public function test_tao_bill_chinh_theo_tran_khong_can_bill_cha(): void
+    {
+        $bill = $this->actingAs($this->admin)
+            ->postJson('/api/bills', $this->examplePayload())
+            ->assertStatus(201)
+            ->json();
+
+        $this->assertSame('match', $bill['split_mode']);
+        $this->assertNull($bill['parent_bill_id']);
+        $this->assertSame(55000 + 82000, $bill['total_amount']);
+        $this->assertCount(2, $bill['matches']);
+        $this->assertSame(34250, $this->playersByName($bill)['Trường']['share_amount']);
+        $this->assertSame(self::STOCK - 1, $this->s70->fresh()->stock_quantity);
+        $this->assertSame(self::STOCK - 2, $this->thanhCong->fresh()->stock_quantity);
+
+        // Là bill chính: tạo được bill con từ nó
+        $sub = $this->actingAs($this->admin)
+            ->postJson("/api/bills/{$bill['id']}/sub-bills", $this->examplePayload(['court_total' => 40000]))
+            ->assertStatus(201)
+            ->json();
+        $this->assertSame($bill['id'], $sub['parent_bill_id']);
     }
 
     public function test_luu_tung_tran_va_gop_chi_tiet_cau_theo_loai(): void
