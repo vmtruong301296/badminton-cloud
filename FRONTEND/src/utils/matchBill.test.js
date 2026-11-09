@@ -12,6 +12,7 @@ import {
   matchCandidates,
   matchFormErrorList,
   matchFormFromBill,
+  pickerTeamAfterPick,
   setMatchSize,
   teamLabel,
   toggleTeamPlayer,
@@ -144,6 +145,19 @@ describe("toggleTeamPlayer / setMatchSize / teamLabel", () => {
     expect(setMatchSize(match([TRUONG, NGUYEN, HIEN, HUYNH]), 2)).toMatchObject(
       { size: 2, teams: [[TRUONG], [HIEN]] },
     );
+  });
+
+  it("chọn đủ một bên thì sheet sang bên kia, đủ cả hai thì đóng", () => {
+    expect(pickerTeamAfterPick(match([TRUONG]), 0)).toBe(0);
+    expect(pickerTeamAfterPick(match([TRUONG, NGUYEN]), 0)).toBe(1);
+    expect(pickerTeamAfterPick(match([TRUONG, NGUYEN, HIEN, HUYNH]), 1)).toBe(
+      null,
+    );
+    // Chọn đủ Cặp B trước: quay lại Cặp A còn thiếu
+    const bFirst = { ...match([]), teams: [[], [HIEN, HUYNH]] };
+    expect(pickerTeamAfterPick(bFirst, 1)).toBe(0);
+    // Đánh đơn: mỗi bên một người
+    expect(pickerTeamAfterPick(match([LOC], S70.id, 1, 2), 0)).toBe(1);
   });
 
   it("tên bên: đánh đôi là cặp, đánh đơn là bên", () => {

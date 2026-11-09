@@ -342,6 +342,9 @@ export default function MatchBillForm({
         allPlayers={allPlayers}
         onChange={(updated) => updateMatch(updated.key, updated)}
         onPicked={rememberPlayer}
+        onSwitchTeam={(team) =>
+          setPicker((prev) => (prev ? { ...prev, team } : prev))
+        }
         onClose={() => setPicker(null)}
       />
 

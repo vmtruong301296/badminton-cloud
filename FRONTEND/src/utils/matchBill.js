@@ -47,6 +47,7 @@ export const MATCH_FORM_MESSAGES = {
   teamFull: (label, count) =>
     `${label} đã đủ ${count} người — bỏ bớt một người trước khi chọn thêm.`,
   movedTeam: (name, from, to) => `Đã chuyển ${name} từ ${from} sang ${to}.`,
+  nextTeam: (done, next) => `Đã đủ ${done} — chọn tiếp ${next}.`,
 };
 
 /** Tên bên `team` (0 = A, 1 = B) của trận đôi / đơn. */
@@ -158,6 +159,18 @@ export const toggleTeamPlayer = (match, team, userId) => {
       i === team ? [...ids, userId] : ids.filter((id) => id !== userId),
     ),
   };
+};
+
+/**
+ * Sheet chọn người sau khi vừa chọn một người vào bên `team` (trận đã cập nhật): bên đó còn
+ * thiếu thì ở lại (trả `team`); đủ rồi thì sang bên kia nếu bên kia còn thiếu; cả hai đủ thì
+ * đóng sheet (trả null).
+ */
+export const pickerTeamAfterPick = (match, team) => {
+  const capacity = teamCapacity(match);
+  if (match.teams[team].length < capacity) return team;
+  const other = 1 - team;
+  return match.teams[other].length < capacity ? other : null;
 };
 
 /** Đổi đôi / đơn: mỗi bên giữ những người chọn trước, bỏ người thừa. */

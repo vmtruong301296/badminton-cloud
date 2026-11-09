@@ -9,7 +9,7 @@ import {
   teamLabel,
   toggleTeamPlayer,
 } from "../../utils/matchBill";
-import { CircleAlert, Plus, Users, X } from "../ui/icons";
+import { CircleAlert, Pencil, Plus, Users, X } from "../ui/icons";
 
 function FieldError({ id, message }) {
   return (
@@ -22,7 +22,10 @@ function FieldError({ id, message }) {
 
 const money = (value) => formatCurrency(Math.round(value));
 
-/** Một bên của trận (Cặp A / Cặp B): người đã chọn (chạm × để bỏ) + nút mở sheet chọn người. */
+/**
+ * Một bên của trận (Cặp A / Cặp B): người đã chọn (chạm × để bỏ). Còn thiếu người: nút gạch
+ * đứt "Chọn …" nằm ở chỗ trống cạnh người đã chọn. Đủ người: nút "Đổi người" nhỏ ở dòng tên bên.
+ */
 function TeamBox({
   uid,
   index,
@@ -40,26 +43,34 @@ function TeamBox({
   const full = ids.length >= capacity;
   const labelId = `${uid}-team-${team}-label`;
   const errorId = `${uid}-team-${team}-err`;
-  const pickLabel =
-    ids.length === 0
-      ? `Chọn ${capacity} người`
-      : full
-        ? "Đổi người"
-        : "Chọn thêm";
+  const pickLabel = ids.length === 0 ? `Chọn ${capacity} người` : "Chọn thêm";
 
   return (
     <div
       className={`min-w-0 rounded-lg border bg-slate-50/60 p-2.5 ${error ? "border-rose-300" : "border-slate-200"}`}
     >
-      <div className="mb-1.5 flex items-baseline justify-between gap-2">
-        <span id={labelId} className="text-sm font-semibold text-slate-800">
-          {label}
+      <div className="mb-1.5 flex min-h-6 items-center justify-between gap-2">
+        <span className="flex items-baseline gap-2">
+          <span id={labelId} className="text-sm font-semibold text-slate-800">
+            {label}
+          </span>
+          <span
+            className={`font-tabular text-xs font-medium ${full ? "text-emerald-700" : "text-slate-500"}`}
+          >
+            {ids.length}/{capacity}
+          </span>
         </span>
-        <span
-          className={`font-tabular text-xs font-medium ${full ? "text-emerald-700" : "text-slate-500"}`}
-        >
-          {ids.length}/{capacity}
-        </span>
+        {full && (
+          <button
+            type="button"
+            onClick={() => onOpenPicker(team)}
+            aria-label={`Đổi người ${label} trận ${number}`}
+            className="-my-2.5 -mr-1.5 inline-flex h-11 flex-none items-center gap-1 rounded-lg px-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600/40 sm:-my-1.5 sm:h-9"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Đổi người
+          </button>
+        )}
       </div>
       <ul aria-labelledby={labelId} className="flex flex-wrap gap-2">
         {ids.map((userId) => (
@@ -78,24 +89,26 @@ function TeamBox({
             </button>
           </li>
         ))}
-        <li>
-          <button
-            type="button"
-            onClick={() => onOpenPicker(team)}
-            data-field={`match-${index}-team-${team}`}
-            aria-label={`${pickLabel} cho ${label} trận ${number}`}
-            aria-invalid={error ? true : undefined}
-            aria-describedby={error ? errorId : undefined}
-            className={`inline-flex h-11 items-center gap-1.5 rounded-lg border border-dashed bg-white px-3 text-sm font-semibold transition sm:h-9 ${
-              error
-                ? "border-rose-400 text-rose-700 hover:bg-rose-50"
-                : "border-emerald-400 text-emerald-700 hover:bg-emerald-50"
-            }`}
-          >
-            <Users className="h-4 w-4" />
-            {pickLabel}
-          </button>
-        </li>
+        {!full && (
+          <li>
+            <button
+              type="button"
+              onClick={() => onOpenPicker(team)}
+              data-field={`match-${index}-team-${team}`}
+              aria-label={`${pickLabel} cho ${label} trận ${number}`}
+              aria-invalid={error ? true : undefined}
+              aria-describedby={error ? errorId : undefined}
+              className={`inline-flex h-11 items-center gap-1.5 rounded-lg border border-dashed bg-white px-3 text-sm font-semibold transition sm:h-9 ${
+                error
+                  ? "border-rose-400 text-rose-700 hover:bg-rose-50"
+                  : "border-emerald-400 text-emerald-700 hover:bg-emerald-50"
+              }`}
+            >
+              <Users className="h-4 w-4" />
+              {pickLabel}
+            </button>
+          </li>
+        )}
       </ul>
       {error && <FieldError id={errorId} message={error} />}
     </div>
