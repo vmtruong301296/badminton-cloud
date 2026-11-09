@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateBillPreview,
   formatDateShort,
+  formatDateWithWeekday,
   formatRatio,
   formatTimeShort,
 } from "./formatters";
@@ -91,6 +92,17 @@ describe("formatDateShort", () => {
     const today = new Date();
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     expect(formatDateShort(iso)).toMatch(/^(CN|T[2-7]), \d{2}\/\d{2}$/);
+  });
+});
+
+describe("formatDateWithWeekday", () => {
+  it("ngày-tháng-năm kèm thứ, đọc ngày lịch không lệch múi giờ", () => {
+    expect(formatDateWithWeekday("2026-11-09")).toBe("09-11-2026 (Thứ 2)");
+    expect(formatDateWithWeekday("2026-11-08T00:00:00.000000Z")).toBe(
+      "08-11-2026 (Chủ nhật)",
+    );
+    expect(formatDateWithWeekday("2026-11-14")).toBe("14-11-2026 (Thứ 7)");
+    expect(formatDateWithWeekday(null)).toBe("");
   });
 });
 

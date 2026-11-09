@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { formatCurrency, formatCurrencyRounded, formatDate, formatDateDisplay, formatRatio, roundToNearestThousand } from "../../utils/formatters";
+import { formatCurrency, formatCurrencyRounded, formatDateDisplay, formatDateWithWeekday, formatRatio, roundToNearestThousand } from "../../utils/formatters";
 import { hasExtraCosts } from "../../utils/billTotals";
 import { isMatchSplit, matchDisplayLines, playerWeightLabel } from "../../utils/matchBill";
 
@@ -26,7 +26,8 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 			<div>
 				{showTitle && (
 					<div className="text-center mb-6 border-b-2 border-gray-800 pb-4">
-						<h1 className="text-3xl font-bold mb-2">Bill Ngày: {formatDate(billData.date)}</h1>
+						{/* Bill chính và bill con xuất riêng: "09-11-2026 (Thứ 2)" */}
+						<h1 className="text-3xl font-bold mb-2">Bill Ngày: {formatDateWithWeekday(billData.date)}</h1>
 					</div>
 				)}
 
@@ -64,7 +65,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 					</div>
 				</div>
 
-				{/* Bill chia theo trận: từng trận, người đánh, tiền mỗi người của trận */}
+				{/* Bill chia theo trận: từng trận, người đánh, cầu */}
 				{isMatchSplit(billData) && (
 					<table className="mb-6 w-full border-collapse text-sm">
 						<thead>
@@ -72,7 +73,6 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 								<th className="border border-gray-300 px-2 py-2 w-20 text-left">Trận</th>
 								<th className="border border-gray-300 px-3 py-2 text-left">Người chơi</th>
 								<th className="border border-gray-300 px-3 py-2 text-left">Cầu</th>
-								<th className="border border-gray-300 px-3 py-2 text-right">Mỗi người</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -85,7 +85,6 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 									<td className="border border-gray-300 px-3 py-2">
 										{line.shuttle_text} = {formatCurrency(line.subtotal)}
 									</td>
-									<td className="border border-gray-300 px-3 py-2 text-right font-semibold">{formatCurrency(line.per_player)}</td>
 								</tr>
 							))}
 						</tbody>

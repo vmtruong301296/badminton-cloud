@@ -88,6 +88,17 @@ export const formatDateShort = (date, now = new Date()) => {
   return `${WEEKDAYS_SHORT[d.getDay()]}, ${day}/${month}`;
 };
 
+const WEEKDAYS_LONG = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+/** Ngày kèm thứ cho tiêu đề ảnh xuất bill chính: "09-11-2026 (Thứ 2)". */
+export const formatDateWithWeekday = (date) => {
+  const d = toLocalDate(date);
+  if (!d) return '';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  return `${day}-${month}-${d.getFullYear()} (${WEEKDAYS_LONG[d.getDay()]})`;
+};
+
 /** Giờ ngắn "21:13" (24 giờ, giờ máy), vd giờ đánh dấu đã thanh toán. */
 export const formatTimeShort = (date) => {
   const d = toLocalDate(date);
