@@ -48,8 +48,7 @@ export default function BillMatchesCard({
             {line.names.join(", ")}
           </div>
           <div className="font-tabular mt-0.5 text-xs text-slate-500">
-            {line.shuttle_name} × {line.quantity} ={" "}
-            {formatCurrency(line.subtotal)}
+            {line.shuttle_text} = {formatCurrency(line.subtotal)}
           </div>
         </li>
       ))}

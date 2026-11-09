@@ -9,8 +9,8 @@ use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 /**
- * Bill con chia theo trận: nhập tiền sân chung + từng trận (người đánh, loại
- * cầu, số quả). Tiền sân chia đều theo trận, mỗi trận chia cho người đánh trận
+ * Bill con chia theo trận: nhập tiền sân chung + từng trận (người đánh, một
+ * hoặc nhiều loại cầu + số quả). Tiền sân chia đều theo trận, mỗi trận chia cho người đánh trận
  * đó; tiền cầu của trận chia cho người đánh trận đó.
  */
 class BillMatchSplitTest extends TestCase
@@ -62,10 +62,18 @@ class BillMatchSplitTest extends TestCase
 
     private function match(array $names, ShuttleType $type, int $quantity): array
     {
+        return $this->matchWith($names, [[$type, $quantity]]);
+    }
+
+    /** @param  array<int, array{0: ShuttleType, 1: int}>  $lines  các loại cầu của trận: [loại, số quả] */
+    private function matchWith(array $names, array $lines): array
+    {
         return [
             'player_ids' => array_map(fn (string $n) => $this->id($n), $names),
-            'shuttle_type_id' => $type->id,
-            'quantity' => $quantity,
+            'shuttles' => array_map(fn (array $line) => [
+                'shuttle_type_id' => $line[0]->id,
+                'quantity' => $line[1],
+            ], $lines),
         ];
     }
 
@@ -135,7 +143,7 @@ class BillMatchSplitTest extends TestCase
         $this->assertSame([1, 2, 3], array_column($bill['matches'], 'position'));
         $this->assertSame(28000 * 2, $bill['matches'][1]['subtotal']);
         $this->assertSame(['Trường', 'Lộc'], array_column($bill['matches'][2]['players'], 'name'));
-        $this->assertSame('Cầu Thành Công', $bill['matches'][1]['shuttle_type']['name']);
+        $this->assertSame('Cầu Thành Công', $bill['matches'][1]['shuttles'][0]['shuttle_type']['name']);
 
         $shuttles = collect($bill['bill_shuttles'])->keyBy('shuttle_type_id');
         $this->assertSame(2, $shuttles[$this->s70->id]['quantity']);
@@ -160,6 +168,56 @@ class BillMatchSplitTest extends TestCase
         // Trận 1: 30.000/4 + 26.000/4 = 14.000; trận 2: 30.000/2 + 28.000/2 = 29.000
         $this->assertSame(14000 + 29000, $players['Trường']['total_amount']);
         $this->assertSame(14000, $players['Huỳnh']['total_amount']);
+    }
+
+    public function test_mot_tran_dung_nhieu_loai_cau(): void
+    {
+        $bill = $this->createSubBill($this->examplePayload([
+            'court_total' => 40000,
+            'matches' => [
+                $this->matchWith(['Trường', 'Nguyên', 'Hiển', 'Huỳnh'], [[$this->s70, 1], [$this->thanhCong, 1]]),
+                $this->match(['Trường', 'Hiển', 'Lộc', 'Tân'], $this->s70, 1),
+            ],
+        ]));
+
+        $this->assertSame(26000 + 28000, $bill['matches'][0]['subtotal']);
+        $this->assertSame(
+            [['Cầu S70', 1, 26000], ['Cầu Thành Công', 1, 28000]],
+            array_map(fn (array $line) => [$line['shuttle_type']['name'], $line['quantity'], $line['subtotal']], $bill['matches'][0]['shuttles']),
+        );
+        $this->assertSame(54000 + 26000, $bill['total_shuttle_price']);
+
+        // Trận 1: (20.000 + 54.000) / 4 = 18.500; trận 2: (20.000 + 26.000) / 4 = 11.500
+        $players = $this->playersByName($bill);
+        $this->assertSame(18500 + 11500, $players['Trường']['share_amount']);
+        $this->assertSame(18500, $players['Nguyên']['share_amount']);
+        $this->assertSame(11500, $players['Lộc']['share_amount']);
+
+        $shuttles = collect($bill['bill_shuttles'])->keyBy('shuttle_type_id');
+        $this->assertSame(2, $shuttles[$this->s70->id]['quantity']);
+        $this->assertSame(1, $shuttles[$this->thanhCong->id]['quantity']);
+        $this->assertSame(self::STOCK - 2, $this->s70->fresh()->stock_quantity);
+        $this->assertSame(self::STOCK - 1, $this->thanhCong->fresh()->stock_quantity);
+    }
+
+    public function test_mot_loai_cau_khong_duoc_chon_hai_lan_trong_mot_tran(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson("/api/bills/{$this->parentId}/sub-bills", $this->examplePayload([
+                'matches' => [$this->matchWith(['Trường', 'Nguyên', 'Hiển', 'Huỳnh'], [[$this->s70, 1], [$this->s70, 2]])],
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['matches.0.shuttles' => 'Trận 1 có loại cầu bị chọn hai lần.']);
+    }
+
+    public function test_tran_can_it_nhat_mot_loai_cau(): void
+    {
+        $this->actingAs($this->admin)
+            ->postJson("/api/bills/{$this->parentId}/sub-bills", $this->examplePayload([
+                'matches' => [$this->matchWith(['Trường', 'Nguyên', 'Hiển', 'Huỳnh'], [])],
+            ]))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['matches.0.shuttles' => 'Mỗi trận cần ít nhất một loại cầu.']);
     }
 
     public function test_tran_phai_du_4_hoac_2_nguoi(): void
@@ -245,7 +303,7 @@ class BillMatchSplitTest extends TestCase
             ->assertOk()
             ->assertJsonPath('sub_bills.0.split_mode', 'match')
             ->assertJsonPath('sub_bills.0.matches.1.players.3.name', 'Tân')
-            ->assertJsonPath('sub_bills.0.matches.0.shuttle_type.name', 'Cầu S70');
+            ->assertJsonPath('sub_bills.0.matches.0.shuttles.0.shuttle_type.name', 'Cầu S70');
 
         $this->actingAs($this->admin)
             ->getJson("/api/bills/{$sub['id']}")

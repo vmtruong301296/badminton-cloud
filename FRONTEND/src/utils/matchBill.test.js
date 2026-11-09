@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   MATCH_FORM_MESSAGES,
+  addMatchShuttle,
   calculateMatchPreview,
+  fillDefaultShuttleTypes,
   isMatchSplit,
   matchDisplayLines,
   playerWeightLabel,
@@ -21,6 +23,14 @@ const TYPES = [THANH_CONG, S70];
 
 const [TRUONG, NGUYEN, HIEN, HUYNH, LOC, TAN] = [11, 12, 13, 14, 15, 16];
 
+/** Dòng cầu của trận từ các cặp [loại cầu, số quả]. */
+const lines = (...pairs) =>
+  pairs.map(([shuttle_type_id, quantity], index) => ({
+    key: index + 1,
+    shuttle_type_id,
+    quantity,
+  }));
+
 const match = (
   player_ids,
   shuttle_type_id = S70.id,
@@ -29,8 +39,7 @@ const match = (
 ) => ({
   size,
   player_ids,
-  shuttle_type_id,
-  quantity,
+  shuttles: lines([shuttle_type_id, quantity]),
 });
 
 describe("calculateMatchPreview", () => {
@@ -76,6 +85,26 @@ describe("calculateMatchPreview", () => {
     expect(preview.players[0].share_amount).toBe(14000 + 29000);
   });
 
+  it("một trận nhiều loại cầu: cộng tiền các loại rồi chia cho người đánh", () => {
+    const preview = calculateMatchPreview(
+      40000,
+      [
+        {
+          ...match([TRUONG, NGUYEN, HIEN, HUYNH]),
+          shuttles: lines([S70.id, 1], [THANH_CONG.id, 1]),
+        },
+        match([TRUONG, HIEN, LOC, TAN], S70.id, 1),
+      ],
+      TYPES,
+    );
+
+    expect(preview.matches[0].subtotal).toBe(26000 + 28000);
+    expect(preview.total_shuttle_price).toBe(54000 + 26000);
+    // Trận 1: (20.000 + 54.000) / 4; trận 2: (20.000 + 26.000) / 4
+    expect(preview.players[0].share_amount).toBe(18500 + 11500);
+    expect(preview.players[1].share_amount).toBe(18500);
+  });
+
   it("trận chưa chọn đủ người vẫn chia theo số người của trận", () => {
     const preview = calculateMatchPreview(40000, [match([TRUONG])], TYPES);
     expect(preview.players).toEqual([
@@ -112,20 +141,85 @@ describe("toggleMatchPlayer / setMatchSize", () => {
   });
 });
 
+describe("addMatchShuttle / fillDefaultShuttleTypes", () => {
+  it("thêm loại cầu chưa có trong trận, ưu tiên Cầu S70", () => {
+    const added = addMatchShuttle(match([], THANH_CONG.id), TYPES);
+    expect(added.shuttles).toEqual(lines([THANH_CONG.id, 1], [S70.id, 1]));
+    const again = addMatchShuttle(match([], S70.id), TYPES);
+    expect(again.shuttles[1]).toEqual({
+      key: 2,
+      shuttle_type_id: THANH_CONG.id,
+      quantity: 1,
+    });
+  });
+
+  it("đã dùng hết loại cầu thì không thêm dòng", () => {
+    const full = {
+      ...match([]),
+      shuttles: lines([S70.id, 1], [THANH_CONG.id, 1]),
+    };
+    expect(addMatchShuttle(full, TYPES)).toBe(full);
+  });
+
+  it("dòng chưa có loại nhận loại mặc định chưa dùng trong trận", () => {
+    const matches = [
+      { ...match([]), shuttles: lines([null, 1], [null, 2]) },
+      match([TRUONG], THANH_CONG.id),
+    ];
+    const filled = fillDefaultShuttleTypes(matches, TYPES);
+    expect(filled[0].shuttles).toEqual(lines([S70.id, 1], [THANH_CONG.id, 2]));
+    expect(filled[1]).toBe(matches[1]);
+  });
+
+  it("không có dòng trống thì trả lại đúng mảng cũ", () => {
+    const matches = [match([TRUONG])];
+    expect(fillDefaultShuttleTypes(matches, TYPES)).toBe(matches);
+  });
+});
+
 describe("validateMatchForm", () => {
   it("báo trận thiếu người, chưa chọn cầu, 0 quả, theo thứ tự trên màn", () => {
     const errors = validateMatchForm({
       matches: [
         match([TRUONG, NGUYEN, HIEN]),
         match([TRUONG, NGUYEN], null, 1, 2),
-        match([TRUONG, NGUYEN, HIEN, HUYNH], S70.id, 0),
+        {
+          ...match([TRUONG, NGUYEN, HIEN, HUYNH]),
+          shuttles: lines([S70.id, 1], [THANH_CONG.id, 0]),
+        },
       ],
     });
 
     expect(matchFormErrorList(errors)).toEqual([
       { field: "match-0-players", message: MATCH_FORM_MESSAGES.players(4) },
-      { field: "match-1-shuttle", message: MATCH_FORM_MESSAGES.noShuttle },
-      { field: "match-2-quantity", message: MATCH_FORM_MESSAGES.zeroQuantity },
+      { field: "match-1-shuttle-0", message: MATCH_FORM_MESSAGES.noShuttle },
+      {
+        field: "match-2-quantity-1",
+        message: MATCH_FORM_MESSAGES.zeroQuantity,
+      },
+    ]);
+  });
+
+  it("một loại cầu chọn hai dòng trong trận, trận không còn dòng cầu", () => {
+    const errors = validateMatchForm({
+      matches: [
+        {
+          ...match([TRUONG, NGUYEN, HIEN, HUYNH]),
+          shuttles: lines([S70.id, 1], [S70.id, 2]),
+        },
+        { ...match([TRUONG, NGUYEN, HIEN, HUYNH]), shuttles: [] },
+      ],
+    });
+
+    expect(matchFormErrorList(errors)).toEqual([
+      {
+        field: "match-0-shuttle-1",
+        message: MATCH_FORM_MESSAGES.duplicateShuttle,
+      },
+      {
+        field: "match-1-add-shuttle",
+        message: MATCH_FORM_MESSAGES.noShuttleLines,
+      },
     ]);
   });
 
@@ -147,13 +241,19 @@ describe("validateMatchForm", () => {
 });
 
 describe("matchBillPayload", () => {
-  it("gửi split_mode match và từng trận, bỏ size và key", () => {
+  it("gửi split_mode match và từng trận kèm các loại cầu, bỏ size và key", () => {
     expect(
       matchBillPayload({
         date: "2026-11-08",
         note: "",
         court_total: 55000,
-        matches: [{ key: 7, ...match([TRUONG, NGUYEN], S70.id, "2", 2) }],
+        matches: [
+          {
+            key: 7,
+            ...match([TRUONG, NGUYEN], S70.id, "2", 2),
+            shuttles: lines([S70.id, "2"], [THANH_CONG.id, 1]),
+          },
+        ],
       }),
     ).toEqual({
       date: "2026-11-08",
@@ -161,7 +261,13 @@ describe("matchBillPayload", () => {
       court_total: 55000,
       split_mode: "match",
       matches: [
-        { player_ids: [TRUONG, NGUYEN], shuttle_type_id: S70.id, quantity: 2 },
+        {
+          player_ids: [TRUONG, NGUYEN],
+          shuttles: [
+            { shuttle_type_id: S70.id, quantity: 2 },
+            { shuttle_type_id: THANH_CONG.id, quantity: 1 },
+          ],
+        },
       ],
     });
   });
@@ -205,8 +311,7 @@ describe("matchFormFromBill", () => {
       court_total: 55000,
       matches: [
         {
-          shuttle_type_id: S70.id,
-          quantity: 1,
+          shuttles: [{ shuttle_type_id: S70.id, quantity: 1 }],
           players: [{ id: TRUONG }, { id: NGUYEN }],
         },
       ],
@@ -238,9 +343,8 @@ describe("matchDisplayLines", () => {
         {
           id: 1,
           position: 1,
-          quantity: 1,
           subtotal: 26000,
-          shuttle_type: { name: "Cầu S70" },
+          shuttles: [{ quantity: 1, shuttle_type: { name: "Cầu S70" } }],
           players: [
             { id: TRUONG, name: "Trường" },
             { id: NGUYEN, name: "Nguyên" },
@@ -251,9 +355,11 @@ describe("matchDisplayLines", () => {
         {
           id: 2,
           position: 2,
-          quantity: 2,
-          subtotal: 56000,
-          shuttle_type: { name: "Cầu Thành Công" },
+          subtotal: 54000,
+          shuttles: [
+            { quantity: 1, shuttle_type: { name: "Cầu S70" } },
+            { quantity: 1, shuttle_type: { name: "Cầu Thành Công" } },
+          ],
           players: [
             { id: TRUONG, name: "Trường" },
             { id: LOC, name: "Lộc" },
@@ -268,8 +374,7 @@ describe("matchDisplayLines", () => {
         position: 1,
         kind: "Đôi",
         names: ["Trường", "Nguyên", "Hiển", "Huỳnh"],
-        shuttle_name: "Cầu S70",
-        quantity: 1,
+        shuttle_text: "Cầu S70 × 1",
         subtotal: 26000,
         per_player: 13375,
       },
@@ -278,10 +383,9 @@ describe("matchDisplayLines", () => {
         position: 2,
         kind: "Đơn",
         names: ["Trường", "Lộc"],
-        shuttle_name: "Cầu Thành Công",
-        quantity: 2,
-        subtotal: 56000,
-        per_player: 41750,
+        shuttle_text: "Cầu S70 × 1 + Cầu Thành Công × 1",
+        subtotal: 54000,
+        per_player: 40750,
       },
     ]);
   });

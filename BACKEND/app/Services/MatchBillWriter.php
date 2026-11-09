@@ -22,7 +22,7 @@ class MatchBillWriter
     public function __construct(private MatchBillCalculator $calculator) {}
 
     /**
-     * @param  array{date: string, note?: string|null, court_total: int, matches: array<int, array{player_ids: array<int, int>, shuttle_type_id: int, quantity: int}>}  $data
+     * @param  array{date: string, note?: string|null, court_total: int, matches: array<int, array{player_ids: array<int, int>, shuttles: array<int, array{shuttle_type_id: int, quantity: int}>}>}  $data
      * @param  array<int, array{is_paid: bool, paid_at: mixed}>  $paymentByUser  "Đã TT" giữ lại khi sửa bill
      */
     public function save(Bill $bill, array $data, array $paymentByUser = []): Bill
@@ -43,10 +43,9 @@ class MatchBillWriter
         ])->save();
 
         foreach ($matches as $match) {
-            $bill->matches()
-                ->create(Arr::except($match, 'player_ids'))
-                ->players()
-                ->attach($match['player_ids']);
+            $saved = $bill->matches()->create(Arr::only($match, ['position', 'subtotal']));
+            $saved->shuttles()->createMany($match['shuttles']);
+            $saved->players()->attach($match['player_ids']);
         }
 
         $this->saveShuttleLines($bill, $matches);
@@ -56,36 +55,48 @@ class MatchBillWriter
     }
 
     /**
-     * Giá cầu theo ngày bill cho từng trận.
+     * Giá cầu theo ngày bill cho từng dòng cầu của từng trận; subtotal của trận = tổng các dòng.
      *
-     * @return array<int, array{position: int, shuttle_type_id: int, quantity: int, price_each: int, subtotal: int, player_ids: array<int, int>}>
+     * @return array<int, array{position: int, subtotal: int, player_ids: array<int, int>, shuttles: array<int, array{shuttle_type_id: int, quantity: int, price_each: int, subtotal: int}>}>
      */
     private function priceMatches(array $matches, string $billDate): array
     {
-        $prices = ShuttleType::findMany(array_column($matches, 'shuttle_type_id'))
+        $typeIds = array_merge(...array_map(
+            fn (array $match) => array_column($match['shuttles'], 'shuttle_type_id'),
+            $matches,
+        ));
+        $prices = ShuttleType::findMany(array_unique($typeIds))
             ->mapWithKeys(fn (ShuttleType $type) => [$type->id => $type->priceForDate($billDate)]);
 
         $priced = [];
         foreach (array_values($matches) as $index => $match) {
-            $typeId = (int) $match['shuttle_type_id'];
-            $quantity = (int) $match['quantity'];
+            $shuttles = array_map(function (array $line) use ($prices) {
+                $typeId = (int) $line['shuttle_type_id'];
+                $quantity = (int) $line['quantity'];
+
+                return [
+                    'shuttle_type_id' => $typeId,
+                    'quantity' => $quantity,
+                    'price_each' => $prices[$typeId],
+                    'subtotal' => $prices[$typeId] * $quantity,
+                ];
+            }, array_values($match['shuttles']));
+
             $priced[] = [
                 'position' => $index + 1,
-                'shuttle_type_id' => $typeId,
-                'quantity' => $quantity,
-                'price_each' => $prices[$typeId],
-                'subtotal' => $prices[$typeId] * $quantity,
+                'subtotal' => array_sum(array_column($shuttles, 'subtotal')),
                 'player_ids' => array_map('intval', $match['player_ids']),
+                'shuttles' => $shuttles,
             ];
         }
 
         return $priced;
     }
 
-    /** Một dòng bill_shuttles cho mỗi loại cầu, cộng dồn các trận. */
+    /** Một dòng bill_shuttles cho mỗi loại cầu, cộng dồn mọi trận. */
     private function saveShuttleLines(Bill $bill, array $matches): void
     {
-        collect($matches)->groupBy('shuttle_type_id')->each(function ($group, $typeId) use ($bill) {
+        collect($matches)->pluck('shuttles')->flatten(1)->groupBy('shuttle_type_id')->each(function ($group, $typeId) use ($bill) {
             BillShuttle::create([
                 'bill_id' => $bill->id,
                 'shuttle_type_id' => $typeId,

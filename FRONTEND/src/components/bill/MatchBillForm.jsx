@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { playersApi, shuttlesApi } from "../../services/api";
+import { shuttlesApi } from "../../services/api";
 import {
   calculateMatchPreview,
   defaultMatchShuttleTypeId,
+  fillDefaultShuttleTypes,
   matchBillPayload,
   matchFormErrorList,
   newMatch,
@@ -11,19 +12,20 @@ import {
 import { serverErrorMessage } from "../../utils/billFormErrors";
 import ConfirmDialog from "../common/ConfirmDialog";
 import useToast from "../ui/useToast";
-import { CircleAlert, Plus, Users } from "../ui/icons";
+import { CircleAlert, Plus } from "../ui/icons";
 import { BillActionBar, BillBasicInfoCard } from "./BillFormSections";
 import { focusField, focusNextOnEnter } from "./billFormFocus";
 import MatchBillSummary from "./MatchBillSummary";
 import MatchCard from "./MatchCard";
-import PlayerPickerSheet from "./PlayerPickerSheet";
+import MatchPlayerPicker from "./MatchPlayerPicker";
+import useAllPlayers from "./useAllPlayers";
 import useConfirmLeave from "./useConfirmLeave";
 
 const FORM_ID = "match-bill-form";
 
 const SPLIT_OPTIONS = [
-  { value: "ratio", label: "Theo mức tính" },
   { value: "match", label: "Theo trận" },
+  { value: "ratio", label: "Theo mức tính" },
 ];
 
 /** Chọn cách chia tiền của bill con (màn tạo bill con). */
@@ -60,32 +62,6 @@ export function SplitModeSwitch({ value, onChange }) {
       </div>
     </div>
   );
-}
-
-/** Danh sách người tải từ GET /players cho sheet thêm người ngoài bill chính. */
-function useAllPlayers() {
-  const [state, setState] = useState({
-    players: null,
-    loading: false,
-    error: null,
-  });
-
-  const load = async () => {
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-    try {
-      const response = await playersApi.getAll();
-      setState({ players: response.data || [], loading: false, error: null });
-    } catch (error) {
-      console.error("Error loading players:", error);
-      setState({
-        players: null,
-        loading: false,
-        error: "Không tải được danh sách người chơi.",
-      });
-    }
-  };
-
-  return { ...state, load };
 }
 
 /**
@@ -138,8 +114,9 @@ export default function MatchBillForm({
   const [loading, setLoading] = useState(false);
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [typesLoading, setTypesLoading] = useState(true);
+  // Người ngoài bill chính đã chọn vào trận (để hiện tên)
   const [extraPlayers, setExtraPlayers] = useState([]);
-  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerKey, setPickerKey] = useState(null);
   const allPlayers = useAllPlayers();
 
   useEffect(() => {
@@ -159,21 +136,15 @@ export default function MatchBillForm({
     };
   }, [form.date]);
 
-  // Trận chưa có loại cầu (trận đầu khi mới mở) nhận loại mặc định khi tải xong loại cầu
+  // Dòng cầu chưa có loại (trận đầu khi mới mở) nhận loại mặc định khi tải xong loại cầu
   const defaultTypeId = defaultMatchShuttleTypeId(shuttleTypes);
   useEffect(() => {
-    if (!defaultTypeId) return;
-    setForm((prev) =>
-      prev.matches.some((m) => !m.shuttle_type_id)
-        ? {
-            ...prev,
-            matches: prev.matches.map((m) =>
-              m.shuttle_type_id ? m : { ...m, shuttle_type_id: defaultTypeId },
-            ),
-          }
-        : prev,
-    );
-  }, [defaultTypeId]);
+    if (shuttleTypes.length === 0) return;
+    setForm((prev) => {
+      const matches = fillDefaultShuttleTypes(prev.matches, shuttleTypes);
+      return matches === prev.matches ? prev : { ...prev, matches };
+    });
+  }, [shuttleTypes]);
 
   const candidates = useMemo(() => {
     const baseIds = new Set(baseCandidates.map((c) => c.user_id));
@@ -182,6 +153,8 @@ export default function MatchBillForm({
       ...extraPlayers.filter((p) => !baseIds.has(p.user_id)),
     ];
   }, [baseCandidates, extraPlayers]);
+  const nameOf = (userId) =>
+    candidates.find((c) => c.user_id === userId)?.name ?? `#${userId}`;
 
   const preview = useMemo(
     () => calculateMatchPreview(form.court_total, form.matches, shuttleTypes),
@@ -211,29 +184,16 @@ export default function MatchBillForm({
     update((prev) => ({ ...prev, matches: [...prev.matches, match] }));
   };
 
-  /** Sheet thêm người: chỉ thêm / bỏ người ngoài bill chính; bỏ thì gỡ khỏi các trận. */
-  const togglePickedPlayer = (player, nextSelected) => {
-    if (baseCandidates.some((c) => c.user_id === player.id)) return;
-    if (nextSelected) {
-      setExtraPlayers((prev) => [
-        ...prev,
-        { user_id: player.id, name: player.name },
-      ]);
-      return;
-    }
-    setExtraPlayers((prev) => prev.filter((p) => p.user_id !== player.id));
-    update((prev) => ({
-      ...prev,
-      matches: prev.matches.map((m) => ({
-        ...m,
-        player_ids: m.player_ids.filter((id) => id !== player.id),
-      })),
-    }));
+  const pickerIndex = form.matches.findIndex((m) => m.key === pickerKey);
+  const openPicker = (key) => {
+    setPickerKey(key);
+    allPlayers.loadOnce();
   };
-  const openPicker = () => {
-    setPickerOpen(true);
-    if (!allPlayers.players && !allPlayers.loading) allPlayers.load();
-  };
+  /** Người chọn từ ngoài bill chính: nhớ tên để hiện ở trận và phần tóm tắt. */
+  const rememberPlayer = (player) =>
+    setExtraPlayers((prev) =>
+      prev.some((p) => p.user_id === player.user_id) ? prev : [...prev, player],
+    );
 
   const leave = useConfirmLeave({ when: touched && !loading, backTo });
 
@@ -280,21 +240,13 @@ export default function MatchBillForm({
               />
 
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-2">
-                <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
+                <div className="border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
                   <h2 className="text-base font-semibold text-slate-900">
                     Các trận
                     <span className="font-tabular ml-1 text-slate-500">
                       ({form.matches.length})
                     </span>
                   </h2>
-                  <button
-                    type="button"
-                    onClick={openPicker}
-                    className="btn btn-secondary btn-sm"
-                  >
-                    <Users className="h-4 w-4" />
-                    Thêm người
-                  </button>
                 </div>
                 <div className="space-y-3 p-4 sm:p-5">
                   {form.matches.map((match, index) => (
@@ -302,12 +254,13 @@ export default function MatchBillForm({
                       key={match.key}
                       index={index}
                       match={match}
-                      candidates={candidates}
+                      nameOf={nameOf}
                       shuttleTypes={shuttleTypes}
                       typesLoading={typesLoading}
                       line={preview.matches[index]}
                       errors={errors?.matches[index]}
                       onChange={(updated) => updateMatch(match.key, updated)}
+                      onOpenPicker={() => openPicker(match.key)}
                       onRemove={() => removeMatch(match.key)}
                     />
                   ))}
@@ -371,19 +324,14 @@ export default function MatchBillForm({
         }
       />
 
-      <PlayerPickerSheet
-        isOpen={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        players={allPlayers.players || []}
-        selectedIds={candidates.map((c) => c.user_id)}
-        onToggle={togglePickedPlayer}
-        loading={allPlayers.loading}
-        error={allPlayers.error}
-        onRetry={allPlayers.load}
-        showRatio={false}
+      <MatchPlayerPicker
+        match={form.matches[pickerIndex] ?? null}
+        number={pickerIndex + 1}
         scopeIds={baseCandidates.map((c) => c.user_id)}
-        title="Thêm người ngoài bill chính"
-        doneLabel={() => "Xong"}
+        allPlayers={allPlayers}
+        onChange={(updated) => updateMatch(updated.key, updated)}
+        onPicked={rememberPlayer}
+        onClose={() => setPickerKey(null)}
       />
 
       <ConfirmDialog

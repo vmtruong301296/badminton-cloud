@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Http;
 class BillController extends Controller
 {
     /** Quan hệ trả kèm bill chia theo trận (Bill::SPLIT_MATCH). */
-    private const MATCH_RELATIONS = ['matches.players', 'matches.shuttleType'];
+    private const MATCH_RELATIONS = ['matches.players', 'matches.shuttles.shuttleType'];
 
     public function __construct(private MatchBillWriter $matchBills) {}
 
@@ -256,7 +256,7 @@ class BillController extends Controller
             'subBills.billPlayers.user',
             'subBills.billPlayers.billPlayerMenus.menu',
             'subBills.matches.players',
-            'subBills.matches.shuttleType',
+            'subBills.matches.shuttles.shuttleType',
             ...self::MATCH_RELATIONS,
         ])
             ->findOrFail($id);

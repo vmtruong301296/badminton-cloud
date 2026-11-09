@@ -57,8 +57,8 @@ export default function CreateBill() {
   const [shuttleTypes, setShuttleTypes] = useState([]);
   const [menus, setMenus] = useState([]);
   const [parentBill, setParentBill] = useState(null);
-  // Bill con: chia theo mức tính (mặc định) hoặc theo trận
-  const [splitMode, setSplitMode] = useState("ratio");
+  // Bill con: chia theo trận (mặc định) hoặc theo mức tính
+  const [splitMode, setSplitMode] = useState(SPLIT_MATCH);
   // Người dùng đã sửa gì chưa (để hỏi lại khi rời màn); đã bấm lưu lần nào chưa (để hiện lỗi M14)
   const [touched, setTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -368,6 +368,8 @@ export default function CreateBill() {
     return (
       <div className="px-4 sm:px-0">
         <MatchBillForm
+          // Dựng lại khi tải xong bill chính để form nhận ngày của bill chính
+          key={parentBill ? `parent-${parentBill.id}` : "loading"}
           header={renderHeader}
           intro={
             <>

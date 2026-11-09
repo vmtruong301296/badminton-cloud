@@ -5,16 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** Một trận của bill chia theo trận (Bill::SPLIT_MATCH). */
+/**
+ * Một trận của bill chia theo trận (Bill::SPLIT_MATCH). subtotal là tổng tiền
+ * cầu của trận (cộng các dòng ở shuttles).
+ */
 class BillMatch extends Model
 {
     protected $fillable = [
         'bill_id',
         'position',
-        'shuttle_type_id',
-        'quantity',
-        'price_each',
         'subtotal',
     ];
 
@@ -23,9 +24,10 @@ class BillMatch extends Model
         return $this->belongsTo(Bill::class);
     }
 
-    public function shuttleType(): BelongsTo
+    /** Các loại cầu dùng trong trận, theo thứ tự đã nhập. */
+    public function shuttles(): HasMany
     {
-        return $this->belongsTo(ShuttleType::class);
+        return $this->hasMany(BillMatchShuttle::class)->orderBy('id');
     }
 
     /** Người đánh trận này, theo thứ tự đã chọn. */

@@ -83,7 +83,7 @@ export default function BillExport({ bill, paymentAccounts = [], paymentAccountI
 									</td>
 									<td className="border border-gray-300 px-3 py-2">{line.names.join(", ")}</td>
 									<td className="border border-gray-300 px-3 py-2">
-										{line.shuttle_name} × {line.quantity} = {formatCurrency(line.subtotal)}
+										{line.shuttle_text} = {formatCurrency(line.subtotal)}
 									</td>
 									<td className="border border-gray-300 px-3 py-2 text-right font-semibold">{formatCurrency(line.per_player)}</td>
 								</tr>
