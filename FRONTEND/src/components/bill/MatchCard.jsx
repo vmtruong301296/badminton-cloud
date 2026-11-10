@@ -47,7 +47,7 @@ function TeamBox({
 
   return (
     <div
-      className={`min-w-0 rounded-lg border bg-slate-50/60 p-2.5 ${error ? "border-rose-300" : "border-slate-200"}`}
+      className={`min-w-0 rounded-lg border bg-slate-50/60 p-2 ${error ? "border-rose-300" : "border-slate-200"}`}
     >
       <div className="mb-1.5 flex min-h-6 items-center justify-between gap-2">
         <span className="flex items-baseline gap-2">
@@ -72,18 +72,19 @@ function TeamBox({
           </button>
         )}
       </div>
-      <ul aria-labelledby={labelId} className="flex flex-wrap gap-2">
+      {/* Chip gọn (chữ 13px, nút × 24px) để đôi tên thường gặp nằm đủ một hàng trên điện thoại ≥ 360px */}
+      <ul aria-labelledby={labelId} className="flex flex-wrap gap-1.5">
         {ids.map((userId) => (
           <li
             key={userId}
-            className="inline-flex h-11 max-w-full items-center rounded-lg border border-emerald-600 bg-emerald-50 pl-3 text-sm font-medium text-emerald-800 sm:h-9"
+            className="inline-flex h-11 max-w-full items-center rounded-lg border border-emerald-600 bg-emerald-50 pl-2.5 text-[13px] font-medium text-emerald-800 sm:h-9"
           >
             <span className="truncate">{nameOf(userId)}</span>
             <button
               type="button"
               onClick={() => onChange(toggleTeamPlayer(match, team, userId))}
               aria-label={`Bỏ ${nameOf(userId)} khỏi ${label} trận ${number}`}
-              className="ml-0.5 flex h-11 w-9 flex-none items-center justify-center rounded-r-lg text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 sm:h-9 sm:w-8"
+              className="flex h-11 w-6 flex-none items-center justify-center rounded-r-lg text-emerald-700 hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600/40 sm:h-9"
             >
               <X className="h-3.5 w-3.5" />
             </button>
