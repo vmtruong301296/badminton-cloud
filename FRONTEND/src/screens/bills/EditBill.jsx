@@ -32,6 +32,10 @@ import {
   matchCandidates,
   matchFormFromBill,
 } from "../../utils/matchBill";
+import {
+  courtRowsFromSlots,
+  courtSlotsPayload,
+} from "../../utils/courtTimeFee";
 import ActionBar from "../../components/ui/ActionBar";
 import AppBar from "../../components/ui/AppBar";
 import EmptyState from "../../components/ui/EmptyState";
@@ -207,6 +211,7 @@ export default function EditBill() {
     date: new Date().toISOString().split("T")[0],
     note: "",
     court_total: 0,
+    court_slots: courtRowsFromSlots(null),
     shuttles: [],
     players: [],
     parent_bill_id: null,
@@ -292,6 +297,8 @@ export default function EditBill() {
         date: billDateStr,
         note: bill.note || "",
         court_total: bill.court_total || 0,
+        // Khung giờ sân đã lưu của bill con (bảng "Tính theo giờ")
+        court_slots: courtRowsFromSlots(bill.court_slots),
         shuttles: mappedShuttles,
         players: mappedPlayers,
         parent_bill_id: bill.parent_bill_id || null,
@@ -437,6 +444,7 @@ export default function EditBill() {
         date: formData.date,
         note: formData.note || null,
         court_total: formData.court_total,
+        court_slots: courtSlotsPayload(formData.court_slots),
         parent_bill_id: formData.parent_bill_id || null,
         shuttles: formData.shuttles
           .filter((s) => s.shuttle_type_id)

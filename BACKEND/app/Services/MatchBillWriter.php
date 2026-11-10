@@ -24,7 +24,7 @@ class MatchBillWriter
     public function __construct(private MatchBillCalculator $calculator) {}
 
     /**
-     * @param  array{date: string, note?: string|null, court_total: int, matches: array<int, array{player_ids: array<int, int>, shuttles: array<int, array{shuttle_type_id: int, quantity: int}>}>}  $data
+     * @param  array{date: string, note?: string|null, court_total: int, court_slots?: array<int, array{start: string, end: string}>|null, matches: array<int, array{player_ids: array<int, int>, shuttles: array<int, array{shuttle_type_id: int, quantity: int}>}>}  $data
      * @param  array<int, array{is_paid: bool, paid_at: mixed}>  $paymentByUser  "Đã TT" giữ lại khi sửa bill
      */
     public function save(Bill $bill, array $data, array $paymentByUser = []): Bill
@@ -37,6 +37,7 @@ class MatchBillWriter
             'date' => $data['date'],
             'note' => $data['note'] ?? null,
             'court_total' => $courtTotal,
+            'court_slots' => ($data['court_slots'] ?? null) ?: null,
             'court_count' => null,
             'total_shuttle_price' => $shuttleTotal,
             'total_amount' => $courtTotal + $shuttleTotal,

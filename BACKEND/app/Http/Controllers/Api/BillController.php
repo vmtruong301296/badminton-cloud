@@ -158,6 +158,7 @@ class BillController extends Controller
                 'date' => $request->date,
                 'note' => $request->note,
                 'court_total' => $request->court_total,
+                'court_slots' => $request->validated('court_slots') ?: null,
                 'court_count' => null, // Không cần số sân
                 'created_by' => $createdBy,
                 'total_shuttle_price' => $totalShuttlePrice,
@@ -456,6 +457,7 @@ class BillController extends Controller
                 'date' => $request->date,
                 'note' => $request->note,
                 'court_total' => $request->court_total,
+                'court_slots' => $request->validated('court_slots') ?: null,
                 'court_count' => null, // Không cần số sân
                 'total_shuttle_price' => $totalShuttlePrice,
                 'total_amount' => $totalAmount,

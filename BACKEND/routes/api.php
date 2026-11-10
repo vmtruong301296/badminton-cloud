@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\BracketController;
 use App\Http\Controllers\Api\CarRentalController;
+use App\Http\Controllers\Api\CourtPriceController;
 use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\FuelPriceController;
 use App\Http\Controllers\Api\MenuController;
@@ -81,6 +82,14 @@ Route::middleware('auth')->group(function () {
         ->middlewareFor('show', RequirePermission::any('shuttles.view'))
         ->middlewareFor('update', RequirePermission::any('shuttles.update'))
         ->middlewareFor('destroy', RequirePermission::any('shuttles.delete'));
+
+    // Giá sân (tab Master): form bill con đọc để tính tiền sân theo giờ; lên giá dùng quyền sửa loại cầu
+    Route::get('court-prices', [CourtPriceController::class, 'index'])
+        ->middleware(RequirePermission::any(...$masterTabs, ...$billForms));
+    Route::post('court-prices', [CourtPriceController::class, 'store'])
+        ->middleware(RequirePermission::any('shuttles.update'));
+    Route::delete('court-prices/{id}', [CourtPriceController::class, 'destroy'])
+        ->middleware(RequirePermission::any('shuttles.update'));
 
     // Bills (Phiếu thu)
     Route::apiResource('bills', BillController::class)

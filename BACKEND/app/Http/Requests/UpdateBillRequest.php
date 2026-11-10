@@ -2,11 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ValidatesCourtSlots;
 use App\Http\Requests\Concerns\ValidatesMatchSplit;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateBillRequest extends FormRequest
 {
+    use ValidatesCourtSlots;
     use ValidatesMatchSplit;
 
     /**
@@ -42,6 +44,7 @@ class UpdateBillRequest extends FormRequest
             'players.*.menus.*.menu_id' => 'required_with:players.*.menus|exists:menus,id',
             'players.*.menus.*.quantity' => 'required_with:players.*.menus|integer|min:1',
             ...$this->matchSplitRules(),
+            ...$this->courtSlotsRules(),
         ];
     }
 
@@ -50,7 +53,7 @@ class UpdateBillRequest extends FormRequest
      */
     public function messages(): array
     {
-        return $this->matchSplitMessages();
+        return [...$this->matchSplitMessages(), ...$this->courtSlotsMessages()];
     }
 
     /**

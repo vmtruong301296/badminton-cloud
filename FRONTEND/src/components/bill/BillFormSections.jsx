@@ -48,7 +48,7 @@ function BillDateField({ value, onChange }) {
  * Thông tin cơ bản: ngày, tổng tiền sân (3 mức nhanh + gợi ý ×1000), ghi chú.
  * Điện thoại: ngày + tiền sân cùng hàng. `courtError` (M14) dưới ô tiền sân; `noteHint`: câu
  * gợi ý dưới ô ghi chú (bill con). `courtCalculator` (bill con): bảng tính tiền sân theo giờ
- * dưới các mức nhanh, tự điền ô tiền sân.
+ * dưới các mức nhanh — các dòng sân là `formData.court_slots`, tự điền ô tiền sân.
  */
 export function BillBasicInfoCard({
   formData,
@@ -131,7 +131,9 @@ export function BillBasicInfoCard({
           {courtCalculator && (
             <div className="col-span-2 sm:col-span-1">
               <CourtTimeCalculator
-                onTotal={(total) => onChange({ court_total: total })}
+                rows={formData.court_slots}
+                date={formData.date}
+                onChange={onChange}
               />
             </div>
           )}

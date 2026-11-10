@@ -56,6 +56,13 @@ export const shuttlesApi = {
   deletePrice: (id, priceId) => api.delete(`/shuttles/${id}/prices/${priceId}`),
 };
 
+// Giá sân (một sân / 2 giờ, lên giá theo ngày áp dụng); thêm / xoá trả lại cả lịch giá
+export const courtPricesApi = {
+  getAll: () => api.get("/court-prices"),
+  create: (data) => api.post("/court-prices", data),
+  delete: (id) => api.delete(`/court-prices/${id}`),
+};
+
 // Bills
 export const billsApi = {
   getAll: (params) => api.get("/bills", { params }),

@@ -2,6 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import RatiosManagement from '../ratios/RatiosManagement';
 import MenusManagement from '../menus/MenusManagement';
 import ShuttlesManagement from '../shuttles/ShuttlesManagement';
+import CourtPricesManagement from '../court-prices/CourtPricesManagement';
 import PaymentAccountsManagement from '../payment-accounts/PaymentAccountsManagement';
 import PageHeader from '../../components/ui/PageHeader';
 
@@ -9,6 +10,7 @@ const TABS = [
   { id: 'ratios', label: 'Mức tính', component: RatiosManagement },
   { id: 'menus', label: 'Menu nước', component: MenusManagement },
   { id: 'shuttles', label: 'Loại cầu', component: ShuttlesManagement },
+  { id: 'court-prices', label: 'Giá sân', component: CourtPricesManagement },
   { id: 'payment-accounts', label: 'TK nhận tiền', component: PaymentAccountsManagement },
 ];
 

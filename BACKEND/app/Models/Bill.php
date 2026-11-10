@@ -18,6 +18,7 @@ class Bill extends Model
         'date',
         'note',
         'court_total',
+        'court_slots',
         'court_count',
         'created_by',
         'total_shuttle_price',
@@ -32,6 +33,7 @@ class Bill extends Model
         return [
             'date' => 'date',
             'unit_price' => 'decimal:3',
+            'court_slots' => 'array',
         ];
     }
 

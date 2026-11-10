@@ -79,6 +79,11 @@ class ApiPermissionTest extends TestCase
         'POST api/shuttles/{id}/prices' => ['shuttles.update'],
         'DELETE api/shuttles/{id}/prices/{priceId}' => ['shuttles.update'],
 
+        // Giá sân (tab Master; form bill con đọc để tính tiền sân theo giờ), lên giá như loại cầu
+        'GET api/court-prices' => [...self::MASTER_TABS, ...self::BILL_FORMS],
+        'POST api/court-prices' => ['shuttles.update'],
+        'DELETE api/court-prices/{id}' => ['shuttles.update'],
+
         // Bill cầu
         'GET api/bills' => ['bills.view'],
         'POST api/bills' => ['bills.create'],
@@ -189,7 +194,7 @@ class ApiPermissionTest extends TestCase
             'GET /api/bills/1', 'GET /api/payment-accounts', 'POST /api/bills/1/send-telegram',
             // Tạo / sửa bill (bills.create / bills.update): danh sách + thêm nhanh người chơi, menu
             'GET /api/players', 'POST /api/players', 'GET /api/ratios', 'GET /api/menus', 'POST /api/menus',
-            'POST /api/bills', 'PUT /api/bills/1',
+            'POST /api/bills', 'PUT /api/bills/1', 'GET /api/court-prices',
             // Bill tiệc (party_bills.*): đánh dấu thanh toán dùng party_bills.update
             'GET /api/party-bills', 'GET /api/party-bills/1', 'POST /api/party-bills',
             'PUT /api/party-bills/1', 'POST /api/party-bills/1/participants/1/pay',
@@ -215,6 +220,7 @@ class ApiPermissionTest extends TestCase
             'GET /api/roles', 'POST /api/roles', 'GET /api/permissions',
             'POST /api/payment-accounts', 'PUT /api/ratios/1', 'DELETE /api/menus/1',
             'GET /api/car-rentals', 'DELETE /api/player-lists/1/brackets',
+            'POST /api/court-prices', 'DELETE /api/court-prices/1',
         ],
         'tournament_scheduler' => [
             'GET /api/bills', 'GET /api/players', 'POST /api/players', 'POST /api/players/1/roles',

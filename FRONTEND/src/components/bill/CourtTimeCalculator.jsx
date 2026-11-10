@@ -1,52 +1,99 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   COURT_BLOCK_MINUTES,
-  COURT_PRICE_PER_BLOCK,
-  DEFAULT_COURT_START,
   calculateCourtTimeFee,
+  courtPriceForDate,
+  newCourtRow,
 } from "../../utils/courtTimeFee";
 import { formatCurrency } from "../../utils/formatters";
 import { CircleAlert, Plus, X } from "../ui/icons";
+import useCourtPrices from "./useCourtPrices";
 
-const RATE_LABEL = `${COURT_PRICE_PER_BLOCK / 1000}k / ${COURT_BLOCK_MINUTES / 60}h / sân`;
+/** "140k / 2h / sân"; giá lẻ nghìn thì ghi đủ số. */
+const rateLabel = (price) =>
+  `${price % 1000 === 0 ? `${price / 1000}k` : formatCurrency(price)} / ${COURT_BLOCK_MINUTES / 60}h / sân`;
 
-const newCourt = (key) => ({ key, start: DEFAULT_COURT_START, end: "" });
+const nextKey = (rows) => Math.max(0, ...rows.map((r) => r.key)) + 1;
 
 /**
- * Bảng tính tiền sân theo giờ của bill con, nằm dưới ô Tổng tiền sân. Sửa giờ hoặc xoá sân mà
- * có ít nhất một sân tính được tiền thì gọi `onTotal(tổng đã làm tròn lên nghìn)`; thêm sân
- * (chưa có giờ kết thúc) không gọi, để giữ số người dùng tự gõ. Danh sách sân chỉ nằm ở màn,
- * không lưu vào bill — mở màn sửa bill thì bảng trống, không đè tiền sân đã lưu.
+ * Bảng tính tiền sân theo giờ của bill con, nằm dưới ô Tổng tiền sân. Các dòng sân là
+ * `rows` của form (lưu kèm bill thành court_slots); đơn giá lấy từ Master → Giá sân theo
+ * `date` của bill. Sửa giờ hoặc xoá sân mà có ít nhất một sân tính được tiền thì gửi kèm
+ * court_total (đã làm tròn lên nghìn); thêm sân (chưa có giờ kết thúc) chỉ đổi dòng, để giữ
+ * số người dùng tự gõ. Mở màn sửa bill thì hiện khung giờ đã lưu, không đè tiền sân đã lưu.
  *
- * @param {{ onTotal: (total: number) => void }} props
+ * @param {{
+ *   rows: { key: number, start: string, end: string }[],
+ *   date: string,
+ *   onChange: (patch: { court_slots: object[], court_total?: number }) => void,
+ * }} props
  */
-export default function CourtTimeCalculator({ onTotal }) {
-  const keyRef = useRef(1);
-  const [courts, setCourts] = useState(() => [newCourt(1)]);
-  const result = calculateCourtTimeFee(courts);
+export default function CourtTimeCalculator({ rows, date, onChange }) {
+  const { prices, error: priceError } = useCourtPrices();
+  const price = courtPriceForDate(prices, date);
+  const priced = price !== null;
+  const result = calculateCourtTimeFee(rows, price ?? 0);
+  // Người dùng đổi giờ khi giá sân chưa tải xong: giá về thì tính tiền sân một lần. Mở màn sửa
+  // (chưa đổi giờ) thì không tính, để giữ tiền sân đã lưu.
+  const recalcWhenPricedRef = useRef(false);
 
-  const commit = (next) => {
-    setCourts(next);
-    const { hasValid, total } = calculateCourtTimeFee(next);
-    if (hasValid) onTotal(total);
+  useEffect(() => {
+    if (!recalcWhenPricedRef.current || price === null) return;
+    recalcWhenPricedRef.current = false;
+    const { hasValid, total } = calculateCourtTimeFee(rows, price);
+    if (hasValid) onChange({ court_total: total });
+  }, [price, rows, onChange]);
+
+  const commit = (next, recalc) => {
+    if (recalc && !priced) recalcWhenPricedRef.current = true;
+    const { hasValid, total } = calculateCourtTimeFee(next, price ?? 0);
+    onChange(
+      recalc && priced && hasValid
+        ? { court_slots: next, court_total: total }
+        : { court_slots: next },
+    );
   };
   const updateCourt = (key, patch) =>
-    commit(courts.map((c) => (c.key === key ? { ...c, ...patch } : c)));
-  const removeCourt = (key) => commit(courts.filter((c) => c.key !== key));
-  const addCourt = () => {
-    keyRef.current += 1;
-    setCourts([...courts, newCourt(keyRef.current)]);
-  };
+    commit(
+      rows.map((c) => (c.key === key ? { ...c, ...patch } : c)),
+      true,
+    );
+  const removeCourt = (key) =>
+    commit(
+      rows.filter((c) => c.key !== key),
+      true,
+    );
+  const addCourt = () => commit([...rows, newCourtRow(nextKey(rows))], false);
+
+  // Dòng dưới bảng: tổng tiền, hoặc câu chờ / nhắc (lỗi tải giá đã báo ở đầu bảng)
+  const showTotal = priced && result.hasValid;
+  let notice = null;
+  if (!priced && !priceError) {
+    notice =
+      prices === null
+        ? "Đang tải giá sân…"
+        : "Chưa có giá sân cho ngày này. Thêm mốc giá ở Master → Giá sân.";
+  } else if (priced && !result.hasValid) {
+    notice = "Chọn giờ kết thúc để tính tiền sân.";
+  }
 
   return (
     <div className="border-t border-slate-100 pt-3">
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <p className="text-sm font-medium text-slate-700">Tính theo giờ</p>
-        <p className="text-[13px] text-slate-500">{RATE_LABEL}</p>
+        {priced && (
+          <p className="text-[13px] text-slate-500">{rateLabel(price)}</p>
+        )}
       </div>
+      {priceError && (
+        <p className="field-error mb-2">
+          <CircleAlert />
+          {priceError}
+        </p>
+      )}
 
       <ul className="space-y-3">
-        {courts.map((court, index) => {
+        {rows.map((court, index) => {
           const line = result.lines[index];
           const name = `Sân ${index + 1}`;
           const errorId = `court-time-err-${court.key}`;
@@ -56,13 +103,13 @@ export default function CourtTimeCalculator({ onTotal }) {
                 <span className="text-sm font-semibold text-slate-900">
                   {name}
                 </span>
-                {line.minutes !== null && (
+                {priced && line.minutes !== null && (
                   <span className="font-tabular min-w-0 flex-1 truncate text-[13px] text-slate-500">
                     {line.minutes} phút ·{" "}
                     {formatCurrency(Math.round(line.amount))}
                   </span>
                 )}
-                {courts.length > 1 && (
+                {rows.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeCourt(court.key)}
@@ -115,30 +162,32 @@ export default function CourtTimeCalculator({ onTotal }) {
         className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-emerald-400 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 sm:h-10"
       >
         <Plus className="h-4 w-4" />
-        Thêm sân {courts.length + 1}
+        Thêm sân {rows.length + 1}
       </button>
 
-      <p
-        aria-live="polite"
-        className="mt-3 rounded-xl bg-slate-100 px-3 py-2 text-[13px] text-slate-600"
-      >
-        {result.hasValid ? (
-          <>
-            Tổng{" "}
-            {result.total !== result.exactTotal && (
-              <span className="font-tabular">
-                {formatCurrency(Math.round(result.exactTotal))} → làm tròn
-                lên{" "}
+      {(showTotal || notice) && (
+        <p
+          aria-live="polite"
+          className="mt-3 rounded-xl bg-slate-100 px-3 py-2 text-[13px] text-slate-600"
+        >
+          {showTotal ? (
+            <>
+              Tổng{" "}
+              {result.total !== result.exactTotal && (
+                <span className="font-tabular">
+                  {formatCurrency(Math.round(result.exactTotal))} → làm tròn
+                  lên{" "}
+                </span>
+              )}
+              <span className="font-tabular text-base font-bold text-emerald-700">
+                {formatCurrency(result.total)}
               </span>
-            )}
-            <span className="font-tabular text-base font-bold text-emerald-700">
-              {formatCurrency(result.total)}
-            </span>
-          </>
-        ) : (
-          "Chọn giờ kết thúc để tính tiền sân."
-        )}
-      </p>
+            </>
+          ) : (
+            notice
+          )}
+        </p>
+      )}
       <p className="mt-1.5 text-[13px] leading-[18px] text-slate-500">
         Sửa giờ là ô Tiền sân tự đổi theo, vẫn gõ sửa tay được.
       </p>

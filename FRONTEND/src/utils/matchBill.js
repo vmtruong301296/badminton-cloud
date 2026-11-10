@@ -1,4 +1,5 @@
 import { BILL_FORM_MESSAGES, isCourtBlank } from "./billFormErrors";
+import { courtRowsFromSlots, courtSlotsPayload } from "./courtTimeFee";
 import { formatDate, shuttleUnitPrice } from "./formatters";
 
 /**
@@ -329,10 +330,17 @@ export const matchFormErrorList = (errors = {}) => {
 };
 
 /** Dữ liệu gửi máy chủ (POST / PUT /bills); player_ids: Cặp A trước, Cặp B sau. */
-export const matchBillPayload = ({ date, note, court_total, matches }) => ({
+export const matchBillPayload = ({
+  date,
+  note,
+  court_total,
+  court_slots,
+  matches,
+}) => ({
   date,
   note: note || null,
   court_total: Number(court_total) || 0,
+  court_slots: courtSlotsPayload(court_slots),
   split_mode: SPLIT_MATCH,
   matches: matches.map((match) => ({
     player_ids: matchPlayerIds(match),
@@ -371,6 +379,7 @@ export const matchFormFromBill = (bill) => ({
   date: formatDate(bill.date),
   note: bill.note || "",
   court_total: Number(bill.court_total) || 0,
+  court_slots: courtRowsFromSlots(bill.court_slots),
   matches: (bill.matches || []).map((m) => {
     const teams = playersBySide(m).map((users) => users.map((u) => u.id));
     return {

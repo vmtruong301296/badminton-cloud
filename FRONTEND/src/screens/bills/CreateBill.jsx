@@ -35,6 +35,10 @@ import {
   SPLIT_RATIO,
   matchCandidates,
 } from "../../utils/matchBill";
+import {
+  courtRowsFromSlots,
+  courtSlotsPayload,
+} from "../../utils/courtTimeFee";
 import PageHeader from "../../components/ui/PageHeader";
 import useToast from "../../components/ui/useToast";
 import { CalendarDays, Check, Loader } from "../../components/ui/icons";
@@ -77,6 +81,8 @@ export default function CreateBill() {
     note: "",
     // Bill con để trống tiền sân cho người dùng tự nhập
     court_total: parentBillId ? null : DEFAULT_COURT_TOTAL,
+    // Bảng "Tính theo giờ" của bill con: một dòng Sân 1 trống
+    court_slots: courtRowsFromSlots(null),
     shuttles: [],
     players: [],
     parent_bill_id: parentBillId || null,
@@ -264,6 +270,7 @@ export default function CreateBill() {
         date: formData.date,
         note: formData.note || null,
         court_total: formData.court_total,
+        court_slots: courtSlotsPayload(formData.court_slots),
         parent_bill_id: formData.parent_bill_id || null,
         shuttles: formData.shuttles
           .filter((s) => s.shuttle_type_id)
@@ -398,6 +405,7 @@ export default function CreateBill() {
             date: formData.date,
             note: formData.note,
             court_total: formData.court_total,
+            court_slots: formData.court_slots,
             matches: [],
           }}
           candidates={matchPlayerCandidates}

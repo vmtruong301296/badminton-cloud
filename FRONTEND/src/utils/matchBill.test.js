@@ -302,6 +302,7 @@ describe("matchBillPayload", () => {
       date: "2026-11-08",
       note: null,
       court_total: 55000,
+      court_slots: [],
       split_mode: "match",
       matches: [
         {
@@ -395,11 +396,30 @@ describe("matchFormFromBill", () => {
       date: "2026-11-08",
       note: "Sau 9h",
       court_total: 55000,
+      court_slots: [{ key: 1, start: "21:00", end: "" }],
       matches: [
         match([TRUONG, NGUYEN, HIEN, HUYNH], S70.id, 1),
         match([LOC, TAN], S70.id, 1, 2),
       ],
     });
+  });
+});
+
+describe("khung giờ sân của bill con theo trận", () => {
+  it("matchFormFromBill nạp khung giờ đã lưu, matchBillPayload gửi lại dòng hợp lệ", () => {
+    const form = matchFormFromBill({
+      date: "2026-11-10",
+      court_total: 38000,
+      court_slots: [{ start: "21:00", end: "21:22" }],
+      matches: [],
+    });
+    expect(form.court_slots).toEqual([{ key: 1, start: "21:00", end: "21:22" }]);
+
+    const payload = matchBillPayload({
+      ...form,
+      court_slots: [...form.court_slots, { key: 2, start: "21:00", end: "" }],
+    });
+    expect(payload.court_slots).toEqual([{ start: "21:00", end: "21:22" }]);
   });
 });
 
