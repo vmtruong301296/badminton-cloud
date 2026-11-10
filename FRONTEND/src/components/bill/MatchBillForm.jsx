@@ -70,7 +70,8 @@ export function SplitModeSwitch({ value, onChange }) {
  * Form bill chia theo trận (tạo / sửa, bill chính hoặc bill con): ngày, tiền sân, ghi chú,
  * rồi từng trận. Tự tải loại cầu theo ngày, kiểm lỗi (M14), hỏi lại khi rời màn và báo lỗi lưu.
  * `scopeToCandidates` (mặc định true, bill con): sheet chọn người chưa gõ chỉ hiện `candidates`;
- * false (bill chính): hiện mọi người chơi.
+ * false (bill chính): hiện mọi người chơi. `courtCalculator` (bill con): bảng tính tiền sân
+ * theo giờ dưới ô tiền sân.
  *
  * @param {{
  *   header: (onBackClick: Function) => import("react").ReactNode,
@@ -85,6 +86,7 @@ export function SplitModeSwitch({ value, onChange }) {
  *   leave: { title: string, message: string, confirmLabel: string },
  *   noteHint?: string,
  *   scopeToCandidates?: boolean,
+ *   courtCalculator?: boolean,
  * }} props
  */
 export default function MatchBillForm({
@@ -100,6 +102,7 @@ export default function MatchBillForm({
   leave: leaveText,
   noteHint,
   scopeToCandidates = true,
+  courtCalculator = false,
 }) {
   const toast = useToast();
   const keyRef = useRef(0);
@@ -245,6 +248,7 @@ export default function MatchBillForm({
                 onChange={(patch) => update((prev) => ({ ...prev, ...patch }))}
                 courtError={errors?.court}
                 noteHint={noteHint}
+                courtCalculator={courtCalculator}
               />
 
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card md:col-span-2">

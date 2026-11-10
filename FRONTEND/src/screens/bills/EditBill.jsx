@@ -539,6 +539,7 @@ export default function EditBill() {
             confirmLabel: "Bỏ thay đổi",
           }}
           noteHint={bill.parent_bill_id ? CHILD_NOTE_HINT : undefined}
+          courtCalculator={Boolean(bill.parent_bill_id)}
         />
       </div>
     );
@@ -562,6 +563,7 @@ export default function EditBill() {
                 onChange={handleChange}
                 courtError={errors?.court}
                 noteHint={formData.parent_bill_id ? CHILD_NOTE_HINT : undefined}
+                courtCalculator={Boolean(formData.parent_bill_id)}
               />
               <BillShuttlesCard
                 shuttles={formData.shuttles}

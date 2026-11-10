@@ -25,6 +25,13 @@ export const roundToNearestThousand = (value) => {
   return Math.round(num / 1000) * 1000;
 };
 
+/** Làm tròn LÊN nghìn: 29.167 → 30.000, 30.000 giữ nguyên. */
+export const roundUpToThousand = (value) => {
+  const num = Number(value);
+  if (Number.isNaN(num)) return 0;
+  return Math.ceil(num / 1000) * 1000;
+};
+
 export const formatCurrencyRounded = (value) => {
   return formatCurrency(roundToNearestThousand(value));
 };

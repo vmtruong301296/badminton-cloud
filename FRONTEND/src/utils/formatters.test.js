@@ -5,6 +5,7 @@ import {
   formatDateWithWeekday,
   formatRatio,
   formatTimeShort,
+  roundUpToThousand,
 } from "./formatters";
 
 describe("formatRatio", () => {
@@ -120,5 +121,22 @@ describe("formatTimeShort", () => {
   it("không có giá trị hoặc sai thì trả chuỗi rỗng", () => {
     expect(formatTimeShort(null)).toBe("");
     expect(formatTimeShort("abc")).toBe("");
+  });
+});
+
+describe("roundUpToThousand", () => {
+  it("số lẻ làm tròn lên nghìn kế tiếp", () => {
+    expect(roundUpToThousand(29166.67)).toBe(30000);
+    expect(roundUpToThousand(30001)).toBe(31000);
+    expect(roundUpToThousand(1)).toBe(1000);
+  });
+
+  it("số chẵn nghìn giữ nguyên", () => {
+    expect(roundUpToThousand(30000)).toBe(30000);
+    expect(roundUpToThousand(0)).toBe(0);
+  });
+
+  it("giá trị không phải số trả về 0", () => {
+    expect(roundUpToThousand("abc")).toBe(0);
   });
 });

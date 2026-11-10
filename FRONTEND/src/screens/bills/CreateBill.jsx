@@ -419,6 +419,7 @@ export default function CreateBill() {
             confirmLabel: "Bỏ bill",
           }}
           noteHint={isChildBill ? CHILD_NOTE_HINT : undefined}
+          courtCalculator={isChildBill}
         />
       </div>
     );
@@ -441,6 +442,7 @@ export default function CreateBill() {
                 onChange={handleChange}
                 courtError={errors?.court}
                 noteHint={isChildBill ? CHILD_NOTE_HINT : undefined}
+                courtCalculator={isChildBill}
               />
               <BillShuttlesCard
                 shuttles={formData.shuttles}

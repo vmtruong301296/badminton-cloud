@@ -5,6 +5,7 @@ import DatePicker from "../common/DatePicker";
 import ActionBar from "../ui/ActionBar";
 import Modal from "../ui/Modal";
 import BillSummary from "./BillSummary";
+import CourtTimeCalculator from "./CourtTimeCalculator";
 import ShuttleRow, { ShuttleColumnHeads } from "./ShuttleRow";
 import { CalendarDays, Check, CircleAlert, Loader, Plus } from "../ui/icons";
 import { formatCurrencyRounded, formatDateShort } from "../../utils/formatters";
@@ -46,13 +47,15 @@ function BillDateField({ value, onChange }) {
 /**
  * Thông tin cơ bản: ngày, tổng tiền sân (3 mức nhanh + gợi ý ×1000), ghi chú.
  * Điện thoại: ngày + tiền sân cùng hàng. `courtError` (M14) dưới ô tiền sân; `noteHint`: câu
- * gợi ý dưới ô ghi chú (bill con).
+ * gợi ý dưới ô ghi chú (bill con). `courtCalculator` (bill con): bảng tính tiền sân theo giờ
+ * dưới các mức nhanh, tự điền ô tiền sân.
  */
 export function BillBasicInfoCard({
   formData,
   onChange,
   courtError,
   noteHint,
+  courtCalculator = false,
 }) {
   const raw = Number(formData.court_total) || 0;
   const suggestion = raw * 1000;
@@ -125,6 +128,13 @@ export function BillBasicInfoCard({
               </button>
             )}
           </div>
+          {courtCalculator && (
+            <div className="col-span-2 sm:col-span-1">
+              <CourtTimeCalculator
+                onTotal={(total) => onChange({ court_total: total })}
+              />
+            </div>
+          )}
           <div className="col-span-2 sm:col-span-1">
             <label htmlFor="bill-note" className="field-label">
               Ghi chú
