@@ -1,5 +1,6 @@
 import { useState } from "react";
 import BillPlayerRow, { BillPlayerTag } from "./BillPlayerRow";
+import BillPaymentGroupLabel from "./BillPaymentGroupLabel";
 import EmptyState from "../ui/EmptyState";
 import { CircleCheck, Clock } from "../ui/icons";
 import { playerWeightLabel } from "../../utils/matchBill";
@@ -23,6 +24,7 @@ import {
 import {
   countBillPlayers,
   filterBillPlayers,
+  groupBillPlayersByPaid,
   sortBillPlayers,
 } from "../../utils/billPlayers";
 
@@ -246,8 +248,8 @@ function BillTotals({ bill, subBills }) {
 
 /**
  * Danh sách người chơi của bill cầu trên điện thoại: chip lọc dính dưới thanh trên, hàng M3b
- * (nút "Đã TT" ở mép phải, chạm hàng mở chi tiết), rồi khối tổng cộng như cũ.
- * Bấm "Đã TT" thì hàng xuống nhóm đã trả như hiện nay (quyết định 8).
+ * (nút "Đã TT" ở mép phải, chạm hàng mở chi tiết) chia hai khối "Chưa thanh toán" / "Đã thanh toán",
+ * rồi khối tổng cộng như cũ. Bấm "Đã TT" thì hàng chuyển sang khối đã trả (quyết định 8).
  *
  * - subBills: bill con của bill chính (tiền "TT + Bill sau"); bill con thì [].
  * - canMark: có quyền bills.mark_payment; không thì hàng chỉ hiện trạng thái.
@@ -345,7 +347,19 @@ export default function BillPlayerList({
       </div>
 
       {visible.length > 0 ? (
-        <ul className="list-card">{visible.map(renderRow)}</ul>
+        <div className="space-y-3">
+          {groupBillPlayersByPaid(visible).map((group) => (
+            <section key={group.key} className="space-y-1.5">
+              <h2 className="px-1">
+                <BillPaymentGroupLabel
+                  paid={group.paid}
+                  count={group.players.length}
+                />
+              </h2>
+              <ul className="list-card">{group.players.map(renderRow)}</ul>
+            </section>
+          ))}
+        </div>
       ) : (
         activeFilter === "unpaid" &&
         counts.all > 0 && (

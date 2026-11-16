@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   countBillPlayers,
   filterBillPlayers,
+  groupBillPlayersByPaid,
   oldBillIdsOf,
   sortBillPlayers,
 } from "./billPlayers";
@@ -70,6 +71,33 @@ describe("filterBillPlayers", () => {
 
   it("bộ lọc lạ thì coi như Tất cả", () => {
     expect(filterBillPlayers(players, "x")).toHaveLength(3);
+  });
+});
+
+describe("groupBillPlayersByPaid", () => {
+  it("nhóm Chưa thanh toán trước, Đã thanh toán sau, giữ thứ tự trong nhóm", () => {
+    const groups = groupBillPlayersByPaid([
+      bp(4),
+      bp(2, { gender: "female" }),
+      bp(3, { paid: true }),
+      bp(1, { paid: true, gender: "female" }),
+    ]);
+    expect(
+      groups.map((g) => [g.key, g.paid, g.players.map((p) => p.id)]),
+    ).toEqual([
+      ["unpaid", false, [4, 2]],
+      ["paid", true, [3, 1]],
+    ]);
+  });
+
+  it("bỏ nhóm rỗng", () => {
+    expect(
+      groupBillPlayersByPaid([bp(1, { paid: true })]).map((g) => g.key),
+    ).toEqual(["paid"]);
+    expect(groupBillPlayersByPaid([bp(1)]).map((g) => g.key)).toEqual([
+      "unpaid",
+    ]);
+    expect(groupBillPlayersByPaid(undefined)).toEqual([]);
   });
 });
 

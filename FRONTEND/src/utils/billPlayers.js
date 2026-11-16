@@ -45,6 +45,20 @@ export const countBillPlayers = (players = []) => ({
 });
 
 /**
+ * Chia danh sách thành nhóm "Chưa thanh toán" rồi "Đã thanh toán" (giữ thứ tự đầu vào, bỏ nhóm
+ * rỗng) để màn chi tiết bill hiện hai khối tách riêng, không nhìn nhầm người đã trả với người chưa.
+ */
+export const groupBillPlayersByPaid = (players = []) =>
+  [
+    {
+      key: "unpaid",
+      paid: false,
+      players: filterBillPlayers(players, "unpaid"),
+    },
+    { key: "paid", paid: true, players: filterBillPlayers(players, "paid") },
+  ].filter((group) => group.players.length > 0);
+
+/**
  * Id các bill cũ người này còn nợ (bill chính và bill con trong debt_details),
  * để đánh dấu đã trả khi chọn "Cả bill cũ". Không trùng, giữ thứ tự gặp.
  */
