@@ -1,6 +1,6 @@
 import { useState } from "react";
 import BillPlayerRow, { BillPlayerTag } from "./BillPlayerRow";
-import BillPaymentGroupLabel from "./BillPaymentGroupLabel";
+import { BillPaymentGroupLabel } from "./BillPaymentGroup";
 import EmptyState from "../ui/EmptyState";
 import { CircleCheck, Clock } from "../ui/icons";
 import { playerWeightLabel } from "../../utils/matchBill";

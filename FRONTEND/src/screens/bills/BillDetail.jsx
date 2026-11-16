@@ -2,25 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { billsApi, paymentAccountsApi } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
+import { formatCurrencyRounded, formatDate } from "../../utils/formatters";
 import {
-  formatCurrency,
-  formatCurrencyRounded,
-  formatDate,
-  formatDateDisplay,
-  formatRatio,
-} from "../../utils/formatters";
-import {
-  billCollectedTotal,
   billCollection,
   billHasPaidPlayers,
-  billPlayingTotal,
-  billProfit,
-  formatProfit,
-  hasExtraCosts,
   playerCurrentOnlyAmount,
   playerTotalWithSubBills,
 } from "../../utils/billTotals";
-import { groupBillPlayersByPaid, oldBillIdsOf } from "../../utils/billPlayers";
+import { oldBillIdsOf } from "../../utils/billPlayers";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import PayOldBillsDialog from "../../components/common/PayOldBillsDialog";
 import SelectPaymentAccountDialog from "../../components/common/SelectPaymentAccountDialog";
@@ -28,9 +17,9 @@ import BillContent from "../../components/bill/BillContent";
 import BillExport from "../../components/bill/BillExport";
 import BillDetailSummary from "../../components/bill/BillDetailSummary";
 import BillPlayerList from "../../components/bill/BillPlayerList";
-import BillPaymentGroupLabel from "../../components/bill/BillPaymentGroupLabel";
+import BillPlayersTable from "../../components/bill/BillPlayersTable";
 import BillMatchesCard from "../../components/bill/BillMatchesCard";
-import { isMatchSplit, playerWeightLabel } from "../../utils/matchBill";
+import { isMatchSplit } from "../../utils/matchBill";
 import { waitForImagesReady, nodeToBlob } from "../../utils/exportImage";
 import PageHeader from "../../components/ui/PageHeader";
 import EmptyState from "../../components/ui/EmptyState";
@@ -905,265 +894,12 @@ export default function BillDetail() {
             )}
           </div>
 
-          {/* Players Table */}
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
-            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
-              <h2 className="text-base font-semibold text-slate-900">
-                Chi tiết người chơi
-              </h2>
-              <span className="font-tabular text-sm text-slate-500">
-                {bill.bill_players?.length || 0} người
-              </span>
-            </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="min-w-full text-sm text-slate-700">
-                <thead className="bg-slate-50 text-xs font-medium text-slate-500">
-                  <tr>
-                    <th scope="col" className="px-4 py-2.5 text-left">
-                      STT
-                    </th>
-                    <th scope="col" className="px-4 py-2.5 text-left">
-                      Tên
-                    </th>
-                    <th scope="col" className="px-4 py-2.5 text-right">
-                      {playerWeightLabel(bill)}
-                    </th>
-                    <th scope="col" className="px-4 py-2.5 text-right">
-                      Chi phí thêm
-                    </th>
-                    <th scope="col" className="px-4 py-2.5 text-right">
-                      Tiền nợ
-                    </th>
-                    <th scope="col" className="px-4 py-2.5 text-right">
-                      Tổng tiền
-                    </th>
-                    <th scope="col" className="px-4 py-2.5 text-center">
-                      Đã thanh toán
-                    </th>
-                  </tr>
-                </thead>
-                {(() => {
-                  // Sort players: unpaid males -> unpaid females -> paid males -> paid females
-                  const sortedPlayers = [...(bill.bill_players || [])].sort(
-                    (a, b) => {
-                      const aIsPaid = a.is_paid || false;
-                      const bIsPaid = b.is_paid || false;
-                      const aGender = a.user?.gender || "";
-                      const bGender = b.user?.gender || "";
-
-                      // First sort by payment status: unpaid first (false < true)
-                      if (aIsPaid !== bIsPaid) {
-                        return aIsPaid ? 1 : -1;
-                      }
-
-                      // If same payment status, sort by gender: male first
-                      if (aGender !== bGender) {
-                        if (aGender === "male") return -1;
-                        if (bGender === "male") return 1;
-                      }
-
-                      return 0;
-                    },
-                  );
-                  // STT liên tục qua hai nhóm Chưa / Đã thanh toán (cùng thứ tự với ảnh xuất)
-                  const sttOf = new Map(
-                    sortedPlayers.map((player, index) => [player.id, index + 1]),
-                  );
-
-                  return groupBillPlayersByPaid(sortedPlayers).map((group) => (
-                    <tbody
-                      key={group.key}
-                      className="divide-y divide-slate-100 border-t border-slate-200"
-                    >
-                      <tr className="bg-slate-50">
-                        <th
-                          scope="rowgroup"
-                          colSpan={7}
-                          className="px-4 py-2 text-left font-normal"
-                        >
-                          <BillPaymentGroupLabel
-                            paid={group.paid}
-                            count={group.players.length}
-                          />
-                        </th>
-                      </tr>
-                      {group.players.map((player) => (
-                        <tr
-                          key={player.id}
-                          className={`align-top ${!player.is_paid ? "bg-rose-50" : ""}`}
-                        >
-                          <td className="font-tabular px-4 py-3">{sttOf.get(player.id)}</td>
-                          <td className="max-w-[16rem] break-words px-4 py-3 font-medium text-slate-900">
-                            {player.user?.name}
-                          </td>
-                          <td className="font-tabular px-4 py-3 text-right">
-                            {formatRatio(player.ratio_value)}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {hasExtraCosts(player) ? (
-                              <div className="text-right">
-                                <div className="font-tabular mb-1 font-semibold">
-                                  {formatCurrencyRounded(
-                                    player.menu_extra_total || 0,
-                                  )}
-                                </div>
-                                <div className="space-y-1 text-xs text-slate-500">
-                                  {(player.bill_player_menus || []).map(
-                                    (menuItem, idx) => (
-                                      <div key={idx} className="text-right">
-                                        {menuItem.menu?.name} ×{" "}
-                                        {menuItem.quantity} ={" "}
-                                        {formatCurrency(menuItem.subtotal)}
-                                      </div>
-                                    ),
-                                  )}
-                                  {Number(player.extra_amount) ? (
-                                    <div className="text-right">
-                                      {player.extra_note || "Cộng thêm"} ={" "}
-                                      {formatCurrency(player.extra_amount)}
-                                    </div>
-                                  ) : null}
-                                </div>
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {player.debt_amount > 0 ? (
-                              <div>
-                                <div className="font-tabular mb-1 font-semibold text-amber-800">
-                                  {formatCurrencyRounded(player.debt_amount)}
-                                </div>
-                                {player.debt_details &&
-                                  player.debt_details.length > 0 && (
-                                    <div className="space-y-2 text-xs text-slate-600">
-                                      {player.debt_details.map((debt, idx) => (
-                                        <div
-                                          key={idx}
-                                          className="rounded-lg border border-amber-200 bg-amber-50/60 p-1.5 text-right"
-                                        >
-                                          {debt.parent_amount !== null && (
-                                            <div className="font-medium">
-                                              {formatDateDisplay(debt.date)}:{" "}
-                                              {formatCurrencyRounded(
-                                                debt.parent_amount,
-                                              )}
-                                            </div>
-                                          )}
-                                          {debt.sub_bills &&
-                                            debt.sub_bills.length > 0 &&
-                                            debt.sub_bills.map(
-                                              (subBill, subIdx) => (
-                                                <div
-                                                  key={subIdx}
-                                                  className="mt-0.5 pl-2"
-                                                >
-                                                  {subBill.note || "Bill con"}:{" "}
-                                                  {formatCurrencyRounded(
-                                                    subBill.amount,
-                                                  )}
-                                                </div>
-                                              ),
-                                            )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                              </div>
-                            ) : (
-                              "-"
-                            )}
-                          </td>
-                          <td className="font-tabular px-4 py-3 text-right font-semibold text-emerald-700">
-                            {formatCurrencyRounded(
-                              (player.total_amount || 0) +
-                                (player.debt_amount || 0),
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <input
-                              type="checkbox"
-                              checked={player.is_paid || false}
-                              aria-label={`Đã thanh toán: ${player.user?.name || ""}`}
-                              onChange={(e) => {
-                                // Nếu đang uncheck, prevent default và hiển thị dialog
-                                if (player.is_paid && !e.target.checked) {
-                                  e.preventDefault();
-                                  handleMarkPayment(player.user_id, false);
-                                } else {
-                                  // Nếu đang check, cho phép update ngay
-                                  handleMarkPayment(
-                                    player.user_id,
-                                    e.target.checked,
-                                  );
-                                }
-                              }}
-                              disabled={!canMark || savingIds.has(player.user_id)}
-                              className="h-5 w-5 cursor-pointer accent-emerald-700 disabled:cursor-not-allowed"
-                            />
-                            {player.paid_at && (
-                              <div className="font-tabular mt-1 text-xs text-slate-500">
-                                {new Date(player.paid_at).toLocaleString("vi-VN")}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  ));
-                })()}
-                <tfoot>
-                  <tr className="border-t-2 border-slate-200 font-bold text-slate-900">
-                    <td colSpan="5" className="px-4 py-3 text-right">
-                      Tổng cộng:
-                    </td>
-                    <td className="font-tabular px-4 py-3 text-right">
-                      {formatCurrencyRounded(
-                        billCollectedTotal(bill.bill_players),
-                      )}
-                    </td>
-                    <td></td>
-                  </tr>
-                  <tr className="text-sm text-slate-600">
-                    <td colSpan="5" className="px-4 pb-3 text-right">
-                      Tổng tiền đánh{" "}
-                      <span className="text-slate-400">
-                        (không gồm nợ cũ, menu):
-                      </span>
-                    </td>
-                    <td className="font-tabular px-4 pb-3 text-right font-semibold text-slate-700">
-                      {formatCurrencyRounded(
-                        billPlayingTotal(bill.bill_players),
-                      )}
-                    </td>
-                    <td></td>
-                  </tr>
-                  <tr className="text-sm text-slate-600">
-                    <td colSpan="5" className="px-4 pb-3 text-right">
-                      Tiền lời{" "}
-                      <span className="text-slate-400">
-                        (tiền đánh − tổng tiền bill):
-                      </span>
-                    </td>
-                    <td
-                      className={`font-tabular px-4 pb-3 text-right font-semibold ${
-                        billProfit(bill) < 0
-                          ? "text-rose-600"
-                          : "text-emerald-700"
-                      }`}
-                    >
-                      {formatProfit(billProfit(bill))}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-
-          </div>
+          <BillPlayersTable
+            bill={bill}
+            canMark={canMark}
+            savingIds={savingIds}
+            onMarkPayment={handleMarkPayment}
+          />
         </>
       )}
 
