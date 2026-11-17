@@ -350,7 +350,7 @@ function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSend
  * - fileName: tên file khi lưu / chia sẻ.
  * - onSendTelegram(blob, accountId) => Promise: gửi ảnh; ném lỗi thì hộp hiện
  *   "Gửi Telegram thất bại: …" và mở nguyên; xong thì hộp tự gọi onClose (màn tự báo thành công).
- * - primaryAction: "telegram" (mặc định) | "download" — nút chính (bên phải).
+ * - primaryAction: "download" (mặc định, Xuất Bill) | "telegram" — nút chính (bên phải).
  * - title: mặc định "Gửi ảnh bill".
  * Chỉ một tài khoản đang bật thì không hiện danh sách chọn (quyết định 12). Màn dùng hộp như cũ muốn
  * bỏ qua bước chọn thì gọi onlyActivePaymentAccountId (utils/billImageShare.js) trước khi mở.
@@ -364,7 +364,7 @@ export default function SelectPaymentAccountDialog({
   buildImage,
   fileName,
   onSendTelegram,
-  primaryAction = 'telegram',
+  primaryAction = 'download',
   title = 'Gửi ảnh bill',
 }) {
   if (!isOpen) return null;

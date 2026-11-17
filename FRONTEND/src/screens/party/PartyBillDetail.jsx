@@ -99,10 +99,10 @@ export default function PartyBillDetail() {
   const [payOldBillsBusy, setPayOldBillsBusy] = useState(null); // null | "current" | "all"
   const [paymentAccounts, setPaymentAccounts] = useState([]);
   const [paymentAccountImages, setPaymentAccountImages] = useState({});
-  // Hộp "Gửi ảnh bill"; primaryAction = nút vừa bấm (desktop) — điện thoại mở bằng "Gửi ảnh".
+  // Hộp "Gửi ảnh bill"; primaryAction = nút vừa bấm (desktop) — điện thoại "Gửi ảnh" mặc định Xuất Bill.
   const [imageDialog, setImageDialog] = useState({
     isOpen: false,
-    primaryAction: "telegram",
+    primaryAction: "download",
   });
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const exportRef = useRef(null);
@@ -883,7 +883,7 @@ export default function PartyBillDetail() {
       >
         <button
           type="button"
-          onClick={() => openImageDialog("telegram")}
+          onClick={() => openImageDialog("download")}
           className="btn btn-primary flex-1"
         >
           <Send className="h-4 w-4" />
