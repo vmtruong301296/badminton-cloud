@@ -7,11 +7,19 @@
 export const activePaymentAccounts = (accounts = []) =>
   (accounts || []).filter((account) => account.is_active);
 
-/** Tài khoản chọn sẵn khi mở hộp: VPBank nếu có, không thì tài khoản đang bật đầu tiên. */
-export const defaultPaymentAccountId = (accounts = []) => {
+/**
+ * Tài khoản chọn sẵn khi mở hộp: tài khoản mặc định của người đăng nhập
+ * (users.default_payment_account_id) nếu còn bật, không thì VPBank, không thì
+ * tài khoản đang bật đầu tiên.
+ */
+export const defaultPaymentAccountId = (accounts = [], preferredId = null) => {
   const active = activePaymentAccounts(accounts);
+  const preferred =
+    preferredId == null
+      ? undefined
+      : active.find((account) => account.id === Number(preferredId));
   const vpbank = active.find((account) => account.bank_name === "VPBank");
-  return (vpbank || active[0])?.id ?? null;
+  return (preferred || vpbank || active[0])?.id ?? null;
 };
 
 /**

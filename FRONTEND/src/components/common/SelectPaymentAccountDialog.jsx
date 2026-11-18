@@ -47,11 +47,11 @@ function AccountOption({ account, checked, onChange }) {
 const NO_ACCOUNT_TEXT = 'Không có tài khoản thanh toán nào đang hoạt động.';
 
 /** Hộp chọn tài khoản như cũ (chưa truyền buildImage): chọn rồi bấm nút xác nhận. */
-function AccountPicker({ onClose, onConfirm, paymentAccounts, confirmLabel }) {
-  // Chỉ lưu lựa chọn của người dùng; chưa chọn thì dùng tài khoản mặc định (VPBank / đầu tiên).
+function AccountPicker({ onClose, onConfirm, paymentAccounts, confirmLabel, preferredAccountId }) {
+  // Chỉ lưu lựa chọn của người dùng; chưa chọn thì dùng tài khoản mặc định (của người đăng nhập / VPBank / đầu tiên).
   const [chosenId, setChosenId] = useState(null);
   const activeAccounts = activePaymentAccounts(paymentAccounts);
-  const selectedAccountId = chosenId ?? defaultPaymentAccountId(paymentAccounts);
+  const selectedAccountId = chosenId ?? defaultPaymentAccountId(paymentAccounts, preferredAccountId);
 
   const handleConfirm = () => {
     if (selectedAccountId) {
@@ -178,7 +178,16 @@ function PreviewBox({ status, url, alt, onRetry, onZoom, zoomButtonRef }) {
 }
 
 /** Hộp "Gửi ảnh bill": chọn tài khoản + xem trước ảnh + Xuất Bill / Gửi Telegram. */
-function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSendTelegram, primaryAction, title }) {
+function BillImageSheet({
+  onClose,
+  paymentAccounts,
+  preferredAccountId,
+  buildImage,
+  fileName,
+  onSendTelegram,
+  primaryAction,
+  title,
+}) {
   const [chosenId, setChosenId] = useState(null);
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState(null); // { key, blob, url } | { key, error }
@@ -188,7 +197,7 @@ function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSend
   const zoomButtonRef = useRef(null);
 
   const activeAccounts = activePaymentAccounts(paymentAccounts);
-  const accountId = chosenId ?? defaultPaymentAccountId(paymentAccounts);
+  const accountId = chosenId ?? defaultPaymentAccountId(paymentAccounts, preferredAccountId);
   const buildKey = accountId === null ? null : `${accountId}:${attempt}`;
   const runBuild = useEffectEvent((id) => buildImage(id));
 
@@ -343,6 +352,8 @@ function BillImageSheet({ onClose, paymentAccounts, buildImage, fileName, onSend
  *
  * Như cũ (không truyền buildImage): isOpen, onClose, onConfirm(accountId), paymentAccounts;
  * tùy chọn confirmLabel (mặc định "Xác nhận").
+ * Cả hai kiểu: preferredAccountId — tài khoản chọn sẵn của người đăng nhập (user.default_payment_account_id);
+ * không có / đã tắt thì chọn sẵn VPBank, không thì tài khoản đầu tiên.
  *
  * Hộp "Gửi ảnh bill" (truyền buildImage): mở là dựng ảnh ngay, xem trước, phóng to, rồi
  * Xuất Bill (điện thoại: bảng chia sẻ của máy nếu có — quyết định 11) hoặc Gửi Telegram.
@@ -360,6 +371,7 @@ export default function SelectPaymentAccountDialog({
   onClose,
   onConfirm,
   paymentAccounts = [],
+  preferredAccountId = null,
   confirmLabel = 'Xác nhận',
   buildImage,
   fileName,
@@ -373,6 +385,7 @@ export default function SelectPaymentAccountDialog({
       <BillImageSheet
         onClose={onClose}
         paymentAccounts={paymentAccounts}
+        preferredAccountId={preferredAccountId}
         buildImage={buildImage}
         fileName={fileName}
         onSendTelegram={onSendTelegram}
@@ -386,6 +399,7 @@ export default function SelectPaymentAccountDialog({
       onClose={onClose}
       onConfirm={onConfirm}
       paymentAccounts={paymentAccounts}
+      preferredAccountId={preferredAccountId}
       confirmLabel={confirmLabel}
     />
   );

@@ -51,7 +51,7 @@ const CLOSED_UNCHECK = { isOpen: false, playerId: null, playerName: "" };
 export default function BillDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
   const toast = useToast();
   const [bill, setBill] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -1001,6 +1001,7 @@ export default function BillDetail() {
         isOpen={imageDialog.isOpen}
         onClose={closeImageDialog}
         paymentAccounts={paymentAccounts}
+        preferredAccountId={user?.default_payment_account_id}
         buildImage={buildBillImage}
         fileName={billImageFileName}
         onSendTelegram={sendBillToTelegram}

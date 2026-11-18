@@ -34,6 +34,23 @@ describe("defaultPaymentAccountId", () => {
     ).toBe(2);
   });
 
+  it("chọn sẵn tài khoản mặc định của người đăng nhập, kể cả khi có VPBank", () => {
+    const list = [acc(1, "VPBank"), acc(4, "Minh Hiển"), acc(9, "Văn Chung")];
+    expect(defaultPaymentAccountId(list, 4)).toBe(4);
+    expect(defaultPaymentAccountId(list, "9")).toBe(9);
+  });
+
+  it("tài khoản mặc định đã tắt hoặc không còn thì quay về VPBank", () => {
+    const list = [
+      acc(4, "Minh Hiển", false),
+      acc(2, "Techcombank"),
+      acc(1, "VPBank"),
+    ];
+    expect(defaultPaymentAccountId(list, 4)).toBe(1);
+    expect(defaultPaymentAccountId(list, 99)).toBe(1);
+    expect(defaultPaymentAccountId(list, null)).toBe(1);
+  });
+
   it("không có tài khoản đang bật thì null", () => {
     expect(defaultPaymentAccountId([acc(1, "VPBank", false)])).toBeNull();
     expect(defaultPaymentAccountId([])).toBeNull();

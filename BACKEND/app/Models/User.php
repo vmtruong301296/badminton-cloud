@@ -47,6 +47,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'default_ratio' => 'decimal:2',
+            'default_payment_account_id' => 'integer',
         ];
     }
 
