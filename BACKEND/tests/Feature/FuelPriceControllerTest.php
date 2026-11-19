@@ -62,8 +62,9 @@ class FuelPriceControllerTest extends TestCase
 
         // Tên nguồn có dấu chấm nên không dùng được assertJsonPath (dấu chấm
         // là ký tự phân cấp), kiểm trực tiếp trên mảng.
-        $this->assertSame(
-            ['baohatinh.vn' => 22660, 'petrolimex.com.vn' => 22660],
+        // assertEquals không xét thứ tự key: cột JSON của MySQL tự sắp lại key.
+        $this->assertEquals(
+            ['petrolimex.com.vn' => 22660, 'baohatinh.vn' => 22660],
             $response->json('0.sources')
         );
     }

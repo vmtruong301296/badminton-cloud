@@ -40,7 +40,9 @@ class FuelPriceServiceTest extends TestCase
             'Title' => 'Xăng E10 RON 95-III',
             'Zone1Price' => $price,
             'Zone2Price' => $price + 390,
-            'LastModified' => '2026-08-21T07:50:29.63Z',
+            // Petrolimex sửa giá chiều thứ Năm 20/08; baohatinh.vn cào ngày
+            // hôm sau vẫn ghi "hôm nay 21/08/2026".
+            'LastModified' => '2026-08-20T07:50:29.63Z',
         ]]]);
     }
 
@@ -75,13 +77,18 @@ class FuelPriceServiceTest extends TestCase
         $result = $this->service->refresh(self::KEY);
 
         $this->assertSame(22660, $result->price);
-        $this->assertSame(
-            ['baohatinh.vn' => 22660, 'petrolimex.com.vn' => 22660],
+        // assertEquals không xét thứ tự key: cột JSON của MySQL tự sắp lại key.
+        $this->assertEquals(
+            ['petrolimex.com.vn' => 22660, 'baohatinh.vn' => 22660],
             $result->sources
         );
         $this->assertNull($result->last_error);
         $this->assertNotNull($result->fetched_at);
-        $this->assertSame('2026-08-21', $result->source_date->format('Y-m-d'));
+        $this->assertSame(
+            '2026-08-20',
+            $result->source_date->format('Y-m-d'),
+            'ngày Petrolimex điều chỉnh giá, không phải ngày "hôm nay" của baohatinh.vn'
+        );
     }
 
     public function test_hai_nguon_lech_thi_giu_gia_cu(): void

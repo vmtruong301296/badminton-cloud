@@ -7,7 +7,9 @@ namespace App\Services\FuelPrice;
  *
  *   Giá Xăng E10 RON 95-III hôm nay 21/08/2026 ở mức 22.660 đồng/lít, tăng 550 đ...
  *
- * Nguồn này có kèm ngày công bố nên dùng để đối chiếu độ tươi của dữ liệu.
+ * Ngày trong câu là "hôm nay" lúc trang được tải, KHÔNG phải ngày điều
+ * chỉnh giá: giá đổi chiều thứ Năm 12/11/2026 mà trang tải ngày 19/11 vẫn
+ * ghi "hôm nay 19/11/2026". Ngày điều chỉnh thật lấy từ Petrolimex.
  */
 class BaoHaTinhFuelSource extends AbstractFuelPriceSource
 {

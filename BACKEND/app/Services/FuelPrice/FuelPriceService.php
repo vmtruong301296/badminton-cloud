@@ -26,9 +26,12 @@ class FuelPriceService
         $min = (int) config('fuel_prices.min_price');
         $max = (int) config('fuel_prices.max_price');
 
+        // Thứ tự có nghĩa: source_date lấy theo nguồn ĐẦU TIÊN có ngày.
+        // Petrolimex đứng trước vì ngày của nó là ngày điều chỉnh giá thật;
+        // ngày của baohatinh.vn chỉ là "hôm nay" lúc tải trang.
         $this->sources = [
-            new BaoHaTinhFuelSource($min, $max),
             new PetrolimexFuelSource($min, $max),
+            new BaoHaTinhFuelSource($min, $max),
         ];
     }
 
