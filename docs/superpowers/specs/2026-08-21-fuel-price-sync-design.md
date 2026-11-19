@@ -4,6 +4,11 @@ Ngày: 2026-08-21
 Trạng thái: đã duyệt hướng tiếp cận, chờ review spec
 Phụ lục của: `2026-08-21-car-rental-cost-comparison-design.md`
 
+> **Cập nhật 2026-11-19:** giavangnay.com chết từ cuối 09/2026 (HTTP 530,
+> Cloudflare 1016), quy tắc hai nguồn giữ giá đứng yên 56 ngày. Thay bằng API
+> bảng giá bán lẻ của Petrolimex (mục 5). `source_date` giờ là ngày Petrolimex
+> điều chỉnh giá; nguồn lỗi được ghi log (mục 6).
+
 ## 1. Mục tiêu và ràng buộc
 
 Ô "Đơn giá xăng" trong màn hình so sánh thuê xe hiện phải gõ tay, và giá
@@ -15,19 +20,24 @@ mặc định 30.000 đ/lít đã lệch xa thực tế (giá thật ngày 21/08
 | Nguồn | Máy đọc được | Có E10 RON 95-III | Kết luận |
 |---|---|---|---|
 | API chính thức Petrolimex | Không tồn tại | — | Loại |
-| Trang chủ petrolimex.com.vn | Không có bảng giá | Chỉ tên sản phẩm | Loại |
+| API bảng giá nội bộ của trang petrolimex.com.vn (tìm ra 2026-11-19) | JSON | Có | **Dùng** từ 2026-11-19 |
+| HTML trang chủ petrolimex.com.vn | Bảng giá nạp bằng JS từ API ở dòng trên | Chỉ tên sản phẩm | Loại |
 | Thông cáo chính thức Petrolimex | Bảng giá là ảnh JPG | Có, trong ảnh | Loại, cần OCR |
 | VietFuelAPI (cộng đồng) | Đã chết, DNS không resolve | — | Loại |
 | webgia.com | HTML table | Dòng RON 95 rỗng | Loại, đang hỏng ngầm |
 | baohatinh.vn | meta description | Có | **Dùng** |
-| giavangnay.com | HTML table | Có | **Dùng** |
+| giavangnay.com | HTML table | Có | Dùng tới 09/2026, **bỏ** vì đã chết (HTTP 530) |
+| pvoil.com.vn (khảo sát 2026-11-19) | Chặn bằng thử thách Cloudflare (403) | — | Loại |
 
 Hai nguồn được chọn cho cùng một con số 22.660 tại thời điểm khảo sát.
+Ngày 2026-11-19, baohatinh.vn và API Petrolimex cùng cho 19.840.
 
 ### Ràng buộc bắt buộc
 
 - **Không có nguồn chính thức máy đọc được.** Mọi thứ dưới đây là cào web
-  bên thứ ba, và phải thiết kế với giả định nguồn sẽ hỏng.
+  bên thứ ba, và phải thiết kế với giả định nguồn sẽ hỏng. API Petrolimex
+  dùng từ 2026-11-19 là API nội bộ của trang, không công bố, không cam kết,
+  nên giả định này vẫn giữ nguyên.
 - **Frontend không tự fetch được.** CORS chặn, và Worker Cloudflare chỉ
   proxy `/api` về Render. Mọi lần lấy giá chạy ở Laravel.
 - **Render free tier không chạy cron.** `render.yaml` khai báo
@@ -42,14 +52,14 @@ Hai nguồn được chọn cho cùng một con số 22.660 tại thời điểm
 tính tiền, nên hệ thống phải **không bao giờ tự tin sai**.
 
 ```
-                  ┌─ baohatinh.vn ──┐
-Yêu cầu làm mới ──┤                 ├─→ hai số BẰNG NHAU?
-                  └─ giavangnay.com ┘         │
-                                              ├─ Có ──→ cập nhật giá, ghi nguồn + thời điểm
-                                              │
-                                              └─ Không, hoặc một/cả hai nguồn lỗi
-                                                     └─→ GIỮ NGUYÊN giá cũ,
-                                                         ghi last_error, gắn cờ cần kiểm tra
+                  ┌─ petrolimex.com.vn ─┐
+Yêu cầu làm mới ──┤                     ├─→ hai số BẰNG NHAU?
+                  └─ baohatinh.vn ──────┘         │
+                                                  ├─ Có ──→ cập nhật giá, ghi nguồn + thời điểm
+                                                  │
+                                                  └─ Không, hoặc một/cả hai nguồn lỗi
+                                                         └─→ GIỮ NGUYÊN giá cũ,
+                                                             ghi last_error + log, gắn cờ cần kiểm tra
 ```
 
 Bốn quy tắc không được vi phạm:
@@ -99,8 +109,8 @@ nạp lại một bản ghi đã lưu), và luôn hiển thị dòng xuất xứ
 | `id` | id | |
 | `fuel_key` | string(50), unique | `e10_ron95_iii` |
 | `price` | unsignedInteger | đ/lít |
-| `sources` | json, nullable | `{"baohatinh.vn":22660,"giavangnay.com":22660}` |
-| `source_date` | date, nullable | ngày nguồn công bố, nếu nguồn có cung cấp |
+| `sources` | json, nullable | `{"baohatinh.vn":22660,"petrolimex.com.vn":22660}` (MySQL tự sắp key, thứ tự không có nghĩa) |
+| `source_date` | date, nullable | ngày Petrolimex điều chỉnh giá (`LastModified`, giờ Việt Nam) |
 | `fetched_at` | timestamp, nullable | lần cào **thành công** gần nhất |
 | `last_checked_at` | timestamp, nullable | lần **thử** gần nhất, kể cả thất bại |
 | `last_error` | string(255), nullable | lý do lần thử gần nhất thất bại |
@@ -134,7 +144,7 @@ return [
 ## 5. Các nguồn cào
 
 Mỗi nguồn là một class nhỏ, một trách nhiệm, test được độc lập bằng
-fixture HTML lưu sẵn.
+fixture (HTML hoặc JSON) lưu sẵn.
 
 ```php
 namespace App\Services\FuelPrice;
@@ -145,7 +155,7 @@ interface FuelPriceSource
     public function name(): string;
 
     /**
-     * Đọc giá từ HTML đã tải về.
+     * Đọc giá từ nội dung đã tải về (HTML hoặc JSON tùy nguồn).
      * Trả về null khi không tìm thấy hoặc giá nằm ngoài khoảng hợp lệ.
      *
      * @return array{price: int, date: ?string}|null
@@ -166,7 +176,10 @@ làm — `Http::timeout(config('fuel_prices.source_timeout_seconds'))->get($sour
 
 URL: `https://baohatinh.vn/cong-cu/gia-xang-dau/ron95`
 
-Giá nằm trong thẻ meta description, kèm cả ngày công bố:
+Giá nằm trong thẻ meta description, kèm một ngày. **Ngày đó là "hôm nay"
+lúc tải trang, không phải ngày điều chỉnh giá** (trang tải 19/11/2026 ghi
+"hôm nay 19/11/2026" dù giá đổi chiều 12/11), nên `FuelPriceService` ưu tiên
+ngày của Petrolimex:
 
 ```html
 <meta name="description" content="Giá Xăng E10 RON 95-III hôm nay 21/08/2026 ở mức 22.660 đồng/lít, tăng 550 đ so kỳ trước. ...">
@@ -180,35 +193,51 @@ Regex:
 
 Nhóm 1 là ngày, nhóm 2 là giá (bỏ dấu chấm rồi ép sang int).
 
-### `GiaVangNayFuelSource`
+### `PetrolimexFuelSource` (từ 2026-11-19, thay `GiaVangNayFuelSource`)
 
-URL: `https://giavangnay.com/gia-xang-e10`
+URL: `https://portals.petrolimex.com.vn/~apis/portals/cms.item/search?x-request=…`
 
-Giá nằm trong bảng, cấu trúc rõ ràng:
+Đây là API mà chính petrolimex.com.vn gọi để hiện nút "Giá bán lẻ xăng dầu"
+ở đầu trang (hàm `__vieapps.prices.fetch` trong
+`portals.petrolimex.com.vn/_themes/sunrise/js/all.js`). Ba mã kho dữ liệu
+`SystemID`, `RepositoryID`, `RepositoryEntityID` chép nguyên từ request đó;
+Petrolimex đổi CMS thì phải dò lại trong file JS này.
 
-```html
-<tr ...>
-  <td data-label="Sản phẩm">
-    <div class="brand-cell">
-      <div class="brand-icon" ...>E10</div>
-      <div><div class="brand-name">Xăng E10 RON 95-III</div>...</div>
-    </div>
-  </td>
-  <td class="price-cell" data-label="Giá bán lẻ">22.660</td>
-  <td class="price-cell" data-label="Thay đổi" ...>+550</td>
-  <td data-label="Đơn vị" ...>VNĐ/lít</td>
-</tr>
+`x-request` là JSON sau, mã base64url, bỏ dấu `=` ở cuối:
+
+```json
+{"FilterBy": {"And": [
+   {"SystemID": {"Equals": "6783dc1271ff449e95b74a9520964169"}},
+   {"RepositoryID": {"Equals": "a95451e23b474fe5886bfb7cf843f53c"}},
+   {"RepositoryEntityID": {"Equals": "3801378fe1e045b1afa10de7c5776124"}},
+   {"Status": {"Equals": "Published"}}]},
+ "SortBy": {"LastModified": "Descending"},
+ "Pagination": {"TotalRecords": -1, "TotalPages": 0, "PageSize": 0, "PageNumber": 0}}
 ```
 
-Thuật toán: tìm `<tr>` có `<div class="brand-name">` khớp chính xác
-`Xăng {pattern}`, rồi lấy `<td class="price-cell">` **đầu tiên** trong
-dòng đó. Nguồn này không cung cấp ngày, trả `date => null`.
+Phản hồi, mỗi sản phẩm một phần tử:
 
-Lưu ý bắt buộc: so khớp `brand-name` phải **bằng chính xác cả chuỗi**, không
-dùng `str_contains`. Hai tên hiện tại không lồng nhau nên chuỗi con vẫn chạy
-đúng hôm nay, nhưng khớp chính xác không tốn thêm gì và chặn sẵn trường hợp
-về sau xuất hiện tên mà tên này là tiền tố của tên kia. Trang có nhiều dòng
-xăng rất giống nhau, bắt nhầm dòng là hỏng ngầm.
+```json
+{"Objects": [
+  {"Title": "Xăng E10 RON 95-III", "Zone1Price": 19840, "Zone2Price": 20230,
+   "LastModified": "2026-11-12T07:50:29.63Z", "...": "..."}
+]}
+```
+
+Thuật toán: tìm phần tử có `Title` bằng chính xác `Xăng {pattern}`, lấy
+`Zone1Price` (giá Vùng 1, cùng mức baohatinh.vn). `date` là ngày của
+`LastModified` đổi sang giờ Việt Nam; `LastModified` hỏng thì vẫn lấy giá,
+`date => null`. Nội dung không phải JSON, thiếu `Objects`, không có dòng khớp,
+hoặc giá ngoài khoảng → `null`.
+
+Lưu ý bắt buộc: so khớp `Title` phải **bằng chính xác cả chuỗi**, không dùng
+`str_contains`. Danh sách có cả `Xăng E10 RON 95-III` lẫn `Xăng E10 RON 95-V`;
+khớp chính xác không tốn thêm gì và chặn sẵn trường hợp về sau xuất hiện tên
+mà tên này là tiền tố của tên kia. Bắt nhầm dòng là hỏng ngầm.
+
+> Lịch sử: `GiaVangNayFuelSource` (cào bảng HTML của giavangnay.com, không
+> có ngày) dùng từ 2026-08-21 tới khi trang chết cuối 09/2026, xóa ngày
+> 2026-11-19.
 
 ## 6. `FuelPriceService`
 
@@ -233,15 +262,19 @@ Luồng của `refresh()`:
 1. Tải song song 2 nguồn, mỗi nguồn timeout 5 giây. Ngoại lệ mạng được bắt
    và coi như nguồn đó trả null.
 2. Gọi `parse()` từng nguồn. Loại bỏ kết quả ngoài khoảng
-   `min_price`–`max_price`.
+   `min_price`–`max_price`. Ngoại lệ mạng, mã lỗi HTTP, hay HTTP 200 mà
+   `parse()` không ra giá đều ghi `Log::warning('Lấy giá xăng thất bại')`
+   kèm `source`, `fuel_key`, `status`, `error` (trước 2026-11-19 chỉ log
+   ngoại lệ, nên 56 ngày giavangnay.com trả 530 không để lại dòng log nào).
 3. Cập nhật `last_checked_at` trong mọi trường hợp.
 4. Nếu có **đúng 2** kết quả hợp lệ và **bằng nhau**: ghi `price`,
-   `sources`, `source_date` (lấy từ nguồn nào có), `fetched_at`, xóa
+   `sources`, `source_date` (lấy từ nguồn **đầu tiên** có ngày; Petrolimex
+   đứng đầu vì ngày của nó là ngày điều chỉnh giá), `fetched_at`, xóa
    `last_error`, xóa `updated_by`.
 5. Ngược lại: giữ nguyên `price`, ghi `last_error` mô tả cụ thể. Ba thông
    điệp lỗi:
-   - `"Hai nguồn lệch nhau: baohatinh.vn 22.660 vs giavangnay.com 22.500"`
-   - `"Chỉ lấy được 1/2 nguồn (giavangnay.com lỗi)"`
+   - `"Hai nguồn lệch nhau: petrolimex.com.vn 22.500, baohatinh.vn 22.660"`
+   - `"Chỉ lấy được 1/2 nguồn (petrolimex.com.vn lỗi)"`
    - `"Cả hai nguồn đều không lấy được"`
 
 **Thứ tự ưu tiên giữa giá tay và giá tự động:** một lần cào thành công
@@ -276,8 +309,8 @@ Hình dạng phản hồi mỗi phần tử:
   "fuel_key": "e10_ron95_iii",
   "label": "Xăng E10 RON 95-III",
   "price": 22660,
-  "sources": {"baohatinh.vn": 22660, "giavangnay.com": 22660},
-  "source_date": "2026-08-21",
+  "sources": {"baohatinh.vn": 22660, "petrolimex.com.vn": 22660},
+  "source_date": "2026-08-20",
   "fetched_at": "2026-08-21T04:00:00Z",
   "last_checked_at": "2026-08-21T04:00:00Z",
   "last_error": null,
@@ -310,7 +343,7 @@ Trong `CarRentalCalculator.jsx`:
 3. Dưới ô "Đơn giá" của phương án chạy xăng, hiển thị dòng xuất xứ:
 
    ```
-   Giá thị trường 22.660 đ/lít · baohatinh.vn + giavangnay.com · 21/08/2026   [Dùng giá này]
+   Giá thị trường 22.660 đ/lít · baohatinh.vn + petrolimex.com.vn · 20/08/2026   [Dùng giá này]
    ```
 
    Nút "Dùng giá này" ghi giá vào ô. Người dùng gõ đè bất cứ lúc nào.
@@ -324,22 +357,29 @@ Không tự động ghi đè giá người dùng đã gõ, trong mọi trường
 
 ## 10. Test
 
-Fixture HTML lưu tại `BACKEND/tests/Fixtures/fuel-prices/`, chụp từ hai
-trang thật ngày 21/08/2026. Không test nào gọi mạng.
+Fixture lưu tại `BACKEND/tests/Fixtures/fuel-prices/`:
+`baohatinh-2026-08-21.html` (trang thật ngày 21/08/2026) và
+`petrolimex-2026-11-19.json` (phản hồi API thật ngày 19/11/2026). Không test
+nào gọi mạng.
 
 `tests/Unit/FuelPrice/BaoHaTinhFuelSourceTest.php`:
 - Fixture thật ra đúng `['price' => 22660, 'date' => '2026-08-21']`
 - HTML không có meta description khớp mẫu trả `null`
 - Giá ngoài khoảng (ví dụ `999.999`) trả `null`
 
-`tests/Unit/FuelPrice/GiaVangNayFuelSourceTest.php`:
-- Fixture thật ra đúng `['price' => 22660, 'date' => null]`
+`tests/Unit/FuelPrice/PetrolimexFuelSourceTest.php`:
+- URL mang đúng bộ lọc bảng giá bán lẻ (giải mã `x-request` để kiểm)
+- Fixture thật ra đúng `['price' => 19840, 'date' => '2026-11-12']` (giá Vùng 1)
 - **Không bắt nhầm dòng `E10 RON 95-V`** khi tìm `E10 RON 95-III`
-- HTML không có dòng khớp trả `null`
-- Giá ngoài khoảng trả `null`
+- Không có dòng khớp, nội dung không phải JSON, thiếu `Objects`, thiếu giá,
+  giá ngoài khoảng đều trả `null`
+- `LastModified` đổi sang ngày giờ Việt Nam; `LastModified` hỏng thì vẫn lấy giá
 
 `tests/Feature/FuelPriceServiceTest.php` (fake HTTP bằng `Http::fake()`):
-- Hai nguồn khớp → cập nhật `price`, `sources`, `fetched_at`, xóa `last_error`
+- Hai nguồn khớp → cập nhật `price`, `sources`, `fetched_at`, xóa `last_error`;
+  `source_date` là ngày của Petrolimex chứ không phải "hôm nay" của baohatinh.vn
+- Nguồn trả mã lỗi HTTP, hoặc HTTP 200 mà không đọc được giá → ghi log kèm
+  `source` và `status`; hai nguồn tốt thì không ghi log
 - Hai nguồn lệch → **giữ giá cũ**, `last_error` nêu rõ cả hai số
 - Một nguồn lỗi → giữ giá cũ, `last_error` nêu tên nguồn hỏng
 - Cả hai lỗi → giữ giá cũ, `last_error` tương ứng
@@ -363,4 +403,6 @@ trang thật ngày 21/08/2026. Không test nào gọi mạng.
 | Cả hai nguồn cùng chết | Giá đóng băng ở giá tốt cuối cùng, cờ `is_stale` làm việc đóng băng nhìn thấy được |
 | Cả hai nguồn cùng sai giống nhau | Không phát hiện được. Chấp nhận: cả hai đều lấy từ công bố Petrolimex, và người dùng luôn sửa đè được |
 | Nguồn đổi tên sản phẩm khi lộ trình E10 thay đổi | `pattern` nằm trong config, sửa một dòng; test fixture sẽ đỏ trước |
+| Một nguồn chết hẳn (giavangnay.com, cuối 09/2026) | Giá đóng băng, `last_error` và log nêu tên nguồn + mã HTTP; thay nguồn khác như đã làm ngày 2026-11-19 |
+| Petrolimex đổi CMS, API nội bộ đổi mã hoặc cấu trúc | Như trên; dò lại ba mã kho dữ liệu trong `_themes/sunrise/js/all.js` của trang chủ |
 | Lần fetch đầu làm chậm màn hình | Gọi nền không chặn form; instance Render ngủ dậy sẵn từ request `/api/me` trước đó |

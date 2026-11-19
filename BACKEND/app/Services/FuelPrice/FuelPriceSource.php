@@ -5,7 +5,7 @@ namespace App\Services\FuelPrice;
 /**
  * Một nguồn giá xăng ngoài.
  *
- * parse() cố ý tách khỏi việc tải mạng: test chạy trên fixture HTML lưu sẵn,
+ * parse() cố ý tách khỏi việc tải mạng: test chạy trên fixture lưu sẵn,
  * không bao giờ gọi mạng thật. FuelPriceService là nơi thực hiện HTTP.
  */
 interface FuelPriceSource
@@ -17,8 +17,9 @@ interface FuelPriceSource
     public function url(string $fuelKey): string;
 
     /**
-     * Đọc giá từ HTML. Trả về null khi không tìm thấy hoặc giá nằm ngoài
-     * khoảng hợp lệ cấu hình trong config/fuel_prices.php.
+     * Đọc giá từ nội dung nguồn trả về (HTML hoặc JSON tùy nguồn). Trả về
+     * null khi không tìm thấy hoặc giá nằm ngoài khoảng hợp lệ cấu hình
+     * trong config/fuel_prices.php.
      *
      * @return array{price: int, date: ?string}|null
      */
