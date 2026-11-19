@@ -162,20 +162,41 @@ class FuelPriceService
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (BadmintonApp fuel price sync)'])
                 ->get($source->url($fuelKey));
 
+            // Nguồn chết hay đổi cấu trúc đều phải lộ ra log: giavangnay.com
+            // từng trả 530 suốt 56 ngày mà log không có dòng nào.
             if (! $response->successful()) {
+                $this->logFailure($source, $fuelKey, [
+                    'status' => $response->status(),
+                    'error' => 'Nguồn trả mã lỗi HTTP',
+                ]);
+
                 return null;
             }
 
-            return $source->parse($response->body(), $pattern);
+            $parsed = $source->parse($response->body(), $pattern);
+
+            if ($parsed === null) {
+                $this->logFailure($source, $fuelKey, [
+                    'status' => $response->status(),
+                    'error' => 'Không đọc được giá hợp lệ từ nội dung nguồn',
+                ]);
+            }
+
+            return $parsed;
         } catch (Throwable $e) {
-            Log::warning('Lấy giá xăng thất bại', [
-                'source' => $source->name(),
-                'fuel_key' => $fuelKey,
-                'error' => $e->getMessage(),
-            ]);
+            $this->logFailure($source, $fuelKey, ['error' => $e->getMessage()]);
 
             return null;
         }
+    }
+
+    private function logFailure(FuelPriceSource $source, string $fuelKey, array $context): void
+    {
+        Log::warning('Lấy giá xăng thất bại', [
+            'source' => $source->name(),
+            'fuel_key' => $fuelKey,
+            ...$context,
+        ]);
     }
 
     private function recordFor(string $fuelKey): FuelPrice

@@ -8,6 +8,7 @@ use App\Services\FuelPrice\FuelPriceService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
 class FuelPriceServiceTest extends TestCase
@@ -106,6 +107,48 @@ class FuelPriceServiceTest extends TestCase
         $this->assertSame(20000, $result->price);
         $this->assertStringContainsString('1/2', $result->last_error);
         $this->assertStringContainsString('petrolimex.com.vn', $result->last_error);
+    }
+
+    public function test_nguon_tra_ma_loi_http_thi_ghi_log_kem_ma(): void
+    {
+        // Đúng tình huống giavangnay.com: trả 530 suốt 56 ngày mà log trống trơn.
+        Log::spy();
+        Http::fake([
+            'baohatinh.vn/*' => Http::response($this->baoHaTinhHtml(), 200),
+            'portals.petrolimex.com.vn/*' => Http::response('error code: 1016', 530),
+        ]);
+
+        $this->service->refresh(self::KEY);
+
+        Log::shouldHaveReceived('warning')->once()->withArgs(
+            fn (string $message, array $context) => $context['source'] === 'petrolimex.com.vn'
+                && $context['fuel_key'] === self::KEY
+                && $context['status'] === 530
+        );
+    }
+
+    public function test_nguon_tra_noi_dung_khong_doc_duoc_thi_ghi_log(): void
+    {
+        // HTTP 200 nhưng không tìm thấy giá: nguồn đổi cấu trúc, cũng phải lộ ra log.
+        Log::spy();
+        $this->fakeSources($this->baoHaTinhHtml(), '{"Objects":[]}');
+
+        $this->service->refresh(self::KEY);
+
+        Log::shouldHaveReceived('warning')->once()->withArgs(
+            fn (string $message, array $context) => $context['source'] === 'petrolimex.com.vn'
+                && $context['status'] === 200
+        );
+    }
+
+    public function test_hai_nguon_tot_thi_khong_ghi_log(): void
+    {
+        Log::spy();
+        $this->fakeSources($this->baoHaTinhHtml(), $this->petrolimexJson());
+
+        $this->service->refresh(self::KEY);
+
+        Log::shouldNotHaveReceived('warning');
     }
 
     public function test_ca_hai_nguon_loi_thi_giu_gia_cu(): void
