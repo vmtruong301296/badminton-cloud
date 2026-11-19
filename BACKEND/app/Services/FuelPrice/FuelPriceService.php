@@ -28,7 +28,7 @@ class FuelPriceService
 
         $this->sources = [
             new BaoHaTinhFuelSource($min, $max),
-            new GiaVangNayFuelSource($min, $max),
+            new PetrolimexFuelSource($min, $max),
         ];
     }
 

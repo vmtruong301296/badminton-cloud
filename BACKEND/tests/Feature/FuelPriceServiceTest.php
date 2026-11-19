@@ -33,23 +33,25 @@ class FuelPriceServiceTest extends TestCase
             .$date.' ở mức '.$formatted.' đồng/lít, tăng 550 đ so kỳ trước.">';
     }
 
-    private function giaVangNayHtml(int $price = 22660): string
+    private function petrolimexJson(int $price = 22660): string
     {
-        $formatted = number_format($price, 0, ',', '.');
-
-        return '<table><tr><td><div class="brand-name">Xăng E10 RON 95-III</div></td>'
-            .'<td class="price-cell">'.$formatted.'</td></tr></table>';
+        return json_encode(['Objects' => [[
+            'Title' => 'Xăng E10 RON 95-III',
+            'Zone1Price' => $price,
+            'Zone2Price' => $price + 390,
+            'LastModified' => '2026-08-21T07:50:29.63Z',
+        ]]]);
     }
 
-    private function fakeSources(?string $baoHaTinh, ?string $giaVangNay): void
+    private function fakeSources(?string $baoHaTinh, ?string $petrolimex): void
     {
         Http::fake([
             'baohatinh.vn/*' => $baoHaTinh === null
                 ? Http::response('', 500)
                 : Http::response($baoHaTinh, 200),
-            'giavangnay.com/*' => $giaVangNay === null
+            'portals.petrolimex.com.vn/*' => $petrolimex === null
                 ? Http::response('', 500)
-                : Http::response($giaVangNay, 200),
+                : Http::response($petrolimex, 200),
         ]);
     }
 
@@ -67,13 +69,13 @@ class FuelPriceServiceTest extends TestCase
     public function test_hai_nguon_khop_thi_cap_nhat_gia(): void
     {
         $this->seedExisting();
-        $this->fakeSources($this->baoHaTinhHtml(), $this->giaVangNayHtml());
+        $this->fakeSources($this->baoHaTinhHtml(), $this->petrolimexJson());
 
         $result = $this->service->refresh(self::KEY);
 
         $this->assertSame(22660, $result->price);
         $this->assertSame(
-            ['baohatinh.vn' => 22660, 'giavangnay.com' => 22660],
+            ['baohatinh.vn' => 22660, 'petrolimex.com.vn' => 22660],
             $result->sources
         );
         $this->assertNull($result->last_error);
@@ -84,7 +86,7 @@ class FuelPriceServiceTest extends TestCase
     public function test_hai_nguon_lech_thi_giu_gia_cu(): void
     {
         $this->seedExisting(20000);
-        $this->fakeSources($this->baoHaTinhHtml(22660), $this->giaVangNayHtml(22500));
+        $this->fakeSources($this->baoHaTinhHtml(22660), $this->petrolimexJson(22500));
 
         $result = $this->service->refresh(self::KEY);
 
@@ -103,7 +105,7 @@ class FuelPriceServiceTest extends TestCase
 
         $this->assertSame(20000, $result->price);
         $this->assertStringContainsString('1/2', $result->last_error);
-        $this->assertStringContainsString('giavangnay.com', $result->last_error);
+        $this->assertStringContainsString('petrolimex.com.vn', $result->last_error);
     }
 
     public function test_ca_hai_nguon_loi_thi_giu_gia_cu(): void
@@ -130,7 +132,7 @@ class FuelPriceServiceTest extends TestCase
 
     public function test_chua_co_ban_ghi_thi_tao_moi_tu_fallback(): void
     {
-        $this->fakeSources($this->baoHaTinhHtml(), $this->giaVangNayHtml());
+        $this->fakeSources($this->baoHaTinhHtml(), $this->petrolimexJson());
 
         $result = $this->service->refresh(self::KEY);
 
@@ -167,7 +169,7 @@ class FuelPriceServiceTest extends TestCase
         $user = User::create(['name' => 'Admin', 'email' => 'a@b.test', 'password' => 'secret123']);
         $this->service->setManually(self::KEY, 30000, $user->id);
 
-        $this->fakeSources($this->baoHaTinhHtml(), $this->giaVangNayHtml());
+        $this->fakeSources($this->baoHaTinhHtml(), $this->petrolimexJson());
         $result = $this->service->refresh(self::KEY);
 
         $this->assertSame(22660, $result->price);
@@ -203,7 +205,7 @@ class FuelPriceServiceTest extends TestCase
 
     public function test_current_dung_cache_khong_goi_lai_mang(): void
     {
-        $this->fakeSources($this->baoHaTinhHtml(), $this->giaVangNayHtml());
+        $this->fakeSources($this->baoHaTinhHtml(), $this->petrolimexJson());
 
         $this->service->current(self::KEY);
         $this->service->current(self::KEY);

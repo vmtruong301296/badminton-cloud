@@ -22,9 +22,13 @@ class FuelPriceControllerTest extends TestCase
                 '<meta name="description" content="Giá Xăng E10 RON 95-III hôm nay 21/08/2026 ở mức 22.660 đồng/lít, tăng 550 đ.">',
                 200
             ),
-            'giavangnay.com/*' => Http::response(
-                '<table><tr><td><div class="brand-name">Xăng E10 RON 95-III</div></td>'
-                .'<td class="price-cell">22.660</td></tr></table>',
+            'portals.petrolimex.com.vn/*' => Http::response(
+                ['Objects' => [[
+                    'Title' => 'Xăng E10 RON 95-III',
+                    'Zone1Price' => 22660,
+                    'Zone2Price' => 23050,
+                    'LastModified' => '2026-08-21T07:50:29.63Z',
+                ]]],
                 200
             ),
         ]);
@@ -59,7 +63,7 @@ class FuelPriceControllerTest extends TestCase
         // Tên nguồn có dấu chấm nên không dùng được assertJsonPath (dấu chấm
         // là ký tự phân cấp), kiểm trực tiếp trên mảng.
         $this->assertSame(
-            ['baohatinh.vn' => 22660, 'giavangnay.com' => 22660],
+            ['baohatinh.vn' => 22660, 'petrolimex.com.vn' => 22660],
             $response->json('0.sources')
         );
     }
